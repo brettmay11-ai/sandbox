@@ -13,11 +13,55 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Navigation Menu Styles */
+        nav {
+            background-color: #1e8449;
+            padding: 15px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: #27ae60;
+            transform: scale(1.05);
+        }
+
+        /* Main Content Container */
+        .content-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            flex: 1;
             padding: 20px;
         }
 
@@ -72,7 +116,7 @@
         .weekday {
             text-align: center;
             font-weight: bold;
-            color: #667eea;
+            color: #2ecc71;
             padding: 10px;
             font-size: 12px;
         }
@@ -114,25 +158,25 @@
         }
 
         .birthday {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
             color: white;
             font-weight: bold;
             font-size: 18px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
             animation: pulse 1.5s infinite;
         }
 
         .birthday:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.6);
         }
 
         @keyframes pulse {
             0%, 100% {
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
             }
             50% {
-                box-shadow: 0 4px 25px rgba(102, 126, 234, 0.8);
+                box-shadow: 0 4px 25px rgba(46, 204, 113, 0.8);
             }
         }
 
@@ -140,10 +184,10 @@
             text-align: center;
             margin-top: 25px;
             padding: 15px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
+            background: #d5f4e6;
+            border-left: 4px solid #2ecc71;
             border-radius: 5px;
-            color: #856404;
+            color: #186a3b;
             font-size: 14px;
             font-weight: bold;
         }
@@ -236,30 +280,43 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🐾 Dog's Birthday Calendar</h1>
-        <p class="subtitle">May 2026</p>
+    <!-- Navigation Menu -->
+    <nav>
+        <ul>
+            <li><a href="https://www.petco.com/" target="_blank">🐾 Petco</a></li>
+            <li><a href="https://www.petsmart.com/" target="_blank">🦴 PetSmart</a></li>
+            <li><a href="https://www.rover.com/" target="_blank">🐕 Rover</a></li>
+            <li><a href="https://www.chewy.com/" target="_blank">🍖 Chewy</a></li>
+            <li><a href="https://www.akcdog.org/" target="_blank">🏅 AKC</a></li>
+        </ul>
+    </nav>
 
-        <div class="calendar">
-            <div class="month-header">
-                <span class="month-title">May 2026</span>
+    <div class="content-wrapper">
+        <div class="container">
+            <h1>🐾 Dog's Birthday Calendar</h1>
+            <p class="subtitle">May 2026</p>
+
+            <div class="calendar">
+                <div class="month-header">
+                    <span class="month-title">May 2026</span>
+                </div>
+
+                <div class="weekdays">
+                    <div class="weekday">Sun</div>
+                    <div class="weekday">Mon</div>
+                    <div class="weekday">Tue</div>
+                    <div class="weekday">Wed</div>
+                    <div class="weekday">Thu</div>
+                    <div class="weekday">Fri</div>
+                    <div class="weekday">Sat</div>
+                </div>
+
+                <div class="days" id="calendarDays"></div>
             </div>
 
-            <div class="weekdays">
-                <div class="weekday">Sun</div>
-                <div class="weekday">Mon</div>
-                <div class="weekday">Tue</div>
-                <div class="weekday">Wed</div>
-                <div class="weekday">Thu</div>
-                <div class="weekday">Fri</div>
-                <div class="weekday">Sat</div>
+            <div class="birthday-label">
+                <span class="emoji">🎂</span> Birthday: May 28th
             </div>
-
-            <div class="days" id="calendarDays"></div>
-        </div>
-
-        <div class="birthday-label">
-            <span class="emoji">🎂</span> Birthday: May 28th
         </div>
     </div>
 
