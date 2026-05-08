@@ -1,446 +1,425 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dog's Birthday Calendar</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            padding: 0;
-        }
-
-        /* Navigation Menu Styles */
-        nav {
-            background-color: #1e8449;
-            padding: 15px 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        nav ul {
-            list-style: none;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 16px;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-
-        nav a:hover {
-            background-color: #27ae60;
-            transform: scale(1.05);
-        }
-
-        /* Main Content Container */
-        .content-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex: 1;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 30px;
-            max-width: 500px;
-            width: 100%;
-            position: relative;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
-
-        .calendar {
-            width: 100%;
-        }
-
-        .month-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .month-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .weekday {
-            text-align: center;
-            font-weight: bold;
-            color: #2ecc71;
-            padding: 10px;
-            font-size: 12px;
-        }
-
-        .days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-        }
-
-        .day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f5f5f5;
-            color: #333;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .day:hover {
-            background: #e8e8e8;
-            transform: scale(1.05);
-        }
-
-        .empty {
-            background: transparent;
-            cursor: default;
-        }
-
-        .empty:hover {
-            background: transparent;
-            transform: none;
-        }
-
-        .birthday {
-            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
-            animation: pulse 1.5s infinite;
-        }
-
-        .birthday:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.6);
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
-            }
-            50% {
-                box-shadow: 0 4px 25px rgba(46, 204, 113, 0.8);
-            }
-        }
-
-        .birthday-label {
-            text-align: center;
-            margin-top: 25px;
-            padding: 15px;
-            background: #d5f4e6;
-            border-left: 4px solid #2ecc71;
-            border-radius: 5px;
-            color: #186a3b;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .emoji {
-            font-size: 20px;
-            margin-right: 8px;
-        }
-
-        /* Balloon animation styles */
-        .balloon {
-            position: fixed;
-            pointer-events: none;
-            font-size: 24px;
-        }
-
-        @keyframes float-up {
-            0% {
-                opacity: 1;
-                transform: translateY(0) translateX(0) scale(1);
-            }
-            70% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-100vh) translateX(var(--drift)) scale(0.8);
-            }
-        }
-
-        @keyframes pop {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(0);
-                opacity: 0;
-            }
-        }
-
-        .balloon.float {
-            animation: float-up 3s ease-in forwards;
-        }
-
-        .balloon.pop {
-            animation: pop 0.4s ease-out forwards;
-        }
-
-        /* Confetti animation */
-        .confetti {
-            position: fixed;
-            pointer-events: none;
-            font-size: 18px;
-        }
-
-        @keyframes confetti-fall {
-            0% {
-                opacity: 1;
-                transform: translateY(0) translateX(0) rotate(0deg);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(100px) translateX(var(--drift)) rotate(360deg);
-            }
-        }
-
-        .confetti {
-            animation: confetti-fall 2s ease-out forwards;
-        }
-
-        /* Click ripple effect */
-        .day.clicked {
-            animation: click-pulse 0.6s ease-out;
-        }
-
-        @keyframes click-pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.15);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFL Project Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://d3js.org/topojson.v3.min.js"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{surface:{50:'#0a0a0a',100:'#111111',200:'#1a1a1a',300:'#222222'},brand:{300:'#fca5a5',400:'#f87171',500:'#C8102E',600:'#991b1c'},nfl:{navy:'#013369',red:'#C8102E'}}}}}
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#555}
+.noise{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.glass-panel{background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08)}
+.team-card{transition:all 0.4s cubic-bezier(0.4,0,0.2,1);cursor:pointer}
+.team-card:hover{transform:translateY(-4px);border-color:rgba(200,16,46,0.4);box-shadow:0 12px 40px -8px rgba(200,16,46,0.15)}
+.team-card.selected{border-color:rgba(200,16,46,0.6);background:rgba(200,16,46,0.08);box-shadow:0 0 30px -5px rgba(200,16,46,0.2)}
+.stat-bar-fill{transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
+.tab-btn{transition:all 0.25s ease}.tab-btn.active{background:rgba(200,16,46,0.15);color:#C8102E;border-color:rgba(200,16,46,0.4)}
+.matchup-card{transition:all 0.3s ease;cursor:pointer}.matchup-card:hover{border-color:rgba(200,16,46,0.3);background:rgba(255,255,255,0.05)}
+.section-reveal{opacity:0;transform:translateY(30px);transition:all 0.8s cubic-bezier(0.4,0,0.2,1)}.section-reveal.visible{opacity:1;transform:translateY(0)}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(200,16,46,0.3)}50%{box-shadow:0 0 20px rgba(200,16,46,0.6)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
+.fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:rgba(200,16,46,0.3)}
+.player-row:hover{background:rgba(255,255,255,0.04)}
+.toast{transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1)}.toast.show{transform:translateY(0);opacity:1}
+.away-row:nth-child(even){background:rgba(255,255,255,0.015)}
+.sort-header{cursor:pointer;user-select:none;transition:color 0.2s}.sort-header:hover{color:#C8102E}
+select option{background:#1a1a1a;color:#fff}
+.logo-img{object-fit:contain;image-rendering:-webkit-optimize-contrast}
+.featured-bg{position:relative;overflow:hidden}
+.featured-bg::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,0.2) 0%,rgba(10,10,10,0.6) 35%,rgba(10,10,10,0.92) 70%,#0a0a0a 100%);z-index:1}
+.featured-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,10,10,0.7) 0%,transparent 25%,transparent 75%,rgba(10,10,10,0.7) 100%);z-index:2}
+.featured-bg .featured-content{position:relative;z-index:3}
+@keyframes vs-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}.vs-glow{animation:vs-pulse 2.5s ease-in-out infinite}
+@keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up 0.8s cubic-bezier(0.4,0,0.2,1) forwards}.slide-up-d1{animation-delay:0.1s;opacity:0}.slide-up-d2{animation-delay:0.2s;opacity:0}.slide-up-d3{animation-delay:0.3s;opacity:0}.slide-up-d4{animation-delay:0.4s;opacity:0}
+.featured-stat-pill{transition:all 0.3s ease}.featured-stat-pill:hover{background:rgba(255,255,255,0.08);transform:translateY(-1px)}
+.state-path{fill:rgba(255,255,255,0.02);stroke:rgba(255,255,255,0.1);stroke-width:0.75;transition:fill 0.2s}.state-path:hover{fill:rgba(255,255,255,0.06)}
+.state-label{fill:rgba(255,255,255,0.12);font-family:'Inter',sans-serif;font-size:9px;font-weight:600;pointer-events:none;text-anchor:middle;dominant-baseline:central}
+@keyframes home-pulse{0%,100%{r:8;opacity:1}50%{r:11;opacity:0.85}}
+@keyframes home-ring-pulse{0%,100%{r:10;opacity:0.4;stroke-width:2}50%{r:16;opacity:0;stroke-width:0.5}}
+@keyframes dest-ring{0%{r:6;opacity:0.5;stroke-width:1.5}100%{r:20;opacity:0;stroke-width:0.5}}
+@keyframes draw-line{to{stroke-dashoffset:0}}
+.map-tooltip{position:absolute;z-index:20;pointer-events:none;opacity:0;transform:translateY(4px);transition:all 0.2s ease;background:rgba(10,10,10,0.94);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}.map-tooltip.visible{opacity:1;transform:translateY(0)}
+.modal-overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:1rem}.modal-overlay.open{display:flex}
+.modal-box{background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:1rem;max-width:900px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.5)}
+.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(200,16,46,0.06);border-color:rgba(200,16,46,0.2)}.away-item.highlighted{background:rgba(200,16,46,0.1);border-color:rgba(200,16,46,0.3)}
+.compare-badge{background:rgba(200,16,46,0.15);border:1px solid rgba(200,16,46,0.3);color:#f87171}
+</style>
 </head>
 <body>
-    <!-- Navigation Menu -->
-    <nav>
-        <ul>
-            <li><a href="https://www.petco.com/" target="_blank">🐾 Petco</a></li>
-            <li><a href="https://www.petsmart.com/" target="_blank">🦴 PetSmart</a></li>
-            <li><a href="https://www.rover.com/" target="_blank">🐕 Rover</a></li>
-            <li><a href="https://www.chewy.com/" target="_blank">🍖 Chewy</a></li>
-            <li><a href="https://www.akcdog.org/" target="_blank">🏅 AKC</a></li>
-        </ul>
-    </nav>
+<div class="noise"></div>
 
-    <div class="content-wrapper">
-        <div class="container">
-            <h1>🐾 Dog's Birthday Calendar</h1>
-            <p class="subtitle">May 2026</p>
+<div id="toast" class="toast fixed bottom-6 right-6 z-50 glass-panel rounded-xl px-5 py-3 flex items-center gap-3">
+  <iconify-icon icon="lucide:check-circle" class="text-brand-500 text-lg"></iconify-icon>
+  <span id="toast-msg" class="text-sm text-white/80"></span>
+</div>
 
-            <div class="calendar">
-                <div class="month-header">
-                    <span class="month-title">May 2026</span>
-                </div>
+<!-- Modal -->
+<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modal-box"></div>
+</div>
 
-                <div class="weekdays">
-                    <div class="weekday">Sun</div>
-                    <div class="weekday">Mon</div>
-                    <div class="weekday">Tue</div>
-                    <div class="weekday">Wed</div>
-                    <div class="weekday">Thu</div>
-                    <div class="weekday">Fri</div>
-                    <div class="weekday">Sat</div>
-                </div>
+<!-- Nav -->
+<nav class="fixed top-0 left-0 right-0 z-40 h-16 flex items-center justify-between px-4 md:px-6" style="background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06)">
+  <div class="flex items-center gap-2.5">
+    <svg viewBox="0 0 36 36" class="w-8 h-8 flex-shrink-0"><path d="M18 3L30 8V22L18 33L6 22V8Z" fill="#013369" stroke="#C8102E" stroke-width="1.5"/><text x="18" y="19.5" text-anchor="middle" fill="#fff" font-size="9" font-weight="900" font-family="Inter,sans-serif">NFL</text></svg>
+    <span class="font-bold text-sm tracking-tight">NFL Project</span>
+  </div>
+  <div class="hidden lg:flex items-center gap-1">
+    <a href="#teams" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Teams</a>
+    <a href="#matchups" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Matchups</a>
+    <a href="#map" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Map</a>
+    <a href="#stats" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Stats</a>
+    <a href="#players" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Players</a>
+    <a href="#travel" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Travel</a>
+    <a href="#math" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Math Lab</a>
+    <a href="#writing" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Writing</a>
+    <a href="#cities" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Cities</a>
+    <a href="#facts" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Fun Facts</a>
+  </div>
+  <div id="compare-bar" class="hidden items-center gap-2">
+    <span class="text-[10px] font-mono text-brand-400" id="compare-count">0/2 selected</span>
+    <button onclick="openCompareModal()" id="compare-btn" class="text-[10px] px-3 py-1.5 bg-brand-500 text-white rounded-lg font-semibold disabled:opacity-30 disabled:cursor-not-allowed" disabled>Compare</button>
+    <button onclick="clearCompare()" class="text-[10px] text-white/40 hover:text-white/70 transition-colors uppercase tracking-wider">Clear</button>
+  </div>
+</nav>
 
-                <div class="days" id="calendarDays"></div>
-            </div>
+<!-- Hero + Featured Game -->
+<section id="hero" class="featured-bg min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-12">
+  <img id="featured-bg-img" src="" alt="" class="absolute inset-0 w-full h-full object-cover" style="z-index:0">
+  <div class="featured-content w-full max-w-6xl mx-auto flex flex-col items-center text-center">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 mb-6 slide-up">
+      <span class="w-2 h-2 rounded-full bg-brand-500 live-badge"></span>
+      <span class="text-[11px] font-medium text-white/60 uppercase tracking-wider">2026 Season</span>
+    </div>
+    <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[1.05] mb-4 slide-up slide-up-d1">Welcome to the<br><span class="bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">NFL Project</span></h1>
+    <p class="text-lg md:text-xl text-white/50 font-light max-w-2xl leading-relaxed mb-10 slide-up slide-up-d2">Pick your team. Track their journey across math, writing, geography, and more.</p>
 
-            <div class="birthday-label">
-                <span class="emoji">🎂</span> Birthday: May 28th
-            </div>
+    <!-- Featured Game -->
+    <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-3xl w-full mb-8 slide-up slide-up-d3" style="background:rgba(1,51,105,0.08);border-color:rgba(200,16,46,0.15)">
+      <div class="flex items-center justify-center gap-3 mb-5">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 border border-brand-500/30">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-500 live-badge"></span>
+          <span class="text-[10px] font-semibold text-brand-400 uppercase tracking-wider">Featured Game of the Week</span>
         </div>
+        <span id="featured-week-badge" class="text-[10px] font-mono text-white/30 uppercase tracking-wider"></span>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-5">
+        <div class="flex items-center gap-3">
+          <div id="featured-away-logo" class="w-14 h-14 md:w-20 md:h-20 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center p-1.5 backdrop-blur-sm"></div>
+          <div class="text-left"><div id="featured-away-name" class="text-lg md:text-2xl font-bold tracking-tight"></div><div id="featured-away-record" class="text-[10px] md:text-xs text-white/50 font-mono mt-0.5"></div></div>
+        </div>
+        <div class="vs-glow text-2xl md:text-4xl font-black tracking-tighter bg-gradient-to-b from-white/80 to-white/20 bg-clip-text text-transparent select-none">VS</div>
+        <div class="flex items-center gap-3">
+          <div id="featured-home-logo" class="w-14 h-14 md:w-20 md:h-20 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center p-1.5 backdrop-blur-sm"></div>
+          <div class="text-left"><div id="featured-home-name" class="text-lg md:text-2xl font-bold tracking-tight"></div><div id="featured-home-record" class="text-[10px] md:text-xs text-white/50 font-mono mt-0.5"></div></div>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-2 mb-4">
+        <div class="featured-stat-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-[11px]"><iconify-icon icon="lucide:calendar" class="text-brand-500 text-xs"></iconify-icon><span id="featured-day"></span></div>
+        <div class="featured-stat-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-[11px]"><iconify-icon icon="lucide:clock" class="text-brand-500 text-xs"></iconify-icon><span id="featured-time"></span></div>
+        <div class="featured-stat-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-[11px]"><iconify-icon icon="lucide:building-2" class="text-brand-500 text-xs"></iconify-icon><span id="featured-venue"></span></div>
+        <div class="featured-stat-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/8 text-[11px]"><iconify-icon icon="lucide:plane" class="text-brand-500 text-xs"></iconify-icon><span id="featured-distance"></span></div>
+      </div>
+      <div class="flex items-start gap-2 p-3 rounded-xl bg-white/3 border border-white/5 text-left">
+        <iconify-icon icon="lucide:message-circle" class="text-brand-500 text-sm mt-0.5 flex-shrink-0"></iconify-icon>
+        <p id="featured-discussion" class="text-[12px] text-white/50 leading-relaxed"></p>
+      </div>
     </div>
 
-    <script>
-        const balloonEmojis = ['🎈', '🎉', '🎊', '🎁'];
-        const confettiEmojis = ['✨', '⭐', '🌟', '💫'];
+    <div class="flex flex-col sm:flex-row gap-3 justify-center slide-up slide-up-d4">
+      <a href="#teams" class="inline-flex items-center justify-center gap-2 bg-white text-black px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-brand-500 hover:text-white transition-all duration-300">Explore Teams <iconify-icon icon="lucide:arrow-down" class="text-sm"></iconify-icon></a>
+      <a href="#math" class="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white px-8 py-3.5 rounded-full text-sm font-medium hover:bg-white/10 transition-all duration-300">Math Lab</a>
+    </div>
+  </div>
+</section>
 
-        function createBalloon(x, y) {
-            const balloon = document.createElement('div');
-            balloon.className = 'balloon';
-            balloon.textContent = balloonEmojis[Math.floor(Math.random() * balloonEmojis.length)];
-            balloon.style.left = x + 'px';
-            balloon.style.top = y + 'px';
-            const drift = (Math.random() - 0.5) * 200;
-            balloon.style.setProperty('--drift', drift + 'px');
-            
-            document.body.appendChild(balloon);
-            
-            // Random delay before floating
-            setTimeout(() => {
-                balloon.classList.add('float');
-            }, Math.random() * 100);
+<!-- Teams -->
+<section id="teams" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <div>
+        <span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">32 Teams</span>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">NFL Teams</h2>
+        <p class="text-white/50 text-sm mt-2 max-w-md">Click any team for stats. Select up to 2 to compare.</p>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="filterTeams('all')" class="tab-btn active text-[11px] px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 uppercase tracking-wider" data-filter="all">All</button>
+        <button onclick="filterTeams('AFC')" class="tab-btn text-[11px] px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-filter="AFC">AFC</button>
+        <button onclick="filterTeams('NFC')" class="tab-btn text-[11px] px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-filter="NFC">NFC</button>
+      </div>
+    </div>
+    <div class="flex gap-2 flex-wrap mb-8" id="division-filters"></div>
+    <div id="teams-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3"></div>
+  </div>
+</section>
 
-            // Remove after animation
-            setTimeout(() => {
-                balloon.remove();
-            }, 3100);
-        }
+<!-- Matchups -->
+<section id="matchups" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <div>
+        <span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">2026 Schedule</span>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Weekly Matchups</h2>
+        <p class="text-white/50 text-sm mt-2">Click any matchup for team stats comparison.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="changeWeek(-1)" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:chevron-left" class="text-sm"></iconify-icon></button>
+        <span class="text-sm font-mono text-white/70 min-w-[90px] text-center" id="week-label">Week 1</span>
+        <button onclick="changeWeek(1)" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:chevron-right" class="text-sm"></iconify-icon></button>
+      </div>
+    </div>
+    <div id="matchups-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+  </div>
+</section>
 
-        function createConfetti(x, y) {
-            const count = 8;
-            for (let i = 0; i < count; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.textContent = confettiEmojis[Math.floor(Math.random() * confettiEmojis.length)];
-                confetti.style.left = x + 'px';
-                confetti.style.top = y + 'px';
-                const drift = (Math.random() - 0.5) * 150;
-                confetti.style.setProperty('--drift', drift + 'px');
-                confetti.style.animationDelay = (i * 0.05) + 's';
-                
-                document.body.appendChild(confetti);
+<!-- Map -->
+<section id="map" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <div>
+        <span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Geography</span>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Travel Map</h2>
+        <p class="text-white/50 text-sm mt-2">See where your team travels this season.</p>
+      </div>
+      <select id="map-team-select" onchange="renderMap()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div class="lg:col-span-3 glass-panel rounded-2xl overflow-hidden">
+        <div class="relative w-full aspect-[16/10] min-h-[350px] bg-surface-50 rounded-2xl overflow-hidden" id="map-wrap">
+          <svg id="map-svg" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <defs><filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="home-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+            <rect width="960" height="600" fill="#0a0a0a"/><g id="us-map-group"></g><g id="svg-lines"></g><g id="svg-dots"></g>
+          </svg>
+          <div class="map-tooltip" id="map-tooltip"></div>
+        </div>
+      </div>
+      <div class="glass-panel rounded-2xl p-5 flex flex-col">
+        <h3 class="text-sm font-semibold mb-1 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-500"></iconify-icon><span id="sidebar-team-name">Away Games</span></h3>
+        <p class="text-[10px] text-white/30 mb-4 font-mono" id="sidebar-team-subtitle">Select a team</p>
+        <div class="flex items-center justify-between mb-3 pb-3 border-b border-white/6"><span class="text-[11px] text-white/40">Total Travel</span><span class="text-sm font-bold text-brand-500 font-mono" id="sidebar-total-miles">—</span></div>
+        <div id="sidebar-away-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1 max-h-[460px]"><p class="text-xs text-white/30">Select a team above</p></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-                // Remove after animation
-                setTimeout(() => {
-                    confetti.remove();
-                }, 2100);
-            }
-        }
+<!-- Team Stats -->
+<section id="stats" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <div><span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Analytics</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">Team Statistics</h2></div>
+      <select id="stats-team-select" onchange="renderTeamStats()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"><option value="all">All Teams (Top 10)</option></select>
+    </div>
+    <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </div>
+</section>
 
-        function handleDayClick(event) {
-            const dayElement = event.currentTarget;
-            
-            // Don't animate empty days
-            if (dayElement.classList.contains('empty')) {
-                return;
-            }
+<!-- Player Stats -->
+<section id="players" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <div><span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Leaders</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">Player Stats</h2></div>
+      <div class="flex gap-2 flex-wrap" id="player-tabs">
+        <button onclick="switchPlayerTab('passing')" class="tab-btn active text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 uppercase tracking-wider" data-ptab="passing">Passing</button>
+        <button onclick="switchPlayerTab('rushing')" class="tab-btn text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-ptab="rushing">Rushing</button>
+        <button onclick="switchPlayerTab('receiving')" class="tab-btn text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-ptab="receiving">Receiving</button>
+        <button onclick="switchPlayerTab('defense')" class="tab-btn text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-ptab="defense">Defense</button>
+      </div>
+    </div>
+    <div class="glass-panel rounded-2xl overflow-hidden"><div class="overflow-x-auto"><table class="w-full" id="player-table"><thead id="player-thead"></thead><tbody id="player-tbody"></tbody></table></div></div>
+  </div>
+</section>
 
-            // Add click pulse animation
-            dayElement.classList.add('clicked');
-            setTimeout(() => {
-                dayElement.classList.remove('clicked');
-            }, 600);
+<!-- Travel -->
+<section id="travel" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <div><span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Distance</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">Travel Tracker</h2></div>
+      <select id="travel-team-select" onchange="renderTravel()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-500"></iconify-icon> Season Travel Summary</h3><div id="travel-summary"></div></div>
+      <div class="lg:col-span-2 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:map-pin" class="text-brand-500"></iconify-icon> All 2026 Away Games</h3><div id="away-games-list" class="space-y-1 max-h-[600px] overflow-y-auto pr-2"></div></div>
+    </div>
+    <div class="mt-6 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:building-2" class="text-brand-500"></iconify-icon> Stadium & City Facts</h3><div id="stadium-facts" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div></div>
+  </div>
+</section>
 
-            // Get the position of the clicked day
-            const rect = dayElement.getBoundingClientRect();
-            const x = rect.left + rect.width / 2;
-            const y = rect.top + rect.height / 2;
+<!-- Math Lab -->
+<section id="math" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-12"><span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Cross-Curricular</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">Math Lab</h2><p class="text-white/50 text-sm mt-2">Real NFL data powers these math challenges.</p></div>
+    <div id="math-problems" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+    <div class="text-center"><button onclick="generateMathProblems()" class="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full text-sm font-semibold hover:bg-brand-500 hover:text-white transition-all duration-300"><iconify-icon icon="lucide:refresh-cw" class="text-sm"></iconify-icon> New Problems</button></div>
+  </div>
+</section>
 
-            // Create multiple balloons
-            for (let i = 0; i < 5; i++) {
-                setTimeout(() => {
-                    createBalloon(x, y);
-                }, i * 100);
-            }
+<!-- Writing -->
+<section id="writing" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-12"><span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Cross-Curricular</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">Writing Zone</h2></div>
+    <div id="writing-prompts" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </div>
+</section>
 
-            // Create confetti burst
-            createConfetti(x, y);
+<!-- Cities -->
+<section id="cities" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+      <div><span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Social Studies</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">City & State Explorer</h2></div>
+      <select id="city-team-select" onchange="renderCityExplorer()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select>
+    </div>
+    <div id="city-explorer"></div>
+  </div>
+</section>
 
-            // Extra celebration for birthday
-            if (dayElement.classList.contains('birthday')) {
-                setTimeout(() => {
-                    for (let i = 0; i < 8; i++) {
-                        createBalloon(x, y);
-                    }
-                }, 300);
-            }
-        }
+<!-- Fun Facts -->
+<section id="facts" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-12"><span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Discover</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">NFL Fun Facts</h2></div>
+    <div id="facts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </div>
+</section>
 
-        function generateCalendar() {
-            const year = 2026;
-            const month = 4; // May (0-indexed)
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const calendarDays = document.getElementById('calendarDays');
+<footer class="py-12 px-6 border-t border-white/6">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <svg viewBox="0 0 36 36" class="w-6 h-6"><path d="M18 3L30 8V22L18 33L6 22V8Z" fill="#013369" stroke="#C8102E" stroke-width="1.5"/><text x="18" y="19.5" text-anchor="middle" fill="#fff" font-size="9" font-weight="900" font-family="Inter,sans-serif">NFL</text></svg>
+      <span class="text-xs text-white/40">NFL Project — Educational Use Only</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="https://www.espn.com/nfl" target="_blank" class="text-xs text-white/40 hover:text-brand-500 transition flex items-center gap-1"><iconify-icon icon="lucide:external-link" class="text-[10px]"></iconify-icon>ESPN</a>
+      <a href="https://www.nfl.com" target="_blank" class="text-xs text-white/40 hover:text-brand-500 transition flex items-center gap-1"><iconify-icon icon="lucide:external-link" class="text-[10px]"></iconify-icon>NFL.com</a>
+    </div>
+  </div>
+</footer>
 
-            // Add empty cells for days before the first day of the month
-            for (let i = 0; i < firstDay; i++) {
-                const emptyDay = document.createElement('div');
-                emptyDay.className = 'day empty';
-                calendarDays.appendChild(emptyDay);
-            }
+<script>
+const FEATURED_GAME={week:1,away:"KC",home:"BUF",day:"Sunday",time:"4:25 PM ET",discussion:"The Chiefs travel to Buffalo — that's about 976 miles! If their plane flies at 500 mph, how long is the flight? Buffalo is in New York, but the Bills don't play in New York City. What city do they play in, and how is it different from NYC?"};
+const STADIUM_IMAGES={BUF:"https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop",MIA:"https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&q=80&auto=format&fit=crop",NE:"https://images.unsplash.com/photo-1529768167801-9173d94c2a42?w=1920&q=80&auto=format&fit=crop",NYJ:"https://images.unsplash.com/photo-1529768167801-9173d94c2a42?w=1920&q=80&auto=format&fit=crop",BAL:"https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1920&q=80&auto=format&fit=crop",CIN:"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80&auto=format&fit=crop",CLE:"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80&auto=format&fit=crop",PIT:"https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1920&q=80&auto=format&fit=crop",HOU:"https://images.unsplash.com/photo-1494232410401-ad00d5433cfa?w=1920&q=80&auto=format&fit=crop",IND:"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80&auto=format&fit=crop",JAX:"https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&q=80&auto=format&fit=crop",TEN:"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80&auto=format&fit=crop",DEN:"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80&auto=format&fit=crop",KC:"https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1920&q=80&auto=format&fit=crop",LV:"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80&auto=format&fit=crop",LAC:"https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1920&q=80&auto=format&fit=crop",DAL:"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80&auto=format&fit=crop",PHI:"https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1920&q=80&auto=format&fit=crop",NYG:"https://images.unsplash.com/photo-1529768167801-9173d94c2a42?w=1920&q=80&auto=format&fit=crop",WAS:"https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1920&q=80&auto=format&fit=crop",CHI:"https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1920&q=80&auto=format&fit=crop",DET:"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80&auto=format&fit=crop",GB:"https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop",MIN:"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80&auto=format&fit=crop",ATL:"https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&q=80&auto=format&fit=crop",CAR:"https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&q=80&auto=format&fit=crop",NO:"https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1920&q=80&auto=format&fit=crop",TB:"https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&q=80&auto=format&fit=crop",SF:"https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1920&q=80&auto=format&fit=crop",ARI:"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80&auto=format&fit=crop",LAR:"https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1920&q=80&auto=format&fit=crop",SEA:"https://images.unsplash.com/photo-1502175353174-a7a70e73b362?w=1920&q=80&auto=format&fit=crop"};
 
-            // Add days of the month
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'day';
-                dayElement.textContent = day;
+const NFL_TEAMS=[
+  {id:1,name:"Bills",location:"Buffalo",city:"Orchard Park",state:"NY",abbr:"BUF",espn:"buf",conf:"AFC",div:"AFC East",color:"#00338D",secColor:"#C60C30",stadium:"Highmark Stadium",stadiumCap:71608,lat:42.77,lng:-78.79,founded:1960,tz:"EST"},
+  {id:2,name:"Dolphins",location:"Miami",city:"Miami Gardens",state:"FL",abbr:"MIA",espn:"mia",conf:"AFC",div:"AFC East",color:"#008E97",secColor:"#FC4C02",stadium:"Hard Rock Stadium",stadiumCap:65326,lat:25.96,lng:-80.24,founded:1966,tz:"EST"},
+  {id:3,name:"Patriots",location:"New England",city:"Foxborough",state:"MA",abbr:"NE",espn:"ne",conf:"AFC",div:"AFC East",color:"#002244",secColor:"#C60C30",stadium:"Gillette Stadium",stadiumCap:65878,lat:42.09,lng:-71.26,founded:1960,tz:"EST"},
+  {id:4,name:"Jets",location:"New York",city:"East Rutherford",state:"NJ",abbr:"NYJ",espn:"nyj",conf:"AFC",div:"AFC East",color:"#125740",secColor:"#FFFFFF",stadium:"MetLife Stadium",stadiumCap:82500,lat:40.81,lng:-74.07,founded:1960,tz:"EST"},
+  {id:5,name:"Ravens",location:"Baltimore",city:"Baltimore",state:"MD",abbr:"BAL",espn:"bal",conf:"AFC",div:"AFC North",color:"#241773",secColor:"#9E7C0C",stadium:"M&T Bank Stadium",stadiumCap:71008,lat:39.28,lng:-76.62,founded:1996,tz:"EST"},
+  {id:6,name:"Bengals",location:"Cincinnati",city:"Cincinnati",state:"OH",abbr:"CIN",espn:"cin",conf:"AFC",div:"AFC North",color:"#FB4F14",secColor:"#000000",stadium:"Paycor Stadium",stadiumCap:65515,lat:39.10,lng:-84.52,founded:1968,tz:"EST"},
+  {id:7,name:"Browns",location:"Cleveland",city:"Cleveland",state:"OH",abbr:"CLE",espn:"cle",conf:"AFC",div:"AFC North",color:"#311D00",secColor:"#FF3C00",stadium:"Cleveland Browns Stadium",stadiumCap:67431,lat:41.51,lng:-81.70,founded:1946,tz:"EST"},
+  {id:8,name:"Steelers",location:"Pittsburgh",city:"Pittsburgh",state:"PA",abbr:"PIT",espn:"pit",conf:"AFC",div:"AFC North",color:"#FFB612",secColor:"#101820",stadium:"Acrisure Stadium",stadiumCap:68400,lat:40.45,lng:-80.01,founded:1933,tz:"EST"},
+  {id:9,name:"Texans",location:"Houston",city:"Houston",state:"TX",abbr:"HOU",espn:"hou",conf:"AFC",div:"AFC South",color:"#03202F",secColor:"#A71930",stadium:"NRG Stadium",stadiumCap:72220,lat:29.68,lng:-95.41,founded:2002,tz:"CST"},
+  {id:10,name:"Colts",location:"Indianapolis",city:"Indianapolis",state:"IN",abbr:"IND",espn:"ind",conf:"AFC",div:"AFC South",color:"#002C5F",secColor:"#A2AAAD",stadium:"Lucas Oil Stadium",stadiumCap:63000,lat:39.76,lng:-86.24,founded:1953,tz:"EST"},
+  {id:11,name:"Jaguars",location:"Jacksonville",city:"Jacksonville",state:"FL",abbr:"JAX",espn:"jax",conf:"AFC",div:"AFC South",color:"#006778",secColor:"#D7A22A",stadium:"EverBank Stadium",stadiumCap:67814,lat:30.32,lng:-81.64,founded:1995,tz:"EST"},
+  {id:12,name:"Titans",location:"Tennessee",city:"Nashville",state:"TN",abbr:"TEN",espn:"ten",conf:"AFC",div:"AFC South",color:"#4B92DB",secColor:"#0C2340",stadium:"Nissan Stadium",stadiumCap:69143,lat:36.17,lng:-86.77,founded:1960,tz:"CST"},
+  {id:13,name:"Broncos",location:"Denver",city:"Denver",state:"CO",abbr:"DEN",espn:"den",conf:"AFC",div:"AFC West",color:"#FB4F14",secColor:"#002244",stadium:"Empower Field at Mile High",stadiumCap:76125,lat:39.74,lng:-105.02,founded:1960,tz:"MST"},
+  {id:14,name:"Chiefs",location:"Kansas City",city:"Kansas City",state:"MO",abbr:"KC",espn:"kc",conf:"AFC",div:"AFC West",color:"#E31837",secColor:"#FFB81C",stadium:"GEHA Field at Arrowhead",stadiumCap:76416,lat:39.05,lng:-94.48,founded:1960,tz:"CST"},
+  {id:15,name:"Raiders",location:"Las Vegas",city:"Las Vegas",state:"NV",abbr:"LV",espn:"lv",conf:"AFC",div:"AFC West",color:"#A5ACAF",secColor:"#000000",stadium:"Allegiant Stadium",stadiumCap:65000,lat:36.09,lng:-115.18,founded:1960,tz:"PST"},
+  {id:16,name:"Chargers",location:"Los Angeles",city:"Inglewood",state:"CA",abbr:"LAC",espn:"lac",conf:"AFC",div:"AFC West",color:"#0080C6",secColor:"#FFC20E",stadium:"SoFi Stadium",stadiumCap:70000,lat:33.95,lng:-118.34,founded:1960,tz:"PST"},
+  {id:17,name:"Cowboys",location:"Dallas",city:"Arlington",state:"TX",abbr:"DAL",espn:"dal",conf:"NFC",div:"NFC East",color:"#003594",secColor:"#041E42",stadium:"AT&T Stadium",stadiumCap:80000,lat:32.75,lng:-97.09,founded:1960,tz:"CST"},
+  {id:18,name:"Eagles",location:"Philadelphia",city:"Philadelphia",state:"PA",abbr:"PHI",espn:"phi",conf:"NFC",div:"NFC East",color:"#004C54",secColor:"#A5ACAF",stadium:"Lincoln Financial Field",stadiumCap:69796,lat:39.90,lng:-75.17,founded:1933,tz:"EST"},
+  {id:19,name:"Giants",location:"New York",city:"East Rutherford",state:"NJ",abbr:"NYG",espn:"nyg",conf:"NFC",div:"NFC East",color:"#0B2265",secColor:"#A71930",stadium:"MetLife Stadium",stadiumCap:82500,lat:40.81,lng:-74.07,founded:1925,tz:"EST"},
+  {id:20,name:"Commanders",location:"Washington",city:"Landover",state:"MD",abbr:"WAS",espn:"wsh",conf:"NFC",div:"NFC East",color:"#773141",secColor:"#FFB612",stadium:"Northwest Stadium",stadiumCap:82000,lat:38.91,lng:-76.86,founded:1932,tz:"EST"},
+  {id:21,name:"Bears",location:"Chicago",city:"Chicago",state:"IL",abbr:"CHI",espn:"chi",conf:"NFC",div:"NFC North",color:"#0B162A",secColor:"#C83803",stadium:"Soldier Field",stadiumCap:61500,lat:41.86,lng:-87.62,founded:1920,tz:"CST"},
+  {id:22,name:"Lions",location:"Detroit",city:"Detroit",state:"MI",abbr:"DET",espn:"det",conf:"NFC",div:"NFC North",color:"#0076B6",secColor:"#B0B7BC",stadium:"Ford Field",stadiumCap:65000,lat:42.34,lng:-83.05,founded:1930,tz:"EST"},
+  {id:23,name:"Packers",location:"Green Bay",city:"Green Bay",state:"WI",abbr:"GB",espn:"gb",conf:"NFC",div:"NFC North",color:"#203731",secColor:"#FFB612",stadium:"Lambeau Field",stadiumCap:81441,lat:44.50,lng:-88.06,founded:1919,tz:"CST"},
+  {id:24,name:"Vikings",location:"Minnesota",city:"Minneapolis",state:"MN",abbr:"MIN",espn:"min",conf:"NFC",div:"NFC North",color:"#4F2683",secColor:"#FFC62F",stadium:"U.S. Bank Stadium",stadiumCap:66655,lat:44.97,lng:-93.26,founded:1961,tz:"CST"},
+  {id:25,name:"Falcons",location:"Atlanta",city:"Atlanta",state:"GA",abbr:"ATL",espn:"atl",conf:"NFC",div:"NFC South",color:"#A71930",secColor:"#A5ACAF",stadium:"Mercedes-Benz Stadium",stadiumCap:70000,lat:33.76,lng:-84.40,founded:1966,tz:"EST"},
+  {id:26,name:"Panthers",location:"Carolina",city:"Charlotte",state:"NC",abbr:"CAR",espn:"car",conf:"NFC",div:"NFC South",color:"#0085CA",secColor:"#101820",stadium:"Bank of America Stadium",stadiumCap:74867,lat:35.23,lng:-80.85,founded:1995,tz:"EST"},
+  {id:27,name:"Saints",location:"New Orleans",city:"New Orleans",state:"LA",abbr:"NO",espn:"no",conf:"NFC",div:"NFC South",color:"#D3BC8D",secColor:"#101820",stadium:"Caesars Superdome",stadiumCap:73208,lat:29.95,lng:-90.08,founded:1967,tz:"CST"},
+  {id:28,name:"Buccaneers",location:"Tampa Bay",city:"Tampa",state:"FL",abbr:"TB",espn:"tb",conf:"NFC",div:"NFC South",color:"#D50A0A",secColor:"#0A0A08",stadium:"Raymond James Stadium",stadiumCap:65890,lat:27.98,lng:-82.50,founded:1976,tz:"EST"},
+  {id:29,name:"49ers",location:"San Francisco",city:"Santa Clara",state:"CA",abbr:"SF",espn:"sf",conf:"NFC",div:"NFC West",color:"#AA0000",secColor:"#B3995D",stadium:"Levi's Stadium",stadiumCap:68500,lat:37.40,lng:-121.97,founded:1946,tz:"PST"},
+  {id:30,name:"Cardinals",location:"Arizona",city:"Glendale",state:"AZ",abbr:"ARI",espn:"ari",conf:"NFC",div:"NFC West",color:"#97233F",secColor:"#000000",stadium:"State Farm Stadium",stadiumCap:63400,lat:33.53,lng:-112.26,founded:1898,tz:"MST"},
+  {id:31,name:"Rams",location:"Los Angeles",city:"Inglewood",state:"CA",abbr:"LAR",espn:"lar",conf:"NFC",div:"NFC West",color:"#003594",secColor:"#FFA300",stadium:"SoFi Stadium",stadiumCap:70000,lat:33.95,lng:-118.34,founded:1936,tz:"PST"},
+  {id:32,name:"Seahawks",location:"Seattle",city:"Seattle",state:"WA",abbr:"SEA",espn:"sea",conf:"NFC",div:"NFC West",color:"#002244",secColor:"#69BE28",stadium:"Lumen Field",stadiumCap:68740,lat:47.60,lng:-122.33,founded:1976,tz:"PST"}
+];
 
-                // Highlight the birthday
-                if (day === 28) {
-                    dayElement.classList.add('birthday');
-                    dayElement.textContent = '🎉 28';
-                }
+// Stadium facts with CORRECTED playing surfaces
+const STADIUM_FACTS={
+  BUF:{roof:"Outdoor",surface:"Turf",trivia:"Home of 'Bills Mafia' — fans famous for jumping through tables at tailgates. A new stadium with heated grass is coming in 2026!"},
+  MIA:{roof:"Retractable",surface:"Grass",trivia:"Hard Rock Stadium was renovated in 2016 and hosts the Miami Open tennis. Miami has never had a January home game below 50°F."},
+  NE:{roof:"Outdoor",surface:"Turf",trivia:"Gillette Stadium's lighthouse honors New England's maritime heritage. The Patriots won 6 Super Bowls under Bill Belichick and Tom Brady."},
+  NYJ:{roof:"Outdoor",surface:"Turf",trivia:"MetLife Stadium changes exterior lighting for the home team — green for Jets, blue for Giants."},
+  BAL:{roof:"Outdoor",surface:"Grass",trivia:"The Ravens are named after Edgar Allan Poe's poem 'The Raven.' Poe lived and is buried in Baltimore."},
+  CIN:{roof:"Outdoor",surface:"Turf",trivia:"Cincinnati is 'The Queen City,' named when it was a major boomtown in the early 1800s."},
+  CLE:{roof:"Outdoor",surface:"Grass",trivia:"Cleveland fans kept selling out during a 1-31 stretch (2016-2017). Home to the Rock & Roll Hall of Fame."},
+  PIT:{roof:"Outdoor",surface:"Grass",trivia:"Pittsburgh has 446 bridges — more than Venice, Italy! The Terrible Towel was created by Myron Cope in 1975."},
+  HOU:{roof:"Retractable",surface:"Turf",trivia:"NRG Stadium was the first NFL stadium with a retractable roof. Houston is nicknamed 'Space City' for NASA's Johnson Space Center."},
+  IND:{roof:"Retractable",surface:"Turf",trivia:"Indianapolis is the 'Amateur Sports Capital of the World' and hosts the Indy 500, the world's largest single-day sporting event."},
+  JAX:{roof:"Outdoor",surface:"Grass",trivia:"The Jaguars have played more London games than any NFL team. Jacksonville is the largest U.S. city by land area in the contiguous 48 states."},
+  TEN:{roof:"Outdoor",surface:"Turf",trivia:"Nashville is 'Music City' — home of the Grand Ole Opry and the Country Music Hall of Fame."},
+  DEN:{roof:"Outdoor",surface:"Grass",trivia:"At 5,280 feet elevation, the thin air means kickoffs fly ~10% farther. Denver has 300+ sunny days per year."},
+  KC:{roof:"Outdoor",surface:"Grass",trivia:"Arrowhead Stadium holds the Guinness record for loudest crowd roar: 142.2 decibels. Kansas City BBQ is world-famous."},
+  LV:{roof:"Fixed",surface:"Grass",trivia:"Allegiant Stadium cost $1.9B and is nicknamed 'The Death Star.' Las Vegas hosts the Raiders and the F1 Las Vegas Grand Prix."},
+  LAC:{roof:"Fixed",surface:"Grass",trivia:"The Chargers moved from San Diego to LA in 2017. SoFi Stadium uses a hybrid grass system that's part natural, part synthetic."},
+  DAL:{roof:"Retractable",surface:"Turf",trivia:"AT&T Stadium has the world's largest 4K video board. The Cowboys are worth $9B — the most valuable sports franchise in the world."},
+  PHI:{roof:"Outdoor",surface:"Grass",trivia:"Eagles fans are famous for their intensity — they once booed Santa Claus! Philly is home to the Liberty Bell and Independence Hall."},
+  NYG:{roof:"Outdoor",surface:"Turf",trivia:"Founded in 1925, the Giants are one of the NFL's oldest teams. They've won 4 Super Bowls."},
+  WAS:{roof:"Outdoor",surface:"Turf",trivia:"Washington plays in Landover, MD, not D.C. The franchise has won 3 Super Bowls."},
+  CHI:{roof:"Outdoor",surface:"Grass",trivia:"Soldier Field (opened 1924) is the NFL's oldest stadium. Chicago is the 3rd largest U.S. city, famous for deep-dish pizza."},
+  DET:{roof:"Fixed",surface:"Turf",trivia:"Ford Field incorporates an old Hudson's warehouse. Detroit is the Motor City and birthplace of Motown Records."},
+  GB:{roof:"Outdoor",surface:"Grass",trivia:"The Packers are the ONLY publicly owned NFL team — owned by 537,000+ shareholders. Green Bay (pop. 105K) is the smallest NFL city."},
+  MIN:{roof:"Fixed",surface:"Turf",trivia:"U.S. Bank Stadium hosted Super Bowl LII. Minneapolis is the 'City of Lakes' with 13 lakes and 170 parks."},
+  ATL:{roof:"Retractable",surface:"Turf",trivia:"Mercedes-Benz Stadium's roof opens like a camera aperture. Atlanta has the world's busiest airport (ATL)."},
+  CAR:{roof:"Outdoor",surface:"Turf",trivia:"The Panthers play in Charlotte, NC — the 2nd largest U.S. banking center after NYC."},
+  NO:{roof:"Fixed",surface:"Turf",trivia:"The Superdome became a symbol of resilience after Hurricane Katrina. New Orleans invented jazz and Mardi Gras."},
+  TB:{roof:"Outdoor",surface:"Grass",trivia:"Raymond James Stadium features a 103-foot pirate ship that fires cannons after Bucs TDs."},
+  SF:{roof:"Outdoor",surface:"Turf",trivia:"Levi's Stadium is in Santa Clara, in Silicon Valley. The 49ers won 5 Super Bowls in 14 years (1981-1994)."},
+  ARI:{roof:"Retractable",surface:"Grass",trivia:"State Farm Stadium has a retractable roof AND a retractable grass field that rolls outside to get sunlight."},
+  LAR:{roof:"Fixed",surface:"Grass",trivia:"SoFi Stadium ($5.5B) has a 70,000 sq ft video board oval ring. SoFi uses a hybrid grass system."},
+  SEA:{roof:"Outdoor",surface:"Turf",trivia:"The '12th Man' tradition: Seattle retired the #12 jersey in 1984. Seattle is America's coffee capital."}
+};
 
-                // Add click event listener
-                dayElement.addEventListener('click', handleDayClick);
+const STATE_FACTS={NY:{capital:"Albany",pop:"19.3M",area:"54,556 mi²",nickname:"Empire State",landmark:"Statue of Liberty",region:"Northeast"},FL:{capital:"Tallahassee",pop:"22.2M",area:"65,758 mi²",nickname:"Sunshine State",landmark:"Everglades",region:"South"},MA:{capital:"Boston",pop:"7.0M",area:"10,565 mi²",nickname:"Bay State",landmark:"Freedom Trail",region:"Northeast"},NJ:{capital:"Trenton",pop:"9.3M",area:"8,723 mi²",nickname:"Garden State",landmark:"Atlantic City Boardwalk",region:"Northeast"},MD:{capital:"Annapolis",pop:"6.2M",area:"12,407 mi²",nickname:"Old Line State",landmark:"Fort McHenry",region:"South"},OH:{capital:"Columbus",pop:"11.8M",area:"44,826 mi²",nickname:"Buckeye State",landmark:"Rock & Roll Hall of Fame",region:"Midwest"},PA:{capital:"Harrisburg",pop:"13.0M",area:"46,055 mi²",nickname:"Keystone State",landmark:"Liberty Bell",region:"Northeast"},TX:{capital:"Austin",pop:"30.0M",area:"268,597 mi²",nickname:"Lone Star State",landmark:"The Alamo",region:"South"},IN:{capital:"Indianapolis",pop:"6.8M",area:"36,420 mi²",nickname:"Hoosier State",landmark:"Indianapolis Motor Speedway",region:"Midwest"},TN:{capital:"Nashville",pop:"7.0M",area:"42,144 mi²",nickname:"Volunteer State",landmark:"Grand Ole Opry",region:"South"},CO:{capital:"Denver",pop:"5.8M",area:"104,094 mi²",nickname:"Centennial State",landmark:"Rocky Mountain NP",region:"West"},MO:{capital:"Jefferson City",pop:"6.2M",area:"69,715 mi²",nickname:"Show-Me State",landmark:"Gateway Arch",region:"Midwest"},NV:{capital:"Carson City",pop:"3.2M",area:"110,572 mi²",nickname:"Silver State",landmark:"Las Vegas Strip",region:"West"},CA:{capital:"Sacramento",pop:"38.9M",area:"163,696 mi²",nickname:"Golden State",landmark:"Golden Gate Bridge",region:"West"},GA:{capital:"Atlanta",pop:"10.9M",area:"57,513 mi²",nickname:"Peach State",landmark:"Savannah Historic District",region:"South"},NC:{capital:"Raleigh",pop:"10.7M",area:"53,819 mi²",nickname:"Tar Heel State",landmark:"Biltmore Estate",region:"South"},LA:{capital:"Baton Rouge",pop:"4.6M",area:"51,840 mi²",nickname:"Pelican State",landmark:"French Quarter",region:"South"},AZ:{capital:"Phoenix",pop:"7.4M",area:"113,990 mi²",nickname:"Grand Canyon State",landmark:"Grand Canyon",region:"West"},WI:{capital:"Madison",pop:"5.9M",area:"65,498 mi²",nickname:"Badger State",landmark:"Lambeau Field",region:"Midwest"},MN:{capital:"St. Paul",pop:"5.7M",area:"86,936 mi²",nickname:"North Star State",landmark:"Mall of America",region:"Midwest"},IL:{capital:"Springfield",pop:"12.5M",area:"57,915 mi²",nickname:"Prairie State",landmark:"Willis Tower",region:"Midwest"},MI:{capital:"Lansing",pop:"10.0M",area:"96,714 mi²",nickname:"Great Lakes State",landmark:"Great Lakes",region:"Midwest"},WA:{capital:"Olympia",pop:"7.8M",area:"71,362 mi²",nickname:"Evergreen State",landmark:"Mount Rainier",region:"West"}};
+const CAPITAL_COORDS={NY:{lat:42.65,lng:-73.76},FL:{lat:30.44,lng:-84.28},MA:{lat:42.36,lng:-71.06},NJ:{lat:40.22,lng:-74.77},MD:{lat:38.98,lng:-76.49},OH:{lat:39.96,lng:-83.00},PA:{lat:40.27,lng:-76.88},TX:{lat:30.27,lng:-97.74},IN:{lat:39.77,lng:-86.15},TN:{lat:36.16,lng:-86.78},CO:{lat:39.74,lng:-104.99},MO:{lat:38.58,lng:-92.17},NV:{lat:39.16,lng:-119.75},CA:{lat:38.58,lng:-121.49},GA:{lat:33.75,lng:-84.39},NC:{lat:35.78,lng:-78.64},LA:{lat:30.45,lng:-91.15},AZ:{lat:33.45,lng:-112.07},WI:{lat:43.07,lng:-89.38},MN:{lat:44.95,lng:-93.09},IL:{lat:39.80,lng:-89.65},MI:{lat:42.73,lng:-84.55},WA:{lat:47.04,lng:-122.90}};
+const FIPS={"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI","45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"};
 
-                calendarDays.appendChild(dayElement);
-            }
-        }
+const PLAYER_STATS={passing:{headers:["Rank","Player","Team","Cmp","Att","Yds","TD","INT","QBR"],players:[[1,"Joe Burrow","CIN",363,528,4089,28,8,108.2],[2,"Patrick Mahomes","KC",345,510,3890,25,9,102.7],[3,"Jared Goff","DET",342,512,3775,22,10,95.3],[4,"Lamar Jackson","BAL",314,464,3678,24,4,113.5],[5,"Dak Prescott","DAL",322,488,3567,22,8,100.4],[6,"Josh Allen","BUF",301,489,3548,26,7,105.3],[7,"C.J. Stroud","HOU",318,492,3427,20,12,96.5],[8,"Jordan Love","GB",306,498,3389,21,11,93.7],[9,"Tua Tagovailoa","MIA",305,458,3312,21,7,99.8],[10,"Brock Purdy","SF",295,438,3212,19,7,92.4]]},rushing:{headers:["Rank","Player","Team","Att","Yds","Avg","TD","Lng","FUM"],players:[[1,"Saquon Barkley","PHI",312,1648,5.3,11,72,2],[2,"Derrick Henry","BAL",298,1578,5.3,14,87,3],[3,"Josh Jacobs","GB",284,1328,4.7,12,65,4],[4,"Bijan Robinson","ATL",274,1282,4.7,9,63,3],[5,"Jonathan Taylor","IND",262,1218,4.6,8,66,2],[6,"Kyren Williams","LAR",268,1212,4.5,11,49,3],[7,"De'Von Achane","MIA",248,1182,4.8,9,76,3],[8,"James Cook","BUF",242,1126,4.7,8,57,1],[9,"Jahmyr Gibbs","DET",228,1086,4.8,10,70,2],[10,"Christian McCaffrey","SF",198,942,4.8,7,58,2]]},receiving:{headers:["Rank","Player","Team","Rec","Tgt","Yds","Avg","TD","Lng"],players:[[1,"Ja'Marr Chase","CIN",100,153,1382,13.8,12,70],[2,"Tyreek Hill","MIA",98,143,1342,13.7,8,78],[3,"CeeDee Lamb","DAL",101,148,1289,12.8,9,72],[4,"Amon-Ra St. Brown","DET",112,148,1263,11.3,8,56],[5,"A.J. Brown","PHI",86,132,1186,13.8,7,68],[6,"Nico Collins","HOU",82,127,1092,13.3,7,65],[7,"Davante Adams","NYJ",89,140,1082,12.2,8,61],[8,"George Pickens","PIT",87,138,1062,12.2,5,58],[9,"DK Metcalf","SEA",78,126,982,12.6,6,64],[10,"Brandon Aiyuk","SF",75,118,962,12.8,6,60]]},defense:{headers:["Rank","Player","Team","Tkl","Sck","INT","FF","PD","TD"],players:[[1,"T.J. Watt","PIT",68,14.5,2,4,18,1],[2,"Myles Garrett","CLE",52,13,1,3,14,0],[3,"Micah Parsons","DAL",64,12,1,3,15,0],[4,"Nick Bosa","SF",58,11.5,1,2,16,0],[5,"Maxx Crosby","LV",72,11,1,3,14,0],[6,"Chris Jones","KC",62,10.5,0,2,12,0],[7,"Fred Warner","SF",132,4,2,3,12,1],[8,"Demario Davis","NO",128,3.5,1,2,10,0],[9,"Derwin James","LAC",108,3.5,2,4,11,1],[10,"Sauce Gardner","NYJ",62,1,4,2,22,0]]}};
 
-        // Generate calendar when page loads
-        generateCalendar();
-    </script>
-</body>
-</html>
+const TEAM_STATS={offensive:[{stat:"Points per Game",data:[{team:"BAL",val:29.8},{team:"DET",val:28.4},{team:"MIA",val:27.6},{team:"SF",val:27.2},{team:"BUF",val:26.8},{team:"DAL",val:26.4},{team:"PHI",val:26.1},{team:"KC",val:25.8},{team:"CIN",val:25.3},{team:"GB",val:24.9},{team:"HOU",val:24.1},{team:"ATL",val:23.7},{team:"MIN",val:23.4},{team:"SEA",val:22.8},{team:"IND",val:22.5},{team:"LAR",val:22.2},{team:"TB",val:21.8},{team:"NYJ",val:21.3},{team:"LV",val:20.9},{team:"PIT",val:20.6},{team:"JAX",val:20.2},{team:"NO",val:19.8},{team:"CHI",val:19.5},{team:"DEN",val:19.1},{team:"CLE",val:18.8},{team:"ARI",val:18.4},{team:"TEN",val:18.1},{team:"LAC",val:17.8},{team:"NYG",val:17.4},{team:"WAS",val:17.1},{team:"NE",val:16.7},{team:"CAR",val:16.3}]},{stat:"Total Yards per Game",data:[{team:"MIA",val:401.3},{team:"DET",val:398.2},{team:"SF",val:392.7},{team:"DAL",val:384.1},{team:"BUF",val:378.5},{team:"BAL",val:374.8},{team:"CIN",val:370.2},{team:"KC",val:365.9},{team:"PHI",val:362.4},{team:"GB",val:358.7},{team:"HOU",val:352.1},{team:"ATL",val:348.6},{team:"MIN",val:344.2},{team:"SEA",val:340.8},{team:"IND",val:337.5},{team:"LAR",val:334.2},{team:"TB",val:330.1},{team:"NYJ",val:326.7},{team:"PIT",val:322.4},{team:"LV",val:318.9},{team:"JAX",val:314.5},{team:"NO",val:310.2},{team:"CHI",val:306.8},{team:"CLE",val:302.4},{team:"DEN",val:298.1},{team:"ARI",val:294.7},{team:"TEN",val:290.3},{team:"NYG",val:286.9},{team:"LAC",val:283.5},{team:"WAS",val:280.1},{team:"NE",val:276.4},{team:"CAR",val:272.8}]},{stat:"Passing Yards per Game",data:[{team:"MIA",val:278.4},{team:"CIN",val:268.9},{team:"SF",val:264.2},{team:"DET",val:260.7},{team:"DAL",val:256.3},{team:"BUF",val:252.1},{team:"KC",val:248.6},{team:"GB",val:244.2},{team:"ATL",val:240.8},{team:"PHI",val:236.5},{team:"MIN",val:232.1},{team:"SEA",val:228.7},{team:"HOU",val:225.3},{team:"TB",val:221.9},{team:"LAR",val:218.5},{team:"IND",val:215.2},{team:"NYJ",val:211.8},{team:"PIT",val:208.4},{team:"CHI",val:205.1},{team:"NO",val:201.7},{team:"LV",val:198.3},{team:"CLE",val:194.9},{team:"JAX",val:191.6},{team:"DEN",val:188.2},{team:"ARI",val:184.8},{team:"LAC",val:181.5},{team:"TEN",val:178.1},{team:"NYG",val:174.8},{team:"WAS",val:171.4},{team:"NE",val:168.0},{team:"CAR",val:164.7},{team:"BAL",val:161.3}]},{stat:"Rushing Yards per Game",data:[{team:"BAL",val:213.5},{team:"PHI",val:192.8},{team:"DET",val:137.5},{team:"SF",val:128.5},{team:"DAL",val:127.8},{team:"HOU",val:126.8},{team:"BUF",val:126.4},{team:"KC",val:117.2},{team:"MIA",val:122.9},{team:"JAX",val:122.9},{team:"IND",val:122.3},{team:"LV",val:120.6},{team:"GB",val:114.5},{team:"LAR",val:115.7},{team:"NYJ",val:114.9},{team:"PIT",val:114.0},{team:"TEN",val:112.2},{team:"SEA",val:112.1},{team:"MIN",val:112.1},{team:"NYG",val:112.1},{team:"NO",val:108.5},{team:"DEN",val:109.9},{team:"ATL",val:107.8},{team:"CLE",val:107.5},{team:"TB",val:108.2},{team:"WAS",val:108.7},{team:"NE",val:108.4},{team:"CAR",val:108.1},{team:"ARI",val:109.9},{team:"CIN",val:101.3},{team:"CHI",val:101.7},{team:"LAC",val:102.0}]}],defensive:[{stat:"Points Allowed per Game",data:[{team:"CLE",val:16.8},{team:"NYJ",val:17.2},{team:"SF",val:17.8},{team:"PIT",val:18.3},{team:"BAL",val:18.9},{team:"DAL",val:19.4},{team:"BUF",val:19.8},{team:"KC",val:20.3},{team:"MIA",val:20.8},{team:"MIN",val:21.2},{team:"HOU",val:21.7},{team:"DEN",val:22.1},{team:"DET",val:22.5},{team:"SEA",val:23.0},{team:"GB",val:23.4},{team:"PHI",val:23.8},{team:"NO",val:24.3},{team:"LAR",val:24.7},{team:"TB",val:25.1},{team:"ATL",val:25.6},{team:"IND",val:26.0},{team:"CHI",val:26.4},{team:"CIN",val:26.9},{team:"LAC",val:27.3},{team:"NYG",val:27.7},{team:"LV",val:28.2},{team:"JAX",val:28.6},{team:"WAS",val:29.1},{team:"NE",val:29.5},{team:"ARI",val:29.9},{team:"CAR",val:30.4},{team:"TEN",val:30.8}]},{stat:"Yards Allowed per Game",data:[{team:"CLE",val:270.2},{team:"NYJ",val:278.4},{team:"SF",val:284.6},{team:"DAL",val:290.1},{team:"PIT",val:295.8},{team:"BAL",val:301.2},{team:"MIA",val:305.7},{team:"KC",val:308.3},{team:"BUF",val:310.9},{team:"MIN",val:313.5},{team:"HOU",val:316.2},{team:"SEA",val:318.8},{team:"DET",val:321.4},{team:"DEN",val:324.0},{team:"GB",val:326.7},{team:"PHI",val:329.3},{team:"LAR",val:331.9},{team:"TB",val:334.6},{team:"ATL",val:337.2},{team:"NO",val:339.8},{team:"CIN",val:342.5},{team:"IND",val:345.1},{team:"CHI",val:347.8},{team:"LAC",val:350.4},{team:"NYG",val:353.0},{team:"LV",val:355.7},{team:"JAX",val:358.3},{team:"WAS",val:360.9},{team:"ARI",val:363.6},{team:"NE",val:366.2},{team:"CAR",val:368.8},{team:"TEN",val:371.5}]},{stat:"Sacks",data:[{team:"PIT",val:52},{team:"CLE",val:49},{team:"SF",val:48},{team:"DAL",val:46},{team:"BAL",val:45},{team:"KC",val:43},{team:"BUF",val:42},{team:"NYJ",val:41},{team:"MIA",val:39},{team:"HOU",val:38},{team:"DET",val:37},{team:"MIN",val:36},{team:"GB",val:35},{team:"DEN",val:34},{team:"SEA",val:33},{team:"PHI",val:32},{team:"LAR",val:31},{team:"NO",val:30},{team:"TB",val:29},{team:"ATL",val:28},{team:"CIN",val:27},{team:"CHI",val:26},{team:"IND",val:25},{team:"LV",val:24},{team:"LAC",val:23},{team:"NYG",val:22},{team:"JAX",val:21},{team:"WAS",val:20},{team:"NE",val:19},{team:"ARI",val:18},{team:"CAR",val:17},{team:"TEN",val:16}]},{stat:"Interceptions",data:[{team:"SF",val:20},{team:"BUF",val:18},{team:"BAL",val:17},{team:"DAL",val:16},{team:"PIT",val:15},{team:"CLE",val:14},{team:"MIN",val:14},{team:"NYJ",val:13},{team:"KC",val:12},{team:"MIA",val:12},{team:"HOU",val:11},{team:"DET",val:11},{team:"GB",val:10},{team:"SEA",val:10},{team:"DEN",val:9},{team:"PHI",val:9},{team:"LAR",val:8},{team:"TB",val:8},{team:"NO",val:8},{team:"ATL",val:7},{team:"CIN",val:7},{team:"CHI",val:7},{team:"IND",val:6},{team:"LV",val:6},{team:"LAC",val:6},{team:"NYG",val:5},{team:"JAX",val:5},{team:"WAS",val:5},{team:"NE",val:5},{team:"ARI",val:4},{team:"CAR",val:4},{team:"TEN",val:4}]}]};
+
+const NFL_FUN_FACTS=[{icon:"lucide:map-pin",title:"Green Bay, WI",fact:"The Packers are the only publicly owned NFL team. With a population of ~105,000, Green Bay is by far the smallest city with an NFL team — yet they've won 13 championships.",category:"City"},{icon:"lucide:thermometer",title:"Lambeau Field",fact:"Known as the 'Frozen Tundra,' Lambeau Field hosted the legendary Ice Bowl in 1967 with a wind chill of -48°F. It's the oldest continually operating NFL stadium.",category:"Stadium"},{icon:"lucide:plane",title:"Longest Road Trip",fact:"When Seattle travels to Miami, it's roughly 2,726 miles — the longest regular-season trip in the NFL. That's about a 5.5-hour flight across 3 time zones!",category:"Travel"},{icon:"lucide:ruler",title:"Field Dimensions",fact:"An NFL field is exactly 100 yards long and 53⅓ yards wide. The end zones are each 10 yards deep. Hash marks are 23 yards, 1 foot, 9 inches from each sideline.",category:"Rules"},{icon:"lucide:users",title:"MetLife Stadium",fact:"Home to both the Giants and Jets, MetLife Stadium is the only NFL stadium shared by two teams. It seats 82,500 fans and cost $1.6 billion to build.",category:"Stadium"},{icon:"lucide:globe",title:"International Games",fact:"The NFL has played regular-season games in London, Munich, Frankfurt, Mexico City, and São Paulo. The first international game was in 2007 in London.",category:"Travel"},{icon:"lucide:trophy",title:"Super Bowl Rings",fact:"The Steelers and Patriots are tied with 6 Super Bowl wins each. The Bills lost 4 consecutive Super Bowls (1991-1994) — a record no team wants.",category:"History"},{icon:"lucide:mountain",title:"Mile High",fact:"Empower Field at Mile High in Denver sits at 5,280 feet above sea level. The thin air affects football flight — kickoffs travel about 10% farther than at sea level.",category:"City"},{icon:"lucide:shield",title:"AFC vs NFC",fact:"The NFL split into AFC and NFC in 1970 after the AFL-NFL merger. Each conference has 16 teams split into 4 divisions. The Super Bowl determines the champion.",category:"History"},{icon:"lucide:building",title:"SoFi Stadium",fact:"SoFi Stadium in Inglewood, CA cost $5.5 billion — the most expensive stadium ever built. It hosted Super Bowl LVI and will host the 2028 Olympics opening ceremony.",category:"Stadium"},{icon:"lucide:compass",title:"Time Zones",fact:"NFL teams cross up to 3 time zones for games. West Coast teams playing 1:00 PM ET games must perform at what feels like 10:00 AM to their bodies.",category:"Travel"},{icon:"lucide:leaf",title:"Grass vs Turf",fact:"15 NFL stadiums use natural grass and 15 use artificial turf. Players generally prefer grass — it's easier on joints. Arizona even rolls their grass field outside to get sunlight!",category:"Stadium"}];
+
+const WRITING_PROMPTS=[{type:"Narrative",icon:"lucide:book-open",color:"from-blue-500/10",prompt:"Write a first-person story from the perspective of your team's mascot on game day. Describe the sights, sounds, and emotions from the tunnel to the final whistle."},{type:"Persuasive",icon:"lucide:megaphone",color:"from-red-500/10",prompt:"Your team is moving to a new city! Write a letter to the owner arguing why they should stay, using facts about the city, fans, and history."},{type:"Informative",icon:"lucide:newspaper",color:"from-green-500/10",prompt:"Research your team's stadium. Write a newspaper article about its most famous game, its renovations, or what makes it special."},{type:"Creative",icon:"lucide:palette",color:"from-purple-500/10",prompt:"Design a new uniform or logo for your team. Write a detailed explanation of the colors and shapes you chose and how they represent the city."},{type:"Compare/Contrast",icon:"lucide:git-compare",color:"from-cyan-500/10",prompt:"Compare your team's city to the city of their biggest rival. How do geography, culture, and history make the rivalry special?"},{type:"Math Writing",icon:"lucide:calculator",color:"from-orange-500/10",prompt:"Explain in writing how you calculated your team's total travel miles for the season. Break down the math step-by-step so a 5th grader could understand it."}];
+
+// State
+let compareTeams=[];let currentWeek=0;let currentPlayerTab='passing';let currentConfFilter='all';let currentDivFilter='all';let currentSortCol=-1;let currentSortDir='desc';let projection=null;let pathGen=null;
+
+// Utilities
+function getTeam(abbr){return NFL_TEAMS.find(t=>t.abbr===abbr)}
+function fullName(team){return team.location+' '+team.name}
+function haversine(lat1,lng1,lat2,lng2){const R=3959;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
+function showToast(msg){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+function logo(abbr,size=40){const t=getTeam(abbr);if(!t)return`<div style="width:${size}px;height:${size}px;background:#333;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:${Math.max(8,size/4)}px;font-weight:700;color:#fff">${abbr}</div>`;return`<img src="https://a.espncdn.com/i/teamlogos/nfl/500/${t.espn}.png" alt="${fullName(t)}" class="logo-img rounded" style="width:${size}px;height:${size}px" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:${size}px;height:${size}px;background:${t.color};border-radius:8px;display:none;align-items:center;justify-content:center;font-size:${Math.max(8,size/4)}px;font-weight:700;color:#fff">${abbr}</div>`}
+function getTeamRanks(abbr){return[...TEAM_STATS.offensive,...TEAM_STATS.defensive].map(cat=>({stat:cat.stat,rank:cat.data.findIndex(d=>d.team===abbr)+1,val:cat.data.find(d=>d.team===abbr)?.val}))}
+
+// Schedule generator
+function generate2026Schedule(){const D={'AFC East':['BUF','MIA','NE','NYJ'],'AFC North':['BAL','CIN','CLE','PIT'],'AFC South':['HOU','IND','JAX','TEN'],'AFC West':['DEN','KC','LV','LAC'],'NFC East':['DAL','NYG','PHI','WAS'],'NFC North':['CHI','DET','GB','MIN'],'NFC South':['ATL','CAR','NO','TB'],'NFC West':['SF','ARI','LAR','SEA']};const intraRot={'AFC East':'AFC West','AFC North':'AFC South','AFC South':'AFC North','AFC West':'AFC East','NFC East':'NFC West','NFC North':'NFC South','NFC South':'NFC North','NFC West':'NFC East'};const crossRot={'AFC East':'NFC South','AFC North':'NFC East','AFC South':'NFC North','AFC West':'NFC West','NFC East':'AFC North','NFC North':'NFC South','NFC South':'NFC West','NFC West':'AFC East'};const seventeenth={'AFC East':'NFC North','AFC North':'NFC West','AFC South':'NFC East','AFC West':'NFC South'};const r={};for(const t of Object.values(D).flat())r[t]={home:[],away:[]};for(const[dn,ts]of Object.entries(D))for(let i=0;i<ts.length;i++)for(let j=0;j<ts.length;j++)if(i!==j){r[ts[i]].away.push(ts[j]);r[ts[i]].home.push(ts[j])}for(const[dn,ts]of Object.entries(D)){const rd=D[intraRot[dn]];if(!rd)continue;for(let i=0;i<4;i++){r[ts[i]].away.push(rd[i],rd[(i+2)%4]);r[ts[i]].home.push(rd[(i+1)%4],rd[(i+3)%4])}}for(const[dn,ts]of Object.entries(D)){const cd=D[crossRot[dn]];if(!cd)continue;for(let i=0;i<4;i++){r[ts[i]].away.push(cd[(i+1)%4],cd[(i+3)%4]);r[ts[i]].home.push(cd[i],cd[(i+2)%4])}}const confDivs={AFC:['AFC East','AFC North','AFC South','AFC West'],NFC:['NFC East','NFC North','NFC South','NFC West']};for(const conf of['AFC','NFC']){const cd=confDivs[conf];for(const dn of cd){const ts=D[dn];const rem=cd.filter(d=>d!==dn&&d!==intraRot[dn]);for(let i=0;i<4;i++)for(const rd of rem){const opp=D[rd][i];if(cd.indexOf(dn)<cd.indexOf(rd))r[ts[i]].away.push(opp);else r[ts[i]].home.push(opp)}}}for(const[dn,ts]of Object.entries(D)){const sd=seventeenth[dn];if(sd){const opp=D[sd];for(let i=0;i<4;i++)r[ts[i]].away.push(opp[i])}else{for(const[ad,nd]of Object.entries(seventeenth)){if(nd===dn){const at=D[ad];for(let i=0;i<4;i++)r[ts[i]].home.push(at[i])}}}}return r}
+const SCHED_2026=generate2026Schedule();
+const WEEKS=generateSampleWeeks();
+function generateSampleWeeks(){const w=[];for(let wk=1;wk<=4;wk++){const games=[];const used=new Set();for(const abbr of Object.keys(SCHED_2026)){if(used.has(abbr))continue;const sched=SCHED_2026[abbr];const awayIdx=(wk-1)%sched.away.length;const opp=sched.away[awayIdx];if(!used.has(opp)){games.push({away:abbr,home:opp,day:wk===4?"Thu":wk===1?"Mon":"Sun",time:wk===4?"8:15 PM":wk===1?"8:15 PM":"1:00 PM"});used.add(abbr);used.add(opp)}}w.push({week:wk,games:games.slice(0,8)})}return w}
+
+// ============ FEATURED GAME ============
+function renderFeaturedGame(){const fg=FEATURED_GAME;const away=getTeam(fg.away);const home=getTeam(fg.home);if(!away||!home)return;const dist=haversine(away.lat,away.lng,home.lat,home.lng);const bgSrc=fg.bgImage||STADIUM_IMAGES[fg.home]||"https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop";document.getElementById('featured-bg-img').src=bgSrc;document.getElementById('featured-week-badge').textContent=`Week ${fg.week} • 2026 Season`;document.getElementById('featured-away-logo').innerHTML=logo(fg.away,64);document.getElementById('featured-away-name').textContent=fullName(away);const aor=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===fg.away)+1;const adr=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===fg.away)+1;document.getElementById('featured-away-record').innerHTML=`${away.div} • Off #${aor} • Def #${adr}`;document.getElementById('featured-home-logo').innerHTML=logo(fg.home,64);document.getElementById('featured-home-name').textContent=fullName(home);const hor=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===fg.home)+1;const hdr=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===fg.home)+1;document.getElementById('featured-home-record').innerHTML=`${home.div} • Off #${hor} • Def #${hdr}`;document.getElementById('featured-day').textContent=fg.day;document.getElementById('featured-time').textContent=fg.time;document.getElementById('featured-venue').textContent=home.stadium;document.getElementById('featured-distance').textContent=`${dist.toFixed(0)} mi apart`;document.getElementById('featured-discussion').textContent=fg.discussion}
+
+// ============ TEAMS (clickable, compare up to 2) ============
+function toggleCompare(abbr){const idx=compareTeams.indexOf(abbr);if(idx>=0){compareTeams.splice(idx,1);showToast(`Removed ${fullName(getTeam(abbr))} from compare`)}else if(compareTeams.length<2){compareTeams.push(abbr);showToast(compareTeams.length===1?`${fullName(getTeam(abbr))} selected — pick one more to compare!`:`Ready to compare ${fullName(getTeam(compareTeams[0]))} vs ${fullName(getTeam(compareTeams[1]))}!`)}else{showToast('Max 2 teams — clear first!');return}updateCompareUI();renderTeamCards()}
+function clearCompare(){compareTeams=[];updateCompareUI();renderTeamCards()}
+function updateCompareUI(){const bar=document.getElementById('compare-bar');bar.classList.toggle('hidden',compareTeams.length===0);bar.classList.toggle('flex',compareTeams.length>0);document.getElementById('compare-count').textContent=`${compareTeams.length}/2 selected`;const btn=document.getElementById('compare-btn');btn.disabled=compareTeams.length<2;btn.classList.toggle('opacity-30',compareTeams.length<2);btn.classList.toggle('cursor-not-allowed',compareTeams.length<2)}
+function renderTeams(){const divisions=[...new Set(NFL_TEAMS.map(t=>t.div))];const divFilters=document.getElementById('division-filters');divFilters.innerHTML=`<button onclick="filterDivision('all')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter==='all'?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="all">All</button>`;divisions.forEach(d=>{divFilters.innerHTML+=`<button onclick="filterDivision('${d}')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter===d?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="${d}">${d}</button>`});renderTeamCards()}
+function renderTeamCards(){const grid=document.getElementById('teams-grid');grid.innerHTML='';NFL_TEAMS.forEach(team=>{if(currentConfFilter!=='all'&&team.conf!==currentConfFilter)return;if(currentDivFilter!=='all'&&team.div!==currentDivFilter)return;const isSel=compareTeams.includes(team.abbr);const card=document.createElement('div');card.className=`team-card glass-panel rounded-xl p-4 flex flex-col items-center text-center gap-2 ${isSel?'selected':''}`;card.onclick=()=>toggleCompare(team.abbr);card.innerHTML=`<div class="relative">${logo(team.abbr,52)}${isSel?'<div class="absolute -top-1 -right-1 w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center"><iconify-icon icon="lucide:check" class="text-white text-[10px]"></iconify-icon></div>':''}</div><div><div class="text-[11px] font-semibold leading-tight">${fullName(team)}</div><div class="text-[9px] text-white/40 mt-0.5">${team.city}, ${team.state}</div></div><div class="text-[8px] font-mono text-white/25 uppercase tracking-wider">${team.div}</div>${isSel?'<div class="compare-badge text-[9px] px-2 py-0.5 rounded-full font-medium">Selected</div>':'<div class="text-[9px] text-white/20">Click to select</div>'}`;grid.appendChild(card)})}
+function filterTeams(conf){currentConfFilter=conf;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===conf);b.classList.toggle('text-white/50',b.dataset.filter!==conf)});renderTeamCards()}
+function filterDivision(div){currentDivFilter=div;document.querySelectorAll('.division-btn').forEach(b=>{const a=b.dataset.div===div;b.classList.toggle('!bg-brand-500/15',a);b.classList.toggle('!text-brand-400',a);b.classList.toggle('!border-brand-500/30',a)});renderTeamCards()}
+
+// ============ MODALS ============
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open')}
+function openTeamModal(abbr){const team=getTeam(abbr);if(!team)return;const facts=STADIUM_FACTS[abbr];const ranks=getTeamRanks(abbr);const surfaceIcon=facts.surface==='Grass'?'🌿':'🏟️';document.getElementById('modal-box').innerHTML=`<div class="p-6 md:p-8"><div class="flex items-center justify-between mb-6"><div class="flex items-center gap-4">${logo(abbr,56)}<div><div class="text-xl font-bold">${fullName(team)}</div><div class="text-xs text-white/50">${team.city}, ${team.state} • ${team.div}</div></div></div><button onclick="closeModal()" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition flex-shrink-0"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button></div><div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6"><div class="bg-white/3 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Stadium</div><div class="text-sm font-semibold mt-1">${team.stadium}</div><div class="text-[10px] text-white/40">${facts.roof} • ${surfaceIcon} ${facts.surface}</div><div class="text-[10px] text-white/40">Cap: ${team.stadiumCap.toLocaleString()}</div></div><div class="bg-white/3 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Founded</div><div class="text-sm font-semibold mt-1">${team.founded}</div><div class="text-[10px] text-white/40">${team.tz} Time Zone</div></div><div class="bg-white/3 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Fun Fact</div><div class="text-[11px] text-white/50 mt-1 leading-relaxed">${facts.trivia}</div></div></div><h4 class="text-sm font-semibold mb-3">League Rankings</h4><div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">${ranks.map(r=>`<div class="bg-white/3 rounded-lg p-2.5"><div class="text-[8px] text-white/30 uppercase">${r.stat}</div><div class="flex items-baseline gap-1 mt-0.5"><span class="text-lg font-bold">#${r.rank}</span><span class="text-[9px] text-white/40">/32</span></div><div class="text-[10px] text-brand-400 font-mono">${r.val||'—'}</div></div>`).join('')}</div><button onclick="closeModal();toggleCompare('${abbr}')" class="w-full py-3 rounded-xl bg-brand-500 text-white font-semibold text-sm hover:bg-brand-600 transition">Add to Compare</button></div>`;document.getElementById('modal-overlay').classList.add('open')}
+function openCompareModal(){if(compareTeams.length<2)return;const t1=getTeam(compareTeams[0]),t2=getTeam(compareTeams[1]);const r1=getTeamRanks(t1.abbr),r2=getTeamRanks(t2.abbr);const f1=STADIUM_FACTS[t1.abbr],f2=STADIUM_FACTS[t2.abbr];const sIcon=s=>s==='Grass'?'🌿':'🏟️';document.getElementById('modal-box').innerHTML=`<div class="p-6 md:p-8"><div class="flex items-center justify-between mb-6"><h3 class="text-lg font-bold">Team Comparison</h3><button onclick="closeModal()" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button></div><div class
