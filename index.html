@@ -20,14 +20,14 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hid
 .noise{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .glass-panel{background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08)}
 .team-card{transition:all 0.4s cubic-bezier(0.4,0,0.2,1);cursor:pointer}
-.team-card:hover{transform:translateY(-4px);border-color:rgba(249,115,22,0.4);box-shadow:0 12px 40px -8px rgba(249,115,22,0.15)}
-.team-card.selected{border-color:rgba(249,115,22,0.6);background:rgba(249,115,22,0.08);box-shadow:0 0 30px -5px rgba(249,115,22,0.2)}
+.team-card:hover{transform:translateY(-4px);border-color:rgba(1,51,105),0.4);box-shadow:0 12px 40px -8px rgba(1,51,105),0.15)}
+.team-card.selected{border-color:rgba(1,51,105),0.6);background:rgba(1,51,105),0.08);box-shadow:0 0 30px -5px rgba(1,51,105),0.2)}
 .stat-bar-fill{transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
-.tab-btn{transition:all 0.25s ease}.tab-btn.active{background:rgba(249,115,22,0.15);color:#f97316;border-color:rgba(249,115,22,0.4)}
+.tab-btn{transition:all 0.25s ease}.tab-btn.active{background:rgba(1,51,105),0.15);color:#f97316;border-color:rgba(1,51,105),0.4)}
 .matchup-card{transition:all 0.3s ease}.matchup-card:hover{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.05)}
 .section-reveal{opacity:0;transform:translateY(30px);transition:all 0.8s cubic-bezier(0.4,0,0.2,1)}.section-reveal.visible{opacity:1;transform:translateY(0)}
-@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(249,115,22,0.3)}50%{box-shadow:0 0 20px rgba(249,115,22,0.6)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
-.fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:rgba(249,115,22,0.3)}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(1,51,105),0.3)}50%{box-shadow:0 0 20px rgba(1,51,105),0.6)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
+.fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:rgba(1,51,105),0.3)}
 .player-row:hover{background:rgba(255,255,255,0.04)}
 .toast{transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1)}.toast.show{transform:translateY(0);opacity:1}
 .away-row:nth-child(even){background:rgba(255,255,255,0.015)}
@@ -52,8 +52,8 @@ select option{background:#1a1a1a;color:#fff}
 @keyframes draw-line{to{stroke-dashoffset:0}}
 .map-tooltip{position:absolute;z-index:20;pointer-events:none;opacity:0;transform:translateY(4px);transition:all 0.2s ease;background:rgba(10,10,10,0.94);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
 .map-tooltip.visible{opacity:1;transform:translateY(0)}
-.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(249,115,22,0.06);border-color:rgba(249,115,22,0.2)}
-.away-item.highlighted{background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3)}
+.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(1,51,105),0.06);border-color:rgba(1,51,105),0.2)}
+.away-item.highlighted{background:rgba(1,51,105),0.1);border-color:rgba(1,51,105),0.3)}
 </style>
 </head>
 <body>
@@ -162,7 +162,7 @@ select option{background:#1a1a1a;color:#fff}
           <span id="featured-distance" class="text-xs font-medium"></span>
         </div>
       </div>
-      <div class="slide-up slide-up-d4 glass-panel rounded-2xl p-5 max-w-2xl" style="background:rgba(249,115,22,0.05);border-color:rgba(249,115,22,0.15)">
+      <div class="slide-up slide-up-d4 glass-panel rounded-2xl p-5 max-w-2xl" style="background:rgba(1,51,105),0.05);border-color:rgba(1,51,105),0.15)">
         <div class="flex items-center gap-2 mb-2">
           <iconify-icon icon="lucide:message-circle" class="text-brand-500 text-sm"></iconify-icon>
           <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Class Discussion</span>
@@ -777,7 +777,7 @@ function renderMap(){
     const destCoords=projection([g.team.lng,g.team.lat]);
     if(!destCoords)return;
     const isLong=g.distance>1500;
-    const baseColor=isLong?"rgba(239,68,68,":"rgba(249,115,22,";
+    const baseColor=isLong?"rgba(239,68,68,":"rgba(1,51,105),";
 
     linesGroup.append("line")
       .attr("x1",homeCoords[0]).attr("y1",homeCoords[1])
@@ -878,9 +878,9 @@ function highlightDestination(destAbbr){
   d3.selectAll('#svg-lines line[data-dest]').each(function(){
     const line=d3.select(this);
     if(line.attr('data-dest')===destAbbr){
-      line.attr('stroke','rgba(249,115,22,0.9)').attr('stroke-width',3);
+      line.attr('stroke','rgba(1,51,105),0.9)').attr('stroke-width',3);
     }else{
-      line.attr('stroke','rgba(249,115,22,0.04)').attr('stroke-width',0.5);
+      line.attr('stroke','rgba(1,51,105),0.04)').attr('stroke-width',0.5);
     }
   });
   d3.selectAll('#svg-dots g').each(function(){
