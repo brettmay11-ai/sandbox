@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://d3js.org/topojson.v3.min.js"></script>
 <script>
 tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{surface:{50:'#0a0a0a',100:'#111111',200:'#1a1a1a',300:'#222222'},brand:{400:'#fed7aa',500:'#f97316',600:'#ea580c'}}}}}
 </script>
@@ -39,6 +41,19 @@ select option{background:#1a1a1a;color:#fff}
 @keyframes vs-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}.vs-glow{animation:vs-pulse 2.5s ease-in-out infinite}
 @keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up 0.8s cubic-bezier(0.4,0,0.2,1) forwards}.slide-up-d1{animation-delay:0.1s;opacity:0}.slide-up-d2{animation-delay:0.2s;opacity:0}.slide-up-d3{animation-delay:0.3s;opacity:0}.slide-up-d4{animation-delay:0.4s;opacity:0}
 .featured-stat-pill{transition:all 0.3s ease}.featured-stat-pill:hover{background:rgba(255,255,255,0.08);transform:translateY(-1px)}
+.map-wrap{position:relative;width:100%;aspect-ratio:16/10;min-height:400px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);background:#0a0a0a}
+.map-wrap svg{width:100%;height:100%;display:block}
+.state-path{fill:rgba(255,255,255,0.02);stroke:rgba(255,255,255,0.1);stroke-width:0.75;transition:fill 0.2s}
+.state-path:hover{fill:rgba(255,255,255,0.06)}
+.state-label{fill:rgba(255,255,255,0.12);font-family:'Inter',sans-serif;font-size:9px;font-weight:600;pointer-events:none;text-anchor:middle;dominant-baseline:central}
+@keyframes home-pulse{0%,100%{r:8;opacity:1}50%{r:11;opacity:0.85}}
+@keyframes home-ring-pulse{0%,100%{r:10;opacity:0.4;stroke-width:2}50%{r:16;opacity:0;stroke-width:0.5}}
+@keyframes dest-ring{0%{r:6;opacity:0.5;stroke-width:1.5}100%{r:20;opacity:0;stroke-width:0.5}}
+@keyframes draw-line{to{stroke-dashoffset:0}}
+.map-tooltip{position:absolute;z-index:20;pointer-events:none;opacity:0;transform:translateY(4px);transition:all 0.2s ease;background:rgba(10,10,10,0.94);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+.map-tooltip.visible{opacity:1;transform:translateY(0)}
+.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(249,115,22,0.06);border-color:rgba(249,115,22,0.2)}
+.away-item.highlighted{background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3)}
 </style>
 </head>
 <body>
@@ -250,6 +265,52 @@ select option{background:#1a1a1a;color:#fff}
       </div>
       <select id="travel-team-select" onchange="renderTravel()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select>
     </div>
+
+    <!-- Interactive Travel Map -->
+    <div class="mb-4 flex items-center gap-5 text-xs text-white/40 flex-wrap">
+      <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-brand-500 border-2 border-white"></span> Home City</span>
+      <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-white border-2 border-brand-500"></span> Away Destination</span>
+      <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-white/70"></span> Other NFL City</span>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+      <div class="lg:col-span-3 glass-panel rounded-2xl overflow-hidden">
+        <div class="map-wrap" id="map-wrap">
+          <svg id="map-svg" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="home-glow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <rect width="960" height="600" fill="#0a0a0a"/>
+            <g id="us-map-group"></g>
+            <g id="svg-lines"></g>
+            <g id="svg-dots"></g>
+          </svg>
+          <div class="map-tooltip" id="map-tooltip"></div>
+        </div>
+      </div>
+      <div class="glass-panel rounded-2xl p-5 flex flex-col">
+        <h3 class="text-sm font-semibold mb-1 flex items-center gap-2">
+          <iconify-icon icon="lucide:plane" class="text-brand-500"></iconify-icon>
+          <span id="sidebar-team-name">Away Games</span>
+        </h3>
+        <p class="text-[10px] text-white/30 mb-4 font-mono" id="sidebar-team-subtitle">Select a team</p>
+        <div class="flex items-center justify-between mb-3 pb-3 border-b border-white/6">
+          <span class="text-[11px] text-white/40">Total Travel</span>
+          <span class="text-sm font-bold text-brand-500 font-mono" id="sidebar-total-miles">—</span>
+        </div>
+        <div id="sidebar-away-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1 max-h-[500px]">
+          <p class="text-xs text-white/30">Loading map data…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing Travel Details -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="glass-panel rounded-2xl p-6">
         <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-500"></iconify-icon> Season Travel Summary</h3>
@@ -352,8 +413,6 @@ select option{background:#1a1a1a;color:#fff}
 <script>
 /* ============================================================
    FEATURED GAME OF THE WEEK
-   — Just update week, away, home, day, time, and discussion! —
-   Background image auto-selects from STADIUM_IMAGES below.
    ============================================================ */
 const FEATURED_GAME={
   week:1,
@@ -364,8 +423,6 @@ const FEATURED_GAME={
   discussion:"The Chiefs travel to Buffalo — that's about 976 miles! If their plane flies at 500 mph, how long is the flight? Buffalo is in New York, but the Bills don't play in New York City. What city do they play in, and how is it different from NYC?"
 };
 
-/* Stadium/city background images — auto-selected by home team.
-   Swap any URL for a better photo anytime. */
 const STADIUM_IMAGES={
   BUF:"https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop",
   MIA:"https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1920&q=80&auto=format&fit=crop",
@@ -400,8 +457,6 @@ const STADIUM_IMAGES={
   LAR:"https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1920&q=80&auto=format&fit=crop",
   SEA:"https://images.unsplash.com/photo-1502175353174-a7a70e73b362?w=1920&q=80&auto=format&fit=crop"
 };
-
-/* ============================================================ */
 
 const NFL_TEAMS=[
   {id:1,name:"Bills",location:"Buffalo",city:"Orchard Park",state:"NY",abbr:"BUF",espn:"buf",conf:"AFC",div:"AFC East",color:"#00338D",secColor:"#C60C30",stadium:"Highmark Stadium",stadiumCap:71608,lat:42.77,lng:-78.79,founded:1960,tz:"EST"},
@@ -569,7 +624,13 @@ const WRITING_PROMPTS=[
   {type:"Math Writing",icon:"lucide:calculator",color:"from-orange-500/10",prompt:"Explain in writing how you calculated your team's total travel miles for the season. Break down the math step-by-step so a 5th grader could understand it."}
 ];
 
+/* ===== Map FIPS data ===== */
+const FIPS={"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI","45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"};
+
 let selectedTeams=new Set();let currentWeek=0;let currentPlayerTab='passing';let currentConfFilter='all';let currentDivFilter='all';let currentSortCol=-1;let currentSortDir='desc';
+
+/* ===== Map state ===== */
+let currentMapTeam=null;let awayGamesData=[];let projection=null;let pathGen=null;
 
 function getTeam(abbr){const t=NFL_TEAMS.find(t=>t.abbr===abbr);if(!t)console.warn(`Team not found: ${abbr}`);return t}
 function haversine(lat1,lng1,lat2,lng2){const R=3959;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
@@ -584,7 +645,6 @@ function renderFeaturedGame(){
   if(!away||!home)return;
   const dist=haversine(away.lat,away.lng,home.lat,home.lng);
 
-  // Auto-select background: fg.bgImage override → STADIUM_IMAGES[home] → default
   const bgSrc=fg.bgImage || STADIUM_IMAGES[fg.home] || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop";
   document.getElementById('featured-bg-img').src=bgSrc;
 
@@ -631,7 +691,11 @@ function renderPlayerStats(){const data=PLAYER_STATS[currentPlayerTab];let playe
 function renderTravel(){const abbr=document.getElementById('travel-team-select').value;const team=getTeam(abbr);const summary=document.getElementById('travel-summary');const awayList=document.getElementById('away-games-list');const stadiumFacts=document.getElementById('stadium-facts');const awayAbbrs=SCHED_2026[abbr]?SCHED_2026[abbr].away:[];let totalMiles=0;const awayGames=awayAbbrs.map(oppAbbr=>{const opp=getTeam(oppAbbr);const dist=haversine(team.lat,team.lng,opp.lat,opp.lng);totalMiles+=dist;return{abbr:oppAbbr,team:opp,distance:dist}});const farthest=awayGames.reduce((max,g)=>g.distance>max.distance?g:max,{distance:0});const closest=awayGames.reduce((min,g)=>g.distance<min.distance?g:min,{distance:Infinity});
 summary.innerHTML=`<div class="space-y-4"><div class="flex items-center gap-3 mb-4">${logo(abbr,48)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state}</div></div></div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-500">${totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Away Games</span><span class="text-sm font-bold">${awayGames.length}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Avg Trip Distance</span><span class="text-sm font-bold">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Farthest Trip</span><span class="text-sm font-bold">${farthest.team?fullName(farthest.team):'—'}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Closest Trip</span><span class="text-sm font-bold">${closest.team?fullName(closest.team):'—'}</span></div><hr class="border-white/6"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Home Stadium</span><span class="text-[11px] font-medium text-right">${team.stadium}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Time Zone</span><span class="text-[11px] font-medium">${team.tz}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Founded</span><span class="text-[11px] font-medium">${team.founded}</span></div></div></div>`;
 awayList.innerHTML=awayGames.map(g=>{const isFar=g===farthest;const isClose=g===closest;return`<div class="away-row flex items-center gap-3 p-3 rounded-lg hover:bg-white/4 transition">${logo(g.abbr,28)}<div class="flex-1 min-w-0"><div class="text-[11px] font-medium">at ${fullName(g.team)}</div><div class="text-[9px] text-white/30">${g.team.stadium} • ${g.team.city}, ${g.team.state} (${g.team.tz})</div></div><div class="text-right flex items-center gap-2"><span class="text-[11px] font-mono ${isFar?'text-red-400':isClose?'text-green-400':'text-white/50'}">${g.distance.toFixed(0)} mi</span>${isFar?'<span class="text-[8px] px-1.5 py-0.5 bg-red-500/15 text-red-400 rounded whitespace-nowrap">FARTHEST</span>':''}${isClose?'<span class="text-[8px] px-1.5 py-0.5 bg-green-500/15 text-green-400 rounded whitespace-nowrap">CLOSEST</span>':''}</div></div>`}).join('');
-const tf=STADIUM_FACTS[abbr];stadiumFacts.innerHTML=`<div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:building-2" class="text-brand-500 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Stadium</span></div><div class="text-sm font-semibold mb-1">${team.stadium}</div><div class="text-[11px] text-white/50">${tf.roof} • ${tf.surface}</div><div class="text-[11px] text-white/50">Capacity: ${team.stadiumCap.toLocaleString()}</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:map" class="text-brand-500 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Location</span></div><div class="text-sm font-semibold mb-1">${team.city}, ${team.state}</div><div class="text-[11px] text-white/50">Lat: ${team.lat}° N</div><div class="text-[11px] text-white/50">Lng: ${Math.abs(team.lng)}° W</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:sparkles" class="text-brand-500 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Fun Fact</span></div><div class="text-[11px] text-white/60 leading-relaxed">${tf.trivia}</div></div>`}
+const tf=STADIUM_FACTS[abbr];stadiumFacts.innerHTML=`<div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:building-2" class="text-brand-500 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Stadium</span></div><div class="text-sm font-semibold mb-1">${team.stadium}</div><div class="text-[11px] text-white/50">${tf.roof} • ${tf.surface}</div><div class="text-[11px] text-white/50">Capacity: ${team.stadiumCap.toLocaleString()}</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:map" class="text-brand-500 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Location</span></div><div class="text-sm font-semibold mb-1">${team.city}, ${team.state}</div><div class="text-[11px] text-white/50">Lat: ${team.lat}° N</div><div class="text-[11px] text-white/50">Lng: ${Math.abs(team.lng)}° W</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:sparkles" class="text-brand-500 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Fun Fact</span></div><div class="text-[11px] text-white/60 leading-relaxed">${tf.trivia}</div></div>`;
+
+  // Also update the interactive map
+  renderMap();
+}
 
 function generateMathProblems(){const grid=document.getElementById('math-problems');let problems=[];const t1=NFL_TEAMS[Math.floor(Math.random()*32)];const t2=NFL_TEAMS[Math.floor(Math.random()*32)];const dist=haversine(t1.lat,t1.lng,t2.lat,t2.lng);problems.push({title:"Travel Distance",icon:"lucide:plane",question:`The ${fullName(t1)} travel to face the ${fullName(t2)}. The straight-line distance is approximately ${dist.toFixed(0)} miles. If the team charter flight travels at 500 mph, how long is the flight?`,formula:`Time = Distance ÷ Speed = ${dist.toFixed(0)} ÷ 500 = ${(dist/500).toFixed(2)} hours = ${Math.floor(dist/500)}h ${Math.round((dist/500%1)*60)}m`});const p1=PLAYER_STATS.passing.players[Math.floor(Math.random()*5)];const compPct=((p1[3]/p1[4])*100).toFixed(1);problems.push({title:"Completion Percentage",icon:"lucide:percent",question:`${p1[1]} completed ${p1[3]} out of ${p1[4]} pass attempts. What is his completion percentage?`,formula:`(Completions ÷ Attempts) × 100 = (${p1[3]} ÷ ${p1[4]}) × 100 = ${compPct}%`});const t3=NFL_TEAMS[Math.floor(Math.random()*32)];const avgTicket=125;problems.push({title:"Game Day Revenue",icon:"lucide:dollar-sign",question:`If the average ticket at ${t3.stadium} costs $${avgTicket} and the capacity is ${t3.stadiumCap.toLocaleString()}, what is the maximum ticket revenue for one sold-out game?`,formula:`Capacity × Price = ${t3.stadiumCap.toLocaleString()} × $${avgTicket} = $${(t3.stadiumCap*avgTicket).toLocaleString()}`});const r1=PLAYER_STATS.rushing.players[Math.floor(Math.random()*5)];problems.push({title:"Yards Per Carry",icon:"lucide:trending-up",question:`${r1[1]} had ${r1[3]} rushing attempts for ${r1[4].toLocaleString()} yards. Calculate his average yards per carry.`,formula:`Yards ÷ Carries = ${r1[4].toLocaleString()} ÷ ${r1[3]} = ${(r1[4]/r1[3]).toFixed(1)} YPC`});grid.innerHTML=problems.map(p=>`<div class="glass-panel rounded-xl p-6"><h3 class="text-sm font-semibold mb-3 flex items-center gap-2"><iconify-icon icon="${p.icon}" class="text-brand-500"></iconify-icon> ${p.title}</h3><p class="text-[12px] text-white/60 leading-relaxed mb-4">${p.question}</p><details class="text-[11px]"><summary class="text-brand-500 cursor-pointer hover:text-brand-400">Show Solution</summary><div class="mt-2 p-3 bg-white/5 rounded-lg font-mono text-white/70">${p.formula}</div></details></div>`).join('')}
 
@@ -644,174 +708,12 @@ function renderFunFacts(){const grid=document.getElementById('facts-grid');const
 
 function populateSelects(){['stats-team-select','travel-team-select','city-team-select'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cv=el.value;const isStats=id==='stats-team-select';el.innerHTML=`${isStats?'<option value="all">All Teams (Top 10)</option>':''}`;NFL_TEAMS.forEach(t=>{el.innerHTML+=`<option value="${t.abbr}"${t.abbr===cv?' selected':''}>${fullName(t)} (${t.div})</option>`})})}
 
-function showDashboard(abbr){const team=getTeam(abbr);if(!team)return;const section=document.getElementById('my-team');section.classList.remove('hidden');document.getElementById('my-team-name').textContent=fullName(team);const facts=STADIUM_FACTS[abbr];const offPPG=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===abbr)+1;const defPPG=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===abbr)+1;const offYPG=TEAM_STATS.offensive[1].data.findIndex(d=>d.team===abbr)+1;const awayAbbrs=SCHED_2026[abbr]?SCHED_2026[abbr].away:[];let totalMiles=0;awayAbbrs.forEach(o=>{const opp=getTeam(o);totalMiles+=haversine(team.lat,team.lng,opp.lat,opp.lng)});const content=document.getElementById('dashboard-content');content.innerHTML=`<div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-2">Team Info</div><div class="mb-3">${logo(abbr,56)}</div><div class="text-lg font-bold">${fullName(team)}</div><div class="text-xs text-white/50">${team.city}, ${team.state} (${team.tz})</div><div class="text-xs text-white/40 mt-1">${team.div} • Founded ${team.founded}</div></div><div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">League Rankings</div><div class="space-y-3"><div class="flex justify-between"><span class="text-xs text-white/50">Pts/Game (Off)</span><span class="text-sm font-bold">#${offPPG}</span></div><div class="flex justify-between"><span class="text-xs text-white/50">Pts/Game (Def)</span><span class="text-sm font-bold">#${defPPG}</span></div><div class="flex justify-between"><span class="text-xs text-white/50">Total Yds/Game</span><span class="text-sm font-bold">#${offYPG}</span></div><div class="flex justify-between"><span class="text-xs text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-500">${totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")} mi</span></div></div></div><div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">Stadium</div><div class="text-sm font-semibold">${team.stadium}</div><div class="text-xs text-white/50 mt-1">${facts.roof} • ${facts.surface} • ${team.stadiumCap.toLocaleString()} capacity</div><div class="text-[10px] text-white/30 mt-2 leading-relaxed">${facts.trivia}</div></div><div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">Top Players</div><div class="space-y-2">${getTopPlayers(abbr)}</div></div><div class="md:col-span-2 lg:col-span-4 glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">Team Statistical Ranks (Full Details)</div><div class="grid grid-cols-2 md:grid-cols-4 gap-3">${[...TEAM_STATS.offensive,...TEAM_STATS.defensive].map((cat,idx)=>{const rank=cat.data.findIndex(d=>d.team===abbr)+1;const val=cat.data.find(d=>d.team===abbr);const isOff=idx<TEAM_STATS.offensive.length;return`<div class="bg-white/3 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">${cat.stat}</div><div class="flex items-baseline gap-1 mt-1"><span class="text-lg font-bold">#${rank}</span><span class="text-[10px] text-white/40">/ 32</span></div><div class="text-[10px] text-brand-400 font-mono mt-1">${val?val.val:'—'}</div><div class="text-[8px] text-white/20 uppercase">${isOff?'OFF':'DEF'}</div></div>`}).join('')}</div></div>`;section.scrollIntoView({behavior:'smooth'})}
+function showDashboard(abbr){const team=getTeam(abbr);if(!team)return;const section=document.getElementById('my-team');section.classList.remove('hidden');document.getElementById('my-team-name').textContent=fullName(team);const facts=STADIUM_FACTS[abbr];const offPPG=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===abbr)+1;const defPPG=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===abbr)+1;const offYPG=TEAM_STATS.offensive[1].data.findIndex(d=>d.team===abbr)+1;const awayAbbrs=SCHED_2026[abbr]?SCHED_2026[abbr].away:[];let totalMiles=0;awayAbbrs.forEach(o=>{const opp=getTeam(o);totalMiles+=haversine(team.lat,team.lng,opp.lat,opp.lng)});const content=document.getElementById('dashboard-content');content.innerHTML=`<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-2">Team Info</div><div class="mb-3">${logo(abbr,56)}</div><div class="text-lg font-bold">${fullName(team)}</div><div class="text-xs text-white/50">${team.city}, ${team.state} (${team.tz})</div><div class="text-xs text-white/40 mt-1">${team.div} • Founded ${team.founded}</div></div><div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">League Rankings</div><div class="space-y-3"><div class="flex justify-between"><span class="text-xs text-white/50">Pts/Game (Off)</span><span class="text-sm font-bold">#${offPPG}</span></div><div class="flex justify-between"><span class="text-xs text-white/50">Pts/Game (Def)</span><span class="text-sm font-bold">#${defPPG}</span></div><div class="flex justify-between"><span class="text-xs text-white/50">Total Yds/Game</span><span class="text-sm font-bold">#${offYPG}</span></div><div class="flex justify-between"><span class="text-xs text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-500">${totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")} mi</span></div></div></div><div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">Stadium</div><div class="text-sm font-semibold">${team.stadium}</div><div class="text-xs text-white/50 mt-1">${facts.roof} • ${facts.surface} • ${team.stadiumCap.toLocaleString()} capacity</div><div class="text-[10px] text-white/30 mt-2 leading-relaxed">${facts.trivia}</div></div><div class="glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">Top Players</div><div class="space-y-2">${getTopPlayers(abbr)}</div></div></div><div class="md:col-span-2 lg:col-span-4 glass-panel rounded-xl p-5"><div class="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-3">Team Statistical Ranks (Full Details)</div><div class="grid grid-cols-2 md:grid-cols-4 gap-3">${[...TEAM_STATS.offensive,...TEAM_STATS.defensive].map((cat,idx)=>{const rank=cat.data.findIndex(d=>d.team===abbr)+1;const val=cat.data.find(d=>d.team===abbr);const isOff=idx<TEAM_STATS.offensive.length;return`<div class="bg-white/3 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">${cat.stat}</div><div class="flex items-baseline gap-1 mt-1"><span class="text-lg font-bold">#${rank}</span><span class="text-[10px] text-white/40">/ 32</span></div><div class="text-[10px] text-brand-400 font-mono mt-1">${val?val.val:'—'}</div><div class="text-[8px] text-white/20 uppercase">${isOff?'OFF':'DEF'}</div></div>`}).join('')}</div></div>`;section.scrollIntoView({behavior:'smooth'})}
 
 function getTopPlayers(abbr){const players=[];PLAYER_STATS.passing.players.forEach(p=>{if(p[2]===abbr)players.push({name:p[1],stat:`${p[6]} pass TD, ${p[5].toLocaleString()} yds`})});PLAYER_STATS.rushing.players.forEach(p=>{if(p[2]===abbr)players.push({name:p[1],stat:`${p[5]} rush TD, ${p[4].toLocaleString()} yds`})});PLAYER_STATS.receiving.players.forEach(p=>{if(p[2]===abbr)players.push({name:p[1],stat:`${p[6]} rec TD, ${p[4].toLocaleString()} yds`})});PLAYER_STATS.defense.players.forEach(p=>{if(p[2]===abbr)players.push({name:p[1],stat:`${p[3]} sacks, ${p[4]} INT`})});if(!players.length)return'<div class="text-[11px] text-white/30">No top-10 stat leaders this week</div>';return players.map(p=>`<div class="flex justify-between items-center"><span class="text-[11px] font-medium">${p.name}</span><span class="text-[10px] font-mono text-white/40">${p.stat}</span></div>`).join('')}
 function closeDashboard(){document.getElementById('my-team').classList.add('hidden')}
 
-function initScrollReveal(){const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.section-reveal').forEach(el=>observer.observe(el))}
-document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',function(e){e.preventDefault();const t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
-
-function init(){renderFeaturedGame();renderTeams();renderMatchups();populateSelects();renderTeamStats();renderPlayerStats();renderTravel();renderFunFacts();generateMathProblems();renderWritingPrompts();renderCityExplorer();initScrollReveal()}
-document.addEventListener('DOMContentLoaded',init);
-</script>
-</body>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NFL Travel Map — Preview</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://d3js.org/topojson.v3.min.js"></script>
-<script>
-tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{surface:{50:'#0a0a0a',100:'#111111',200:'#1a1a1a'},brand:{400:'#fed7aa',500:'#f97316',600:'#ea580c'}}}}}
-</script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
-.glass-panel{background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08)}
-
-.map-wrap{position:relative;width:100%;aspect-ratio:16/10;min-height:400px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);background:#0a0a0a}
-.map-wrap svg{width:100%;height:100%;display:block}
-
-.state-path{fill:rgba(255,255,255,0.02);stroke:rgba(255,255,255,0.1);stroke-width:0.75;transition:fill 0.2s}
-.state-path:hover{fill:rgba(255,255,255,0.06)}
-.state-label{fill:rgba(255,255,255,0.12);font-family:'Inter',sans-serif;font-size:9px;font-weight:600;pointer-events:none;text-anchor:middle;dominant-baseline:central}
-
-@keyframes home-pulse{0%,100%{r:8;opacity:1}50%{r:11;opacity:0.85}}
-@keyframes home-ring-pulse{0%,100%{r:10;opacity:0.4;stroke-width:2}50%{r:16;opacity:0;stroke-width:0.5}}
-@keyframes dest-ring{0%{r:6;opacity:0.5;stroke-width:1.5}100%{r:20;opacity:0;stroke-width:0.5}}
-
-.map-tooltip{position:absolute;z-index:20;pointer-events:none;opacity:0;transform:translateY(4px);transition:all 0.2s ease;background:rgba(10,10,10,0.94);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
-.map-tooltip.visible{opacity:1;transform:translateY(0)}
-
-.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(249,115,22,0.06);border-color:rgba(249,115,22,0.2)}
-.away-item.highlighted{background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3)}
-</style>
-</head>
-<body class="p-4 md:p-8">
-
-<div class="max-w-7xl mx-auto">
-  <div class="mb-8">
-    <span class="text-[10px] font-mono text-brand-500 uppercase tracking-widest mb-2 block">Prototype</span>
-    <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2">Interactive Travel Map</h1>
-    <p class="text-white/50 text-sm max-w-2xl">Select a team to see all their 2026 away game destinations. Hover over any city or state for details.</p>
-  </div>
-
-  <div class="flex flex-col md:flex-row gap-4 mb-6">
-    <select id="map-team-select" onchange="renderMap()" class="bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-sm text-white/80 outline-none focus:border-brand-500/40 transition flex-shrink-0"></select>
-    <div class="flex items-center gap-5 text-xs text-white/40">
-      <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-brand-500 border-2 border-white"></span> Home City</span>
-      <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-white border-2 border-brand-500"></span> Away Destination</span>
-      <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-white/70"></span> Other NFL City</span>
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-    <div class="lg:col-span-3 glass-panel rounded-2xl overflow-hidden">
-      <div class="map-wrap" id="map-wrap">
-        <svg id="map-svg" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
-              <feGaussianBlur stdDeviation="3" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <filter id="home-glow" x="-100%" y="-100%" width="300%" height="300%">
-              <feGaussianBlur stdDeviation="5" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <rect width="960" height="600" fill="#0a0a0a"/>
-          <g id="us-map-group"></g>
-          <g id="svg-lines"></g>
-          <g id="svg-dots"></g>
-        </svg>
-        <div class="map-tooltip" id="map-tooltip"></div>
-      </div>
-    </div>
-
-    <div class="glass-panel rounded-2xl p-5 flex flex-col">
-      <h3 class="text-sm font-semibold mb-1 flex items-center gap-2">
-        <iconify-icon icon="lucide:plane" class="text-brand-500"></iconify-icon>
-        <span id="sidebar-team-name">Away Games</span>
-      </h3>
-      <p class="text-[10px] text-white/30 mb-4 font-mono" id="sidebar-team-subtitle">Select a team</p>
-      <div class="flex items-center justify-between mb-3 pb-3 border-b border-white/6">
-        <span class="text-[11px] text-white/40">Total Travel</span>
-        <span class="text-sm font-bold text-brand-500 font-mono" id="sidebar-total-miles">—</span>
-      </div>
-      <div id="sidebar-away-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1 max-h-[500px]">
-        <p class="text-xs text-white/30">Loading map data...</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-const NFL_TEAMS=[
-  {id:1,name:"Bills",location:"Buffalo",city:"Orchard Park",state:"NY",abbr:"BUF",espn:"buf",conf:"AFC",div:"AFC East",color:"#00338D",secColor:"#C60C30",stadium:"Highmark Stadium",stadiumCap:71608,lat:42.77,lng:-78.79,founded:1960,tz:"EST"},
-  {id:2,name:"Dolphins",location:"Miami",city:"Miami Gardens",state:"FL",abbr:"MIA",espn:"mia",conf:"AFC",div:"AFC East",color:"#008E97",secColor:"#FC4C02",stadium:"Hard Rock Stadium",stadiumCap:65326,lat:25.96,lng:-80.24,founded:1966,tz:"EST"},
-  {id:3,name:"Patriots",location:"New England",city:"Foxborough",state:"MA",abbr:"NE",espn:"ne",conf:"AFC",div:"AFC East",color:"#002244",secColor:"#C60C30",stadium:"Gillette Stadium",stadiumCap:65878,lat:42.09,lng:-71.26,founded:1960,tz:"EST"},
-  {id:4,name:"Jets",location:"New York",city:"East Rutherford",state:"NJ",abbr:"NYJ",espn:"nyj",conf:"AFC",div:"AFC East",color:"#125740",secColor:"#FFFFFF",stadium:"MetLife Stadium",stadiumCap:82500,lat:40.81,lng:-74.07,founded:1960,tz:"EST"},
-  {id:5,name:"Ravens",location:"Baltimore",city:"Baltimore",state:"MD",abbr:"BAL",espn:"bal",conf:"AFC",div:"AFC North",color:"#241773",secColor:"#9E7C0C",stadium:"M&T Bank Stadium",stadiumCap:71008,lat:39.28,lng:-76.62,founded:1996,tz:"EST"},
-  {id:6,name:"Bengals",location:"Cincinnati",city:"Cincinnati",state:"OH",abbr:"CIN",espn:"cin",conf:"AFC",div:"AFC North",color:"#FB4F14",secColor:"#000000",stadium:"Paycor Stadium",stadiumCap:65515,lat:39.10,lng:-84.52,founded:1968,tz:"EST"},
-  {id:7,name:"Browns",location:"Cleveland",city:"Cleveland",state:"OH",abbr:"CLE",espn:"cle",conf:"AFC",div:"AFC North",color:"#311D00",secColor:"#FF3C00",stadium:"Cleveland Browns Stadium",stadiumCap:67431,lat:41.51,lng:-81.70,founded:1946,tz:"EST"},
-  {id:8,name:"Steelers",location:"Pittsburgh",city:"Pittsburgh",state:"PA",abbr:"PIT",espn:"pit",conf:"AFC",div:"AFC North",color:"#FFB612",secColor:"#101820",stadium:"Acrisure Stadium",stadiumCap:68400,lat:40.45,lng:-80.01,founded:1933,tz:"EST"},
-  {id:9,name:"Texans",location:"Houston",city:"Houston",state:"TX",abbr:"HOU",espn:"hou",conf:"AFC",div:"AFC South",color:"#03202F",secColor:"#A71930",stadium:"NRG Stadium",stadiumCap:72220,lat:29.68,lng:-95.41,founded:2002,tz:"CST"},
-  {id:10,name:"Colts",location:"Indianapolis",city:"Indianapolis",state:"IN",abbr:"IND",espn:"ind",conf:"AFC",div:"AFC South",color:"#002C5F",secColor:"#A2AAAD",stadium:"Lucas Oil Stadium",stadiumCap:63000,lat:39.76,lng:-86.24,founded:1953,tz:"EST"},
-  {id:11,name:"Jaguars",location:"Jacksonville",city:"Jacksonville",state:"FL",abbr:"JAX",espn:"jax",conf:"AFC",div:"AFC South",color:"#006778",secColor:"#D7A22A",stadium:"EverBank Stadium",stadiumCap:67814,lat:30.32,lng:-81.64,founded:1995,tz:"EST"},
-  {id:12,name:"Titans",location:"Tennessee",city:"Nashville",state:"TN",abbr:"TEN",espn:"ten",conf:"AFC",div:"AFC South",color:"#4B92DB",secColor:"#0C2340",stadium:"Nissan Stadium",stadiumCap:69143,lat:36.17,lng:-86.77,founded:1960,tz:"CST"},
-  {id:13,name:"Broncos",location:"Denver",city:"Denver",state:"CO",abbr:"DEN",espn:"den",conf:"AFC",div:"AFC West",color:"#FB4F14",secColor:"#002244",stadium:"Empower Field at Mile High",stadiumCap:76125,lat:39.74,lng:-105.02,founded:1960,tz:"MST"},
-  {id:14,name:"Chiefs",location:"Kansas City",city:"Kansas City",state:"MO",abbr:"KC",espn:"kc",conf:"AFC",div:"AFC West",color:"#E31837",secColor:"#FFB81C",stadium:"GEHA Field at Arrowhead",stadiumCap:76416,lat:39.05,lng:-94.48,founded:1960,tz:"CST"},
-  {id:15,name:"Raiders",location:"Las Vegas",city:"Las Vegas",state:"NV",abbr:"LV",espn:"lv",conf:"AFC",div:"AFC West",color:"#A5ACAF",secColor:"#000000",stadium:"Allegiant Stadium",stadiumCap:65000,lat:36.09,lng:-115.18,founded:1960,tz:"PST"},
-  {id:16,name:"Chargers",location:"Los Angeles",city:"Inglewood",state:"CA",abbr:"LAC",espn:"lac",conf:"AFC",div:"AFC West",color:"#0080C6",secColor:"#FFC20E",stadium:"SoFi Stadium",stadiumCap:70000,lat:33.95,lng:-118.34,founded:1960,tz:"PST"},
-  {id:17,name:"Cowboys",location:"Dallas",city:"Arlington",state:"TX",abbr:"DAL",espn:"dal",conf:"NFC",div:"NFC East",color:"#003594",secColor:"#041E42",stadium:"AT&T Stadium",stadiumCap:80000,lat:32.75,lng:-97.09,founded:1960,tz:"CST"},
-  {id:18,name:"Eagles",location:"Philadelphia",city:"Philadelphia",state:"PA",abbr:"PHI",espn:"phi",conf:"NFC",div:"NFC East",color:"#004C54",secColor:"#A5ACAF",stadium:"Lincoln Financial Field",stadiumCap:69796,lat:39.90,lng:-75.17,founded:1933,tz:"EST"},
-  {id:19,name:"Giants",location:"New York",city:"East Rutherford",state:"NJ",abbr:"NYG",espn:"nyg",conf:"NFC",div:"NFC East",color:"#0B2265",secColor:"#A71930",stadium:"MetLife Stadium",stadiumCap:82500,lat:40.81,lng:-74.07,founded:1925,tz:"EST"},
-  {id:20,name:"Commanders",location:"Washington",city:"Landover",state:"MD",abbr:"WAS",espn:"wsh",conf:"NFC",div:"NFC East",color:"#773141",secColor:"#FFB612",stadium:"Northwest Stadium",stadiumCap:82000,lat:38.91,lng:-76.86,founded:1932,tz:"EST"},
-  {id:21,name:"Bears",location:"Chicago",city:"Chicago",state:"IL",abbr:"CHI",espn:"chi",conf:"NFC",div:"NFC North",color:"#0B162A",secColor:"#C83803",stadium:"Soldier Field",stadiumCap:61500,lat:41.86,lng:-87.62,founded:1920,tz:"CST"},
-  {id:22,name:"Lions",location:"Detroit",city:"Detroit",state:"MI",abbr:"DET",espn:"det",conf:"NFC",div:"NFC North",color:"#0076B6",secColor:"#B0B7BC",stadium:"Ford Field",stadiumCap:65000,lat:42.34,lng:-83.05,founded:1930,tz:"EST"},
-  {id:23,name:"Packers",location:"Green Bay",city:"Green Bay",state:"WI",abbr:"GB",espn:"gb",conf:"NFC",div:"NFC North",color:"#203731",secColor:"#FFB612",stadium:"Lambeau Field",stadiumCap:81441,lat:44.50,lng:-88.06,founded:1919,tz:"CST"},
-  {id:24,name:"Vikings",location:"Minnesota",city:"Minneapolis",state:"MN",abbr:"MIN",espn:"min",conf:"NFC",div:"NFC North",color:"#4F2683",secColor:"#FFC62F",stadium:"U.S. Bank Stadium",stadiumCap:66655,lat:44.97,lng:-93.26,founded:1961,tz:"CST"},
-  {id:25,name:"Falcons",location:"Atlanta",city:"Atlanta",state:"GA",abbr:"ATL",espn:"atl",conf:"NFC",div:"NFC South",color:"#A71930",secColor:"#A5ACAF",stadium:"Mercedes-Benz Stadium",stadiumCap:70000,lat:33.76,lng:-84.40,founded:1966,tz:"EST"},
-  {id:26,name:"Panthers",location:"Carolina",city:"Charlotte",state:"NC",abbr:"CAR",espn:"car",conf:"NFC",div:"NFC South",color:"#0085CA",secColor:"#101820",stadium:"Bank of America Stadium",stadiumCap:74867,lat:35.23,lng:-80.85,founded:1995,tz:"EST"},
-  {id:27,name:"Saints",location:"New Orleans",city:"New Orleans",state:"LA",abbr:"NO",espn:"no",conf:"NFC",div:"NFC South",color:"#D3BC8D",secColor:"#101820",stadium:"Caesars Superdome",stadiumCap:73208,lat:29.95,lng:-90.08,founded:1967,tz:"CST"},
-  {id:28,name:"Buccaneers",location:"Tampa Bay",city:"Tampa",state:"FL",abbr:"TB",espn:"tb",conf:"NFC",div:"NFC South",color:"#D50A0A",secColor:"#0A0A08",stadium:"Raymond James Stadium",stadiumCap:65890,lat:27.98,lng:-82.50,founded:1976,tz:"EST"},
-  {id:29,name:"49ers",location:"San Francisco",city:"Santa Clara",state:"CA",abbr:"SF",espn:"sf",conf:"NFC",div:"NFC West",color:"#AA0000",secColor:"#B3995D",stadium:"Levi's Stadium",stadiumCap:68500,lat:37.40,lng:-121.97,founded:1946,tz:"PST"},
-  {id:30,name:"Cardinals",location:"Arizona",city:"Glendale",state:"AZ",abbr:"ARI",espn:"ari",conf:"NFC",div:"NFC West",color:"#97233F",secColor:"#000000",stadium:"State Farm Stadium",stadiumCap:63400,lat:33.53,lng:-112.26,founded:1898,tz:"MST"},
-  {id:31,name:"Rams",location:"Los Angeles",city:"Inglewood",state:"CA",abbr:"LAR",espn:"lar",conf:"NFC",div:"NFC West",color:"#003594",secColor:"#FFA300",stadium:"SoFi Stadium",stadiumCap:70000,lat:33.95,lng:-118.34,founded:1936,tz:"PST"},
-  {id:32,name:"Seahawks",location:"Seattle",city:"Seattle",state:"WA",abbr:"SEA",espn:"sea",conf:"NFC",div:"NFC West",color:"#002244",secColor:"#69BE28",stadium:"Lumen Field",stadiumCap:68740,lat:47.60,lng:-122.33,founded:1976,tz:"PST"}
-];
-
-const FIPS={"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI","45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"};
-
-function generate2026Schedule(){
-  const D={'AFC East':['BUF','MIA','NE','NYJ'],'AFC North':['BAL','CIN','CLE','PIT'],'AFC South':['HOU','IND','JAX','TEN'],'AFC West':['DEN','KC','LV','LAC'],'NFC East':['DAL','NYG','PHI','WAS'],'NFC North':['CHI','DET','GB','MIN'],'NFC South':['ATL','CAR','NO','TB'],'NFC West':['SF','ARI','LAR','SEA']};
-  const intraRot={'AFC East':'AFC West','AFC North':'AFC South','AFC South':'AFC North','AFC West':'AFC East','NFC East':'NFC West','NFC North':'NFC South','NFC South':'NFC North','NFC West':'NFC East'};
-  const crossRot={'AFC East':'NFC South','AFC North':'NFC East','AFC South':'NFC North','AFC West':'NFC West','NFC East':'AFC North','NFC North':'NFC South','NFC South':'NFC West','NFC West':'AFC East'};
-  const seventeenth={'AFC East':'NFC North','AFC North':'NFC West','AFC South':'NFC East','AFC West':'NFC South'};
-  const r={};for(const t of Object.values(D).flat())r[t]={home:[],away:[]};
-  for(const[dn,ts]of Object.entries(D))for(let i=0;i<ts.length;i++)for(let j=0;j<ts.length;j++)if(i!==j){r[ts[i]].away.push(ts[j]);r[ts[i]].home.push(ts[j])}
-  for(const[dn,ts]of Object.entries(D)){const rd=D[intraRot[dn]];if(!rd)continue;for(let i=0;i<4;i++){r[ts[i]].away.push(rd[i],rd[(i+2)%4]);r[ts[i]].home.push(rd[(i+1)%4],rd[(i+3)%4])}}
-  for(const[dn,ts]of Object.entries(D)){const cd=D[crossRot[dn]];if(!cd)continue;for(let i=0;i<4;i++){r[ts[i]].away.push(cd[(i+1)%4],cd[(i+3)%4]);r[ts[i]].home.push(cd[i],cd[(i+2)%4])}}
-  const confDivs={AFC:['AFC East','AFC North','AFC South','AFC West'],NFC:['NFC East','NFC North','NFC South','NFC West']};
-  for(const conf of['AFC','NFC']){const cd=confDivs[conf];for(const dn of cd){const ts=D[dn];const rem=cd.filter(d=>d!==dn&&d!==intraRot[dn]);for(let i=0;i<4;i++)for(const rd of rem){const opp=D[rd][i];if(cd.indexOf(dn)<cd.indexOf(rd))r[ts[i]].away.push(opp);else r[ts[i]].home.push(opp)}}}
-  for(const[dn,ts]of Object.entries(D)){const sd=seventeenth[dn];if(sd){const opp=D[sd];for(let i=0;i<4;i++)r[ts[i]].away.push(opp[i])}else{for(const[ad,nd]of Object.entries(seventeenth)){if(nd===dn){const at=D[ad];for(let i=0;i<4;i++)r[ts[i]].home.push(at[i])}}}}
-  return r;
-}
-const SCHED_2026=generate2026Schedule();
-
-function getTeam(abbr){return NFL_TEAMS.find(t=>t.abbr===abbr)}
-function fullName(team){return team.location+' '+team.name}
-function haversine(lat1,lng1,lat2,lng2){const R=3959;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
-
-let currentMapTeam=null;let awayGamesData=[];let projection=null;let pathGen=null;
-
+/* ===== Interactive Travel Map ===== */
 async function initMap(){
   try{
     const us=await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json");
@@ -830,16 +732,11 @@ async function initMap(){
     console.error("Failed to load map data",err);
     document.getElementById('sidebar-away-list').innerHTML='<p class="text-xs text-red-400">Failed to load map data.</p>';
   }
-
-  const select=document.getElementById('map-team-select');
-  NFL_TEAMS.forEach(t=>{select.innerHTML+=`<option value="${t.abbr}">${fullName(t)} (${t.div})</option>`});
-  select.value='SEA';
-  renderMap();
 }
 
 function renderMap(){
   if(!projection)return;
-  const abbr=document.getElementById('map-team-select').value;
+  const abbr=document.getElementById('travel-team-select').value;
   const team=getTeam(abbr);
   if(!team)return;
   currentMapTeam=abbr;
@@ -914,54 +811,35 @@ function renderMap(){
       .style("cursor","pointer").attr("data-abbr",t.abbr);
 
     if(isHome){
-      // Expanding pulse ring
       g.append("circle").attr("r",10).attr("fill","none")
         .attr("stroke","#f97316").attr("stroke-width",2)
         .style("animation","home-ring-pulse 2s ease-out infinite");
-      
-      // Orange glow behind white dot
       g.append("circle").attr("r",8).attr("fill","#f97316").attr("opacity",0.5)
         .attr("filter","url(#home-glow)");
-
-      // Big white dot
       g.append("circle").attr("r",7).attr("fill","#ffffff")
         .attr("stroke","#f97316").attr("stroke-width",2.5)
         .style("animation","home-pulse 2s ease-in-out infinite");
-
-      // Label above dot
       g.append("text")
         .attr("y",-14).attr("text-anchor","middle")
         .attr("fill","#f97316").attr("font-size","8px").attr("font-weight","800")
         .attr("font-family","Inter, sans-serif").attr("letter-spacing","0.5px")
         .text(t.abbr);
-
     }else if(isAway){
-      // Animated ring
       g.append("circle").attr("r",6).attr("fill","none")
         .attr("stroke",t.color).attr("stroke-width",1.5).attr("opacity",0.5)
         .style("animation","dest-ring 3s ease-out infinite");
-
-      // Team color glow behind white dot
       g.append("circle").attr("r",6).attr("fill",t.color).attr("opacity",0.35)
         .attr("filter","url(#dot-glow)");
-
-      // Big white dot with team-color border
       g.append("circle").attr("r",5.5).attr("fill","#ffffff")
         .attr("stroke",t.color).attr("stroke-width",2.5);
-
-      // Label above dot
       g.append("text")
         .attr("y",-11).attr("text-anchor","middle")
         .attr("fill","rgba(255,255,255,0.9)").attr("font-size","6.5px").attr("font-weight","700")
         .attr("font-family","Inter, sans-serif")
         .text(t.abbr);
-
     }else{
-      // Subtle glow
       g.append("circle").attr("r",4).attr("fill","rgba(255,255,255,0.08)")
         .attr("filter","url(#dot-glow)");
-
-      // White dot
       g.append("circle").attr("r",4).attr("fill","rgba(255,255,255,0.7)")
         .attr("stroke","rgba(255,255,255,0.2)").attr("stroke-width",1);
     }
@@ -1018,11 +896,11 @@ function highlightDestination(destAbbr){
 
 function clearHighlight(){if(currentMapTeam)renderMap();}
 
-const style=document.createElement('style');
-style.textContent=`@keyframes draw-line{to{stroke-dashoffset:0}}`;
-document.head.appendChild(style);
+function initScrollReveal(){const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.section-reveal').forEach(el=>observer.observe(el))}
+document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',function(e){e.preventDefault();const t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
 
-document.addEventListener('DOMContentLoaded',initMap);
+function init(){renderFeaturedGame();renderTeams();renderMatchups();populateSelects();renderTeamStats();renderPlayerStats();renderTravel();renderFunFacts();generateMathProblems();renderWritingPrompts();renderCityExplorer();initMap();initScrollReveal()}
+document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
