@@ -65,8 +65,9 @@ select option{background:#1a1a1a;color:#fff}
 
 <nav class="fixed top-0 left-0 right-0 z-40 h-16 flex items-center justify-between px-4 md:px-6" style="background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06)">
   <div class="flex items-center gap-2">
-    <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center"><iconify-icon icon="lucide:trophy" class="text-white text-sm"></iconify-icon></div>
-    <span class="font-bold text-sm tracking-tight">NFL Project Tracker</span>
+      <div class="flex items-center gap-3">
+    <img src="https://z-cdn-media.chatglm.cn/files/dc147ea0-6201-4f2e-8dcf-5f97ceba3f93.png?auth_key=1878286243-d054e8b165ad4f7499faccf9fbd86e10-0-3fb30dab63175b6b09f1ddc546f9ecef" alt="NFL Logo" class="h-8 w-8 object-contain" onerror="this.src='https://static.www.nfl.com/image/upload/v1554321393/admin/svg/assets/league/shield.svg'">
+    <span class="font-bold text-sm tracking-tight">NFL Project</span>
   </div>
   <div class="hidden lg:flex items-center gap-1">
     <a href="#teams" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Teams</a>
@@ -80,8 +81,9 @@ select option{background:#1a1a1a;color:#fff}
     <a href="#facts" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Fun Facts</a>
   </div>
   <div class="flex items-center gap-3">
-    <span id="assigned-count" class="text-[10px] font-mono text-brand-400/70">0 / 32 assigned</span>
-    <button onclick="resetAssignments()" class="text-[10px] text-white/40 hover:text-white/70 transition-colors uppercase tracking-wider">Reset</button>
+    <button onclick="openCompareModal()" id="compare-nav-btn" class="hidden items-center gap-2 text-[11px] px-3 py-1.5 rounded-lg border border-nfl-blue/40 bg-nfl-blue/10 text-brand-400 hover:bg-nfl-blue/20 transition uppercase tracking-wider font-semibold">
+      <iconify-icon icon="lucide:git-compare" class="text-sm"></iconify-icon> Compare 2 Teams
+    </button>
   </div>
 </nav>
 
