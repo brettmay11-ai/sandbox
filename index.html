@@ -727,10 +727,85 @@ function switchPlayerTab(tab){currentPlayerTab=tab;currentSortCol=-1;currentSort
 function sortPlayerStats(colIndex){if(colIndex===0)return;if(currentSortCol===colIndex){currentSortDir=currentSortDir==='desc'?'asc':'desc'}else{currentSortCol=colIndex;currentSortDir='desc'}renderPlayerStats()}
 function renderPlayerStats(){const data=PLAYER_STATS[currentPlayerTab];let players=[...data.players.map(p=>[...p])];if(currentSortCol>=0){const ci=currentSortCol;players.sort((a,b)=>{let va=a[ci],vb=b[ci];if(typeof va==='string')return currentSortDir==='desc'?vb.localeCompare(va):va.localeCompare(vb);return currentSortDir==='desc'?vb-va:va-vb})}const thead=document.getElementById('player-thead');const tbody=document.getElementById('player-tbody');thead.innerHTML=`<tr class="border-b border-white/6">${data.headers.map((h,i)=>{const arrow=currentSortCol===i?(currentSortDir==='desc'?' ↓':' ↑'):'';const sortable=i!==0&&i!==1;return`<th class="px-4 py-3 text-left text-[10px] font-mono text-white/40 uppercase tracking-wider whitespace-nowrap ${sortable?'sort-header':''}" ${sortable?`onclick="sortPlayerStats(${i})"`:''}>${h}${arrow}</th>`}).join('')}</tr>`;tbody.innerHTML=players.map((p,idx)=>{const team=getTeam(p[2]);return`<tr class="player-row border-b border-white/4 transition">${p.map((val,i)=>{if(i===0)return`<td class="px-4 py-3 text-[11px] font-mono text-white/30">${idx+1}</td>`;if(i===1)return`<td class="px-4 py-3 text-[12px] font-semibold whitespace-nowrap">${val}</td>`;if(i===2)return`<td class="px-4 py-3"><span class="inline-flex items-center gap-1.5">${logo(p[2],20)}<span class="text-[11px] text-white/60">${fullName(team)}</span></span></td>`;return`<td class="px-4 py-3 text-[11px] font-mono text-white/60">${val}</td>`}).join('')}</tr>`}).join('')}
 
-function renderTravel(){const abbr=document.getElementById('travel-team-select').value;const team=getTeam(abbr);const summary=document.getElementById('travel-summary');const awayList=document.getElementById('away-games-list');const stadiumFacts=document.getElementById('stadium-facts');const awayAbbrs=SCHED_2026[abbr]?SCHED_2026[abbr].away:[];let totalMiles=0;const awayGames=awayAbbrs.map(oppAbbr=>{const opp=getTeam(oppAbbr);const dist=haversine(team.lat,team.lng,opp.lat,opp.lng);totalMiles+=dist;return{abbr:oppAbbr,team:opp,distance:dist}});const farthest=awayGames.reduce((max,g)=>g.distance>max.distance?g:max,{distance:0});const closest=awayGames.reduce((min,g)=>g.distance<min.distance?g:min,{distance:Infinity});
-summary.innerHTML=`<div class="space-y-4"><div class="flex items-center gap-3 mb-4">${logo(abbr,48)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state}</div></div></div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-400">${totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Away Games</span><span class="text-sm font-bold">${awayGames.length}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Avg Trip Distance</span><span class="text-sm font-bold">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Farthest Trip</span><span class="text-sm font-bold">${farthest.team?fullName(farthest.team):'—'}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Closest Trip</span><span class="text-sm font-bold">${closest.team?fullName(closest.team):'—'}</span></div><hr class="border-white/6"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Home Stadium</span><span class="text-[11px] font-medium text-right">${team.stadium}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Time Zone</span><span class="text-[11px] font-medium">${team.tz}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Founded</span><span class="text-[11px] font-medium">${team.founded}</span></div></div></div>`;
-awayList.innerHTML=awayGames.map(g=>{const isFar=g===farthest;const isClose=g===closest;return`<div class="away-row flex items-center gap-3 p-3 rounded-lg hover:bg-white/4 transition">${logo(g.abbr,28)}<div class="flex-1 min-w-0"><div class="text-[11px] font-medium">at ${fullName(g.team)}</div><div class="text-[9px] text-white/30">${g.team.stadium} • ${g.team.city}, ${g.team.state} (${g.team.tz})</div></div><div class="text-right flex items-center gap-2"><span class="text-[11px] font-mono ${isFar?'text-red-400':isClose?'text-green-400':'text-white/50'}">${g.distance.toFixed(0)} mi</span>${isFar?'<span class="text-[8px] px-1.5 py-0.5 bg-red-500/15 text-red-400 rounded whitespace-nowrap">FARTHEST</span>':''}${isClose?'<span class="text-[8px] px-1.5 py-0.5 bg-green-500/15 text-green-400 rounded whitespace-nowrap">CLOSEST</span>':''}</div></div>`}).join('');
-const tf=STADIUM_FACTS[abbr];stadiumFacts.innerHTML=`<div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:building-2" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Stadium</span></div><div class="text-sm font-semibold mb-1">${team.stadium}</div><div class="text-[11px] text-white/50">${tf.roof} • ${tf.surface}</div><div class="text-[11px] text-white/50">Capacity: ${team.stadiumCap.toLocaleString()}</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:map" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Location</span></div><div class="text-sm font-semibold mb-1">${team.city}, ${team.state}</div><div class="text-[11px] text-white/50">Lat: ${team.lat}° N</div><div class="text-[11px] text-white/50">Lng: ${Math.abs(team.lng)}° W</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:sparkles" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Fun Fact</span></div><div class="text-[11px] text-white/60 leading-relaxed">${tf.trivia}</div></div>`;
+  function getTeamTravelDestinations(abbr) {
+  const destinations = [];
+  const rawWeeks = SCHED_2026_RAW[abbr];
+  if (!rawWeeks) return destinations;
+
+  for (let i = 0; i < rawWeeks.length; i++) {
+    const w = rawWeeks[i];
+    if (w === 'BYE') continue;
+
+    const isAway = w.startsWith('@') || w.startsWith('at ');
+    const oppAbbr = w.replace('@','').replace('at ','').trim();
+    const opp = getTeam(oppAbbr);
+    if (!opp) continue;
+
+    const weekNum = i + 1;
+
+    // Check if this specific matchup is an international game
+    const intlGame = isAway
+      ? INTERNATIONAL_GAMES.find(g => g.week === weekNum && g.away === abbr && g.home === oppAbbr)
+      : INTERNATIONAL_GAMES.find(g => g.week === weekNum && g.away === oppAbbr && g.home === abbr);
+
+    if (isAway) {
+      // Standard away game
+      if (intlGame) {
+        destinations.push({
+          abbr: oppAbbr, team: opp,
+          lat: intlGame.lat, lng: intlGame.lng,
+          city: intlGame.city, state: intlGame.country, country: intlGame.country,
+          stadium: intlGame.stadium, isIntl: true
+        });
+      } else {
+        destinations.push({
+          abbr: oppAbbr, team: opp,
+          lat: opp.lat, lng: opp.lng,
+          city: opp.city, state: opp.state, country: 'USA',
+          stadium: opp.stadium, isIntl: false
+        });
+      }
+    } else if (intlGame) {
+      // Home game, BUT it's international -> treat as away trip for travel!
+      destinations.push({
+        abbr: oppAbbr, team: opp,
+        lat: intlGame.lat, lng: intlGame.lng,
+        city: intlGame.city, state: intlGame.country, country: intlGame.country,
+        stadium: intlGame.stadium, isIntl: true
+      });
+    }
+  }
+  return destinations;
+}
+  
+function renderTravel(){
+  const abbr=document.getElementById('travel-team-select').value;
+  const team=getTeam(abbr);
+  const summary=document.getElementById('travel-summary');
+  const awayList=document.getElementById('away-games-list');
+  const stadiumFacts=document.getElementById('stadium-facts');
+  
+  const awayGames = getTeamTravelDestinations(abbr);
+  let totalMiles=0;
+  awayGames.forEach(g => {
+    g.distance = haversine(team.lat, team.lng, g.lat, g.lng);
+    totalMiles += g.distance;
+  });
+  
+  const farthest=awayGames.reduce((max,g)=>g.distance>max.distance?g:max,{distance:0});
+  const closest=awayGames.reduce((min,g)=>g.distance<min.distance?g:min,{distance:Infinity});
+
+  summary.innerHTML=`<div class="space-y-4"><div class="flex items-center gap-3 mb-4">${logo(abbr,48)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state}</div></div></div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-400">${totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Away / Travel Games</span><span class="text-sm font-bold">${awayGames.length}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Avg Trip Distance</span><span class="text-sm font-bold">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Farthest Trip</span><span class="text-sm font-bold">${farthest.team?fullName(farthest.team):'—'}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Closest Trip</span><span class="text-sm font-bold">${closest.team?fullName(closest.team):'—'}</span></div><hr class="border-white/6"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Home Stadium</span><span class="text-[11px] font-medium text-right">${team.stadium}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Time Zone</span><span class="text-[11px] font-medium">${team.tz}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Founded</span><span class="text-[11px] font-medium">${team.founded}</span></div></div></div>`;
+
+  awayList.innerHTML=awayGames.map(g=>{
+    const isFar=g===farthest;
+    const isClose=g===closest;
+    const locStr = g.isIntl ? `${g.city}, ${g.country}` : `${g.team.city}, ${g.team.state}`;
+    return`<div class="away-row flex items-center gap-3 p-3 rounded-lg hover:bg-white/4 transition">${logo(g.abbr,28)}<div class="flex-1 min-w-0"><div class="text-[11px] font-medium flex items-center gap-1.5">at ${fullName(g.team)} ${g.isIntl?'<span class="text-[8px] px-1.5 py-0.5 bg-brand-500/15 text-brand-400 rounded font-semibold uppercase tracking-wider">International</span>':''}</div><div class="text-[9px] text-white/30">${g.stadium} • ${locStr}</div></div><div class="text-right flex items-center gap-2"><span class="text-[11px] font-mono ${isFar?'text-red-400':isClose?'text-green-400':'text-white/50'}">${g.distance.toFixed(0)} mi</span>${isFar?'<span class="text-[8px] px-1.5 py-0.5 bg-red-500/15 text-red-400 rounded whitespace-nowrap">FARTHEST</span>':''}${isClose?'<span class="text-[8px] px-1.5 py-0.5 bg-green-500/15 text-green-400 rounded whitespace-nowrap">CLOSEST</span>':''}</div></div>`
+  }).join('');
+
+  const tf=STADIUM_FACTS[abbr];
+  stadiumFacts.innerHTML=`<div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:building-2" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Stadium</span></div><div class="text-sm font-semibold mb-1">${team.stadium}</div><div class="text-[11px] text-white/50">${tf.roof} • ${tf.surface}</div><div class="text-[11px] text-white/50">Capacity: ${team.stadiumCap.toLocaleString()}</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:map" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Location</span></div><div class="text-sm font-semibold mb-1">${team.city}, ${team.state}</div><div class="text-[11px] text-white/50">Lat: ${team.lat}° N</div><div class="text-[11px] text-white/50">Lng: ${Math.abs(team.lng)}° W</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:sparkles" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Fun Fact</span></div><div class="text-[11px] text-white/60 leading-relaxed">${tf.trivia}</div></div>`;
 
   // Also update the interactive map
   renderMap();
@@ -775,12 +850,16 @@ function renderMap(){
   if(!team)return;
   currentMapTeam=abbr;
 
-  const awayAbbrs=SCHED_2026[abbr]?SCHED_2026[abbr].away:[];
+  const awayGames = getTeamTravelDestinations(abbr);
   let totalMiles=0;
-  awayGamesData=awayAbbrs.map(oppAbbr=>{const opp=getTeam(oppAbbr);const dist=haversine(team.lat,team.lng,opp.lat,opp.lng);totalMiles+=dist;return{abbr:oppAbbr,team:opp,distance:dist}});
+  awayGamesData = awayGames.map(g => {
+    g.distance = haversine(team.lat, team.lng, g.lat, g.lng);
+    totalMiles += g.distance;
+    return g;
+  });
   awayGamesData.sort((a,b)=>b.distance-a.distance);
 
-  document.getElementById('sidebar-team-name').textContent=fullName(team)+' Away Games';
+  document.getElementById('sidebar-team-name').textContent=fullName(team)+' Travel Destinations';
   document.getElementById('sidebar-team-subtitle').textContent=`${team.city}, ${team.state} • ${team.tz}`;
   document.getElementById('sidebar-total-miles').textContent=totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")+' mi';
 
@@ -789,13 +868,15 @@ function renderMap(){
     const distColor=g.distance>1500?'text-red-400':g.distance<500?'text-green-400':'text-brand-400';
     const tag=g.distance>1500?'<span class="text-[8px] px-1.5 py-0.5 bg-red-500/15 text-red-400 rounded ml-1">LONG</span>':
               g.distance<500?'<span class="text-[8px] px-1.5 py-0.5 bg-green-500/15 text-green-400 rounded ml-1">SHORT</span>':'';
+    const intlTag = g.isIntl ? '<span class="text-[8px] px-1.5 py-0.5 bg-brand-500/15 text-brand-400 rounded ml-1">INTL</span>' : '';
+    const locStr = g.isIntl ? `${g.city}, ${g.country}` : `${g.team.city}, ${g.team.state}`;
     return`<div class="away-item p-2.5 rounded-lg border border-white/6 cursor-pointer" data-dest="${g.abbr}"
               onmouseenter="highlightDestination('${g.abbr}')" onmouseleave="clearHighlight()">
       <div class="flex items-center justify-between">
-        <span class="text-[11px] font-medium">${fullName(g.team)}</span>
+        <span class="text-[11px] font-medium">at ${fullName(g.team)} ${intlTag}</span>
         <span class="text-[11px] font-mono ${distColor}">${g.distance.toFixed(0)} mi${tag}</span>
       </div>
-      <div class="text-[9px] text-white/30 mt-0.5">${g.team.city}, ${g.team.state}</div>
+      <div class="text-[9px] text-white/30 mt-0.5">${g.stadium} • ${locStr} ${g.isIntl ? '(Off-Map)' : ''}</div>
     </div>`;
   }).join('');
 
