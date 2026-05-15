@@ -609,7 +609,6 @@ function renderFeaturedGame(){
 
 function renderMatchups(){const grid=document.getElementById('matchups-grid');const week=WEEKS[currentWeek];document.getElementById('week-label').textContent=`Week ${week.week}`;grid.innerHTML='';week.games.forEach(game=>{const awayTeam=getTeam(game.away);const homeTeam=getTeam(game.home);if(!awayTeam||!homeTeam)return;const isRel=compareTeams.includes(game.away)||compareTeams.includes(game.home);const isIntlGame = getInternationalGame(week.week, game.away, game.home);const isIntl = !!isIntlGame;
 
-// Calculate distances
 let distStr = "";
 let locationStr = `${homeTeam.stadium} • ${homeTeam.city}, ${homeTeam.state}`;
 let timeStr = game.time;
@@ -625,6 +624,31 @@ if (isIntl) {
   distStr = `${dist} mi`;
 }
 
+const card=document.createElement('div');
+card.className=`matchup-card glass-panel rounded-xl p-4 ${isRel?'border-brand-500/30':''} ${isIntl?'border-brand-500/20':''}`;
+card.style.cursor='pointer';
+card.onclick=()=>showMatchupModal(game.away,game.home);
+
+card.innerHTML=`
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">${game.day}</span>
+    <span class="text-[10px] font-mono ${isRel?'text-brand-400':'text-white/30'}">${timeStr}</span>
+  </div>
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 flex-1">${logo(game.away,36)}<div class="min-w-0"><div class="text-sm font-semibold truncate">${fullName(awayTeam)}</div><div class="text-[10px] text-white/40">${awayTeam.city}</div></div></div>
+    <div class="text-[10px] font-mono text-white/20">@</div>
+    <div class="flex items-center gap-3 flex-1 justify-end"><div class="text-right min-w-0"><div class="text-sm font-semibold truncate">${fullName(homeTeam)}</div><div class="text-[10px] text-white/40">${homeTeam.city}</div></div>${logo(game.home,36)}</div>
+  </div>
+  <div class="mt-3 pt-3 border-t border-white/5 flex flex-wrap items-center gap-2">
+    <iconify-icon icon="${isIntl?'lucide:globe':'lucide:map-pin'}" class="text-[10px] ${isIntl?'text-brand-400':'text-white/30'}"></iconify-icon>
+    <span class="text-[10px] ${isIntl?'text-brand-400':'text-white/30'} truncate">${locationStr}</span>
+    <span class="mx-1 text-[10px] ${isIntl?'text-brand-400':'text-white/20'}">•</span>
+    <iconify-icon icon="lucide:plane" class="text-[10px] ${isIntl?'text-brand-400':'text-white/30'}"></iconify-icon>
+    <span class="text-[10px] ${isIntl?'text-brand-400 font-semibold':'text-white/30'}">${distStr}</span>
+    ${isIntl?'<span class="ml-auto text-[9px] text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded font-semibold uppercase tracking-wider">International</span>':''}
+  </div>`;
+
+grid.appendChild(card)})}
 const card=document.createElement('div');card.className=`matchup-card glass-panel rounded-xl p-4 ${isRel?'border-brand-500/30':''} ${isIntl?'border-brand-500/20':''}`;card.style.cursor='pointer';card.onclick=()=>showMatchupModal(game.away,game.home);
 card.innerHTML=`<div class="flex items-center justify-between mb-3"><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">${game.day}</span><span class="text-[10px] font-mono ${isRel?'text-brand-400':'text-white/30'}">${timeStr}</span></div><div class="flex items-center justify-between gap-4"><div class="flex items-center gap-3 flex-1">${logo(game.away,36)}<div class="min-w-0"><div class="text-sm font-semibold truncate">${fullName(awayTeam)}</div><div class="text-[10px] text-white/40">${awayTeam.city}</div></div></div><div class="text-[10px] font-mono text-white/20">@</div><div class="flex items-center gap-3 flex-1 justify-end"><div class="text-right min-w-0"><div class="text-sm font-semibold truncate">${fullName(homeTeam)}</div><div class="text-[10px] text-white/40">${homeTeam.city}</div></div>${logo(game.home,36)}</div></div><div class="mt-3 pt-3 border-t border-white/5 flex flex-wrap items-center gap-2"><iconify-icon icon="${isIntl?'lucide:globe':'
 function renderTeams(){const divisions=[...new Set(NFL_TEAMS.map(t=>t.div))];const divFilters=document.getElementById('division-filters');divFilters.innerHTML=`<button onclick="filterDivision('all')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter==='all'?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="all">All Divisions</button>`;divisions.forEach(d=>{divFilters.innerHTML+=`<button onclick="filterDivision('${d}')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter===d?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="${d}">${d}</button>`});renderTeamCards()}
