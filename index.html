@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -13,7 +13,6 @@
 <script>
 tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace']},colors:{surface:{50:'#0a0a0a',100:'#111111',200:'#1a1a1a',300:'#222222'},brand:{400:'#5b9bd5',500:'#013369',600:'#D50A0A'},nfl:{red:'#D50A0A',blue:'#013369'}}}}}
 </script>
-</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden}
@@ -21,14 +20,14 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hid
 .noise{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .glass-panel{background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08)}
 .team-card{transition:all 0.4s cubic-bezier(0.4,0,0.2,1);cursor:pointer}
-.team-card:hover{transform:translateY(-4px);border-color:rgba(1,51,105),0.4);box-shadow:0 12px 40px -8px rgba(1,51,105),0.15)}
-.team-card.selected{border-color:rgba(1,51,105),0.6);background:rgba(1,51,105),0.08);box-shadow:0 0 30px -5px rgba(1,51,105),0.2)}
+.team-card:hover{transform:translateY(-4px);border-color:rgba(1,51,105,0.4);box-shadow:0 12px 40px -8px rgba(1,51,105,0.15)}
+.team-card.selected{border-color:rgba(1,51,105,0.6);background:rgba(1,51,105,0.08);box-shadow:0 0 30px -5px rgba(1,51,105,0.2)}
 .stat-bar-fill{transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
-.tab-btn{transition:all 0.25s ease}.tab-btn.active{background:rgba(1,51,105),0.15);color:#013369;border-color:rgba(1,51,105),0.4)}
+.tab-btn{transition:all 0.25s ease}.tab-btn.active{background:rgba(1,51,105,0.15);color:#013369;border-color:rgba(1,51,105,0.4)}
 .matchup-card{transition:all 0.3s ease}.matchup-card:hover{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.05)}
 .section-reveal{opacity:0;transform:translateY(30px);transition:all 0.8s cubic-bezier(0.4,0,0.2,1)}.section-reveal.visible{opacity:1;transform:translateY(0)}
-@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(1,51,105),0.3)}50%{box-shadow:0 0 20px rgba(1,51,105),0.6)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
-.fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:rgba(1,51,105),0.3)}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(1,51,105,0.3)}50%{box-shadow:0 0 20px rgba(1,51,105,0.6)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
+.fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:rgba(1,51,105,0.3)}
 .player-row:hover{background:rgba(255,255,255,0.04)}
 .toast{transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1)}.toast.show{transform:translateY(0);opacity:1}
 .away-row:nth-child(even){background:rgba(255,255,255,0.015)}
@@ -53,8 +52,8 @@ select option{background:#1a1a1a;color:#fff}
 @keyframes draw-line{to{stroke-dashoffset:0}}
 .map-tooltip{position:absolute;z-index:20;pointer-events:none;opacity:0;transform:translateY(4px);transition:all 0.2s ease;background:rgba(10,10,10,0.94);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
 .map-tooltip.visible{opacity:1;transform:translateY(0)}
-.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(1,51,105),0.06);border-color:rgba(1,51,105),0.2)}
-.away-item.highlighted{background:rgba(1,51,105),0.1);border-color:rgba(1,51,105),0.3)}
+.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(1,51,105,0.06);border-color:rgba(1,51,105,0.2)}
+.away-item.highlighted{background:rgba(1,51,105,0.1);border-color:rgba(1,51,105,0.3)}
 </style>
 </head>
 <body>
@@ -87,7 +86,6 @@ select option{background:#1a1a1a;color:#fff}
   </div>
 </nav>
   
-<!-- Hero -->
 <section class="min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-12 relative overflow-hidden">
   <div class="absolute inset-0 z-0">
     <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-10" style="background:radial-gradient(circle,#013369 0%,transparent 70%);filter:blur(100px)"></div>
@@ -105,10 +103,8 @@ select option{background:#1a1a1a;color:#fff}
       <a href="#math" class="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white px-8 py-3.5 rounded-full text-sm font-medium hover:bg-white/10 transition-all duration-300">Math Lab</a>
     </div>
   </div>
- 
 </section>
 
-<!-- Featured Game of the Week -->
 <section id="featured" class="featured-bg section-reveal" style="min-height:600px">
   <img id="featured-bg-img" src="" alt="" class="absolute inset-0 w-full h-full object-cover" style="z-index:0">
   <div class="featured-content min-h-[600px] flex flex-col justify-end px-6 md:px-12 lg:px-20 py-16 md:py-20">
@@ -140,39 +136,20 @@ select option{background:#1a1a1a;color:#fff}
         </div>
       </div>
       <div class="slide-up slide-up-d4 flex flex-wrap items-center gap-3 mb-6">
-        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm">
-          <iconify-icon icon="lucide:calendar" class="text-brand-400 text-sm"></iconify-icon>
-          <span id="featured-day" class="text-xs font-medium"></span>
-        </div>
-        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm">
-          <iconify-icon icon="lucide:clock" class="text-brand-400 text-sm"></iconify-icon>
-          <span id="featured-time" class="text-xs font-medium"></span>
-        </div>
-        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm">
-          <iconify-icon icon="lucide:building-2" class="text-brand-400 text-sm"></iconify-icon>
-          <span id="featured-venue" class="text-xs font-medium"></span>
-        </div>
-        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm">
-          <iconify-icon icon="lucide:map-pin" class="text-brand-400 text-sm"></iconify-icon>
-          <span id="featured-location" class="text-xs font-medium"></span>
-        </div>
-        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm">
-          <iconify-icon icon="lucide:plane" class="text-brand-400 text-sm"></iconify-icon>
-          <span id="featured-distance" class="text-xs font-medium"></span>
-        </div>
+        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm"><iconify-icon icon="lucide:calendar" class="text-brand-400 text-sm"></iconify-icon><span id="featured-day" class="text-xs font-medium"></span></div>
+        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm"><iconify-icon icon="lucide:clock" class="text-brand-400 text-sm"></iconify-icon><span id="featured-time" class="text-xs font-medium"></span></div>
+        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm"><iconify-icon icon="lucide:building-2" class="text-brand-400 text-sm"></iconify-icon><span id="featured-venue" class="text-xs font-medium"></span></div>
+        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm"><iconify-icon icon="lucide:map-pin" class="text-brand-400 text-sm"></iconify-icon><span id="featured-location" class="text-xs font-medium"></span></div>
+        <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm"><iconify-icon icon="lucide:plane" class="text-brand-400 text-sm"></iconify-icon><span id="featured-distance" class="text-xs font-medium"></span></div>
       </div>
-      <div class="slide-up slide-up-d4 glass-panel rounded-2xl p-5 max-w-2xl" style="background:rgba(1,51,105),0.05);border-color:rgba(1,51,105),0.15)">
-        <div class="flex items-center gap-2 mb-2">
-          <iconify-icon icon="lucide:message-circle" class="text-brand-400 text-sm"></iconify-icon>
-          <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Class Discussion</span>
-        </div>
+      <div class="slide-up slide-up-d4 glass-panel rounded-2xl p-5 max-w-2xl" style="background:rgba(1,51,105,0.05);border-color:rgba(1,51,105,0.15)">
+        <div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:message-circle" class="text-brand-400 text-sm"></iconify-icon><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Class Discussion</span></div>
         <p id="featured-discussion" class="text-sm text-white/60 leading-relaxed"></p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Teams -->
 <section id="teams" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-7xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
@@ -192,14 +169,13 @@ select option{background:#1a1a1a;color:#fff}
   </div>
 </section>
 
-<!-- Matchups -->
 <section id="matchups" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
       <div>
         <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">2026 Schedule</span>
         <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Weekly Matchups</h2>
-        <p class="text-white/50 text-sm mt-2">2026 opponents — dates TBD. <a href="https://www.nfl.com/news/2026-nfl-season-team-by-team-opponents-for-every-game" target="_blank" class="text-brand-400 hover:underline">Source: NFL.com →</a></p>
+        <p class="text-white/50 text-sm mt-2">Full 18-week 2026 schedule. <a href="https://www.nfl.com/schedules" target="_blank" class="text-brand-400 hover:underline">Source: NFL.com →</a></p>
       </div>
       <div class="flex items-center gap-3">
         <button onclick="changeWeek(-1)" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:chevron-left" class="text-sm"></iconify-icon></button>
@@ -211,14 +187,12 @@ select option{background:#1a1a1a;color:#fff}
   </div>
 </section>
 
-<!-- Team Stats -->
 <section id="stats" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
       <div>
         <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Analytics</span>
         <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Team Statistics</h2>
-        <p class="text-white/50 text-sm mt-2">Select a team to highlight their ranks. <a href="https://www.espn.com/nfl/stats" target="_blank" class="text-brand-400 hover:underline">ESPN →</a></p>
       </div>
       <select id="stats-team-select" onchange="renderTeamStats()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"><option value="all">All Teams (Top 10)</option></select>
     </div>
@@ -226,14 +200,12 @@ select option{background:#1a1a1a;color:#fff}
   </div>
 </section>
 
-<!-- Player Stats -->
 <section id="players" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
       <div>
         <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Leaders</span>
         <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Player Stats</h2>
-        <p class="text-white/50 text-sm mt-2">Click any column header to sort ↑↓</p>
       </div>
       <div class="flex gap-2 flex-wrap" id="player-tabs">
         <button onclick="switchPlayerTab('passing')" class="tab-btn active text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 uppercase tracking-wider" data-ptab="passing">Passing</button>
@@ -242,30 +214,20 @@ select option{background:#1a1a1a;color:#fff}
         <button onclick="switchPlayerTab('defense')" class="tab-btn text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-ptab="defense">Defense</button>
       </div>
     </div>
-    <div class="glass-panel rounded-2xl overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full" id="player-table">
-          <thead id="player-thead"></thead>
-          <tbody id="player-tbody"></tbody>
-        </table>
-      </div>
-    </div>
+    <div class="glass-panel rounded-2xl overflow-hidden"><div class="overflow-x-auto"><table class="w-full" id="player-table"><thead id="player-thead"></thead><tbody id="player-tbody"></tbody></table></div></div>
   </div>
 </section>
 
-<!-- Travel -->
 <section id="travel" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
       <div>
         <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Distance</span>
         <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Travel Tracker</h2>
-        <p class="text-white/50 text-sm mt-2">All away game distances for 2026 — great for math & geography!</p>
       </div>
       <select id="travel-team-select" onchange="renderTravel()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select>
     </div>
 
-    <!-- Interactive Travel Map -->
     <div class="mb-4 flex items-center gap-5 text-xs text-white/40 flex-wrap">
       <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-brand-500 border-2 border-white"></span> Home City</span>
       <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-white border-2 border-brand-500"></span> Away Destination</span>
@@ -276,127 +238,70 @@ select option{background:#1a1a1a;color:#fff}
         <div class="map-wrap" id="map-wrap">
           <svg id="map-svg" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
-                <feGaussianBlur stdDeviation="3" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-              <filter id="home-glow" x="-100%" y="-100%" width="300%" height="300%">
-                <feGaussianBlur stdDeviation="5" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
+              <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="home-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
             </defs>
             <rect width="960" height="600" fill="#0a0a0a"/>
-            <g id="us-map-group"></g>
-            <g id="svg-lines"></g>
-            <g id="svg-dots"></g>
+            <g id="us-map-group"></g><g id="svg-lines"></g><g id="svg-dots"></g>
           </svg>
           <div class="map-tooltip" id="map-tooltip"></div>
         </div>
       </div>
       <div class="glass-panel rounded-2xl p-5 flex flex-col">
-        <h3 class="text-sm font-semibold mb-1 flex items-center gap-2">
-          <iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon>
-          <span id="sidebar-team-name">Away Games</span>
-        </h3>
+        <h3 class="text-sm font-semibold mb-1 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon><span id="sidebar-team-name">Away Games</span></h3>
         <p class="text-[10px] text-white/30 mb-4 font-mono" id="sidebar-team-subtitle">Select a team</p>
-        <div class="flex items-center justify-between mb-3 pb-3 border-b border-white/6">
-          <span class="text-[11px] text-white/40">Total Travel</span>
-          <span class="text-sm font-bold text-brand-400 font-mono" id="sidebar-total-miles">—</span>
-        </div>
-        <div id="sidebar-away-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1 max-h-[500px]">
-          <p class="text-xs text-white/30">Loading map data…</p>
-        </div>
+        <div class="flex items-center justify-between mb-3 pb-3 border-b border-white/6"><span class="text-[11px] text-white/40">Total Travel</span><span class="text-sm font-bold text-brand-400 font-mono" id="sidebar-total-miles">—</span></div>
+        <div id="sidebar-away-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1 max-h-[500px]"><p class="text-xs text-white/30">Loading map data…</p></div>
       </div>
     </div>
 
-    <!-- Existing Travel Details -->
+    <!-- International Games Side Box -->
+    <div class="mb-8 glass-panel rounded-2xl p-6">
+      <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:globe" class="text-brand-400"></iconify-icon> 2026 International Series</h3>
+      <div id="international-games-list" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+      <p class="text-[10px] text-white/30 mt-4">* International games are played outside the US. These long trips cross oceans and multiple time zones!</p>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div class="glass-panel rounded-2xl p-6">
-        <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon> Season Travel Summary</h3>
-        <div id="travel-summary"></div>
-      </div>
-      <div class="lg:col-span-2 glass-panel rounded-2xl p-6">
-        <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:map-pin" class="text-brand-400"></iconify-icon> All 2026 Away Games</h3>
-        <div id="away-games-list" class="space-y-1 max-h-[600px] overflow-y-auto pr-2"></div>
-      </div>
+      <div class="glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon> Season Travel Summary</h3><div id="travel-summary"></div></div>
+      <div class="lg:col-span-2 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:map-pin" class="text-brand-400"></iconify-icon> All 2026 Away Games</h3><div id="away-games-list" class="space-y-1 max-h-[600px] overflow-y-auto pr-2"></div></div>
     </div>
-    <div class="mt-6 glass-panel rounded-2xl p-6">
-      <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:building-2" class="text-brand-400"></iconify-icon> Stadium & City Facts</h3>
-      <div id="stadium-facts" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
-    </div>
+    <div class="mt-6 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:building-2" class="text-brand-400"></iconify-icon> Stadium & City Facts</h3><div id="stadium-facts" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div></div>
   </div>
 </section>
 
-<!-- Math Lab -->
 <section id="math" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
-    <div class="text-center mb-12">
-      <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Cross-Curricular</span>
-      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Math Lab</h2>
-      <p class="text-white/50 text-sm mt-2">Real NFL data powers these math challenges. Click "New Problems" to generate!</p>
-    </div>
+    <div class="text-center mb-12"><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Cross-Curricular</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">Math Lab</h2></div>
     <div id="math-problems" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
-    <div class="text-center">
-      <button onclick="generateMathProblems()" class="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full text-sm font-semibold hover:bg-brand-500 hover:text-white transition-all duration-300">
-        <iconify-icon icon="lucide:refresh-cw" class="text-sm"></iconify-icon> New Problems
-      </button>
-    </div>
+    <div class="text-center"><button onclick="generateMathProblems()" class="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full text-sm font-semibold hover:bg-brand-500 hover:text-white transition-all duration-300"><iconify-icon icon="lucide:refresh-cw" class="text-sm"></iconify-icon> New Problems</button></div>
   </div>
 </section>
 
-<!-- Writing Zone -->
 <section id="writing" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
-    <div class="text-center mb-12">
-      <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Cross-Curricular</span>
-      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Writing Zone</h2>
-      <p class="text-white/50 text-sm mt-2">Weekly writing prompts across narrative, persuasive, informative, and creative styles.</p>
-    </div>
+    <div class="text-center mb-12"><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Cross-Curricular</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">Writing Zone</h2></div>
     <div id="writing-prompts" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
   </div>
 </section>
 
-<!-- City Explorer -->
 <section id="cities" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-      <div>
-        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Social Studies</span>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">City & State Explorer</h2>
-        <p class="text-white/50 text-sm mt-2">Discover geography, history, and culture behind every NFL city.</p>
-      </div>
+      <div><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Social Studies</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">City & State Explorer</h2></div>
       <select id="city-team-select" onchange="renderCityExplorer()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select>
     </div>
     <div id="city-explorer"></div>
   </div>
 </section>
 
-<!-- Fun Facts -->
 <section id="facts" class="py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
-    <div class="text-center mb-12">
-      <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Discover</span>
-      <h2 class="text-3xl md:text-4xl font-bold tracking-tight">NFL Fun Facts</h2>
-    </div>
+    <div class="text-center mb-12"><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Discover</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">NFL Fun Facts</h2></div>
     <div id="facts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
   </div>
 </section>
 
-<!-- Dashboard -->
-<section id="my-team" class="py-24 px-4 md:px-6 section-reveal hidden">
-  <div class="max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
-      <div>
-        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Dashboard</span>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight" id="my-team-name">Your Team</h2>
-      </div>
-      <button onclick="closeDashboard()" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
-    </div>
-    <div id="dashboard-content"></div>
-  </div>
-</section>
-
-<!-- Team Info Modal -->
 <div id="team-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
   <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
     <button onclick="closeTeamModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
@@ -404,7 +309,6 @@ select option{background:#1a1a1a;color:#fff}
   </div>
 </div>
 
-<!-- Compare Modal -->
 <div id="compare-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
   <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
     <button onclick="closeCompareModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
@@ -414,10 +318,7 @@ select option{background:#1a1a1a;color:#fff}
 
 <footer class="py-12 px-6 border-t border-white/6">
   <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-6 h-6 rounded bg-brand-500 flex items-center justify-center"><iconify-icon icon="lucide:trophy" class="text-white text-xs"></iconify-icon></div>
-      <span class="text-xs text-white/40">NFL Project Tracker — Educational Use Only</span>
-    </div>
+    <div class="flex items-center gap-3"><div class="w-6 h-6 rounded bg-brand-500 flex items-center justify-center"><iconify-icon icon="lucide:trophy" class="text-white text-xs"></iconify-icon></div><span class="text-xs text-white/40">NFL Project Tracker — Educational Use Only</span></div>
     <div class="flex items-center gap-4">
       <a href="https://www.espn.com/nfl" target="_blank" class="text-xs text-white/40 hover:text-brand-400 transition flex items-center gap-1"><iconify-icon icon="lucide:external-link" class="text-[10px]"></iconify-icon> ESPN</a>
       <a href="https://www.nfl.com" target="_blank" class="text-xs text-white/40 hover:text-brand-400 transition flex items-center gap-1"><iconify-icon icon="lucide:external-link" class="text-[10px]"></iconify-icon> NFL.com</a>
