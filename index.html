@@ -471,7 +471,36 @@ function getWeeksForAwayGame(teamAbbr, oppAbbr) {
   return weeks;
 }
 
-function renderInternationalGames(){const el=document.getElementById('international-games-list');if(!el)return;el.innerHTML=INTERNATIONAL_GAMES.map(g=>{const away=getTeam(g.away);const home=getTeam(g.home);return`<div class="away-item p-3 rounded-lg border border-white/6 bg-white/2"><div class="flex items-center justify-between mb-2"><span class="text-[10px] font-mono text-brand-400 uppercase tracking-wider">Week ${g.week}</span><span class="text-[10px] text-white/40">${g.time}</span></div><div class="flex items-center gap-2 mb-2">${logo(g.away,24)} <span class="text-xs font-semibold">${fullName(away)}</span><span class="text-[10px] text-white/30 mx-1">@</span>${logo(g.home,24)} <span class="text-xs font-semibold">${fullName(home)}</span></div><div class="text-[10px] text-white/50 flex items-center gap-1.5"><iconify-icon icon="lucide:map-pin" class="text-brand-400 text-[10px]"></iconify-icon>${g.stadium} — ${g.city}, ${g.country}</div></div>`}).join('')}
+function renderInternationalGames(){
+  const el=document.getElementById('international-games-list');
+  if(!el)return;
+  el.innerHTML=INTERNATIONAL_GAMES.map(g=>{
+    const away=getTeam(g.away);
+    const home=getTeam(g.home);
+    return`<div class="away-item p-3 rounded-lg border border-white/6 bg-white/2 cursor-pointer hover:border-brand-500/30 transition" onclick="focusInternationalGame(${g.week}, '${g.away}', '${g.home}')">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-wider">Week ${g.week}</span>
+        <span class="text-[10px] text-white/40">${g.time}</span>
+      </div>
+      <div class="flex items-center gap-2 mb-2">
+        ${logo(g.away,24)} <span class="text-xs font-semibold">${fullName(away)}</span>
+        <span class="text-[10px] text-white/30 mx-1">@</span>
+        ${logo(g.home,24)} <span class="text-xs font-semibold">${fullName(home)}</span>
+      </div>
+      <div class="text-[10px] text-white/50 flex items-center gap-1.5">
+        <iconify-icon icon="lucide:map-pin" class="text-brand-400 text-[10px]"></iconify-icon>
+        ${g.stadium} — ${g.city}, ${g.country}
+      </div>
+      <div class="text-[9px] text-brand-400 mt-2 text-right" style="opacity:0.6">Click to view travel map</div>
+    </div>`
+  }).join('')}
+
+  function focusInternationalGame(week, away, home) {
+  focusedIntlGame = INTERNATIONAL_GAMES.find(g => g.week === week && g.away === away && g.home === home);
+  renderMap();
+  const mapSection = document.getElementById('travel-section') || document.getElementById('map-wrap');
+  if(mapSection) mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
   
 const STADIUM_FACTS={
   BUF:{roof:"Outdoor",surface:"Grass",trivia:"Home of 'Bills Mafia' — fans famous for jumping through tables at tailgates and braving sub-zero wind chills."},
@@ -779,6 +808,7 @@ function renderPlayerStats(){const data=PLAYER_STATS[currentPlayerTab];let playe
 }
   
 function renderTravel(){
+  focusedIntlGame = null; // <--- ADD THIS LINE
   const abbr=document.getElementById('travel-team-select').value;
   const team=getTeam(abbr);
   const summary=document.getElementById('travel-summary');
@@ -845,6 +875,123 @@ async function initMap(){
 
 function renderMap(){
   if(!projection)return;
+
+  // ==========================================
+  // INTERNATIONAL GAME FOCUS VIEW
+  // ==========================================
+  if (focusedIntlGame) {
+    const awayTeam = getTeam(focusedIntlGame.away);
+    const homeTeam = getTeam(focusedIntlGame.home);
+    if(!awayTeam || !homeTeam) return;
+
+    const awayDist = haversine(awayTeam.lat, awayTeam.lng, focusedIntlGame.lat, focusedIntlGame.lng).toFixed(0);
+    const homeDist = haversine(homeTeam.lat, homeTeam.lng, focusedIntlGame.lat, focusedIntlGame.lng).toFixed(0);
+    const totalDist = Number(awayDist) + Number(homeDist);
+
+    document.getElementById('sidebar-team-name').textContent = `${fullName(awayTeam)} vs ${fullName(homeTeam)}`;
+    document.getElementById('sidebar-team-subtitle').textContent = `Week ${focusedIntlGame.week} • ${focusedIntlGame.stadium}`;
+    document.getElementById('sidebar-total-miles').textContent = `Combined ${Number(totalDist).toLocaleString()} mi`;
+
+    const listEl = document.getElementById('sidebar-away-list');
+    listEl.innerHTML = `
+      <div class="p-3 rounded-lg bg-white/3 border border-white/6 mb-2">
+        <div class="text-[9px] font-mono text-white/30 uppercase tracking-wider mb-2">Traveling To ${focusedIntlGame.city}, ${focusedIntlGame.country}</div>
+        <div class="flex items-center justify-between py-2 border-b border-white/5">
+          <div class="flex items-center gap-2">${logo(awayTeam.abbr, 20)}<span class="text-[11px]">${fullName(awayTeam)}</span></div>
+          <span class="text-[11px] font-mono text-brand-400">${Number(awayDist).toLocaleString()} mi</span>
+        </div>
+        <div class="flex items-center justify-between py-2">
+          <div class="flex items-center gap-2">${logo(homeTeam.abbr, 20)}<span class="text-[11px]">${fullName(homeTeam)}</span></div>
+          <span class="text-[11px] font-mono text-brand-400">${Number(homeDist).toLocaleString()} mi</span>
+        </div>
+      </div>
+      <div class="text-[9px] text-white/30 mt-4 text-center italic">Venue is outside US map bounds</div>
+    `;
+
+    const svg = d3.select("#map-svg");
+    const awayCoords = projection([awayTeam.lng, awayTeam.lat]);
+    const homeCoords = projection([homeTeam.lng, homeTeam.lat]);
+
+    const linesGroup = svg.select("#svg-lines");
+    linesGroup.selectAll("*").remove();
+
+    // Draw a line connecting the two US cities to show the matchup context
+    if (awayCoords && homeCoords) {
+      linesGroup.append("line")
+        .attr("x1", awayCoords[0]).attr("y1", awayCoords[1])
+        .attr("x2", homeCoords[0]).attr("y2", homeCoords[1])
+        .attr("stroke", "rgba(1,51,105,0.15)")
+        .attr("stroke-width", 4).attr("stroke-linecap", "round");
+
+      const len = Math.sqrt(Math.pow(homeCoords[0] - awayCoords[0], 2) + Math.pow(homeCoords[1] - awayCoords[1], 2));
+      linesGroup.append("line")
+        .attr("x1", awayCoords[0]).attr("y1", awayCoords[1])
+        .attr("x2", homeCoords[0]).attr("y2", homeCoords[1])
+        .attr("stroke", "rgba(1,51,105,0.6)")
+        .attr("stroke-width", 1.5).attr("stroke-linecap", "round")
+        .attr("stroke-dasharray", len).attr("stroke-dashoffset", len)
+        .style("animation", `draw-line 1.2s ease 0.1s forwards`);
+    }
+
+    // Draw the dots
+    const dotsGroup = svg.select("#svg-dots");
+    dotsGroup.selectAll("*").remove();
+
+    NFL_TEAMS.forEach(t => {
+      const coords = projection([t.lng, t.lat]);
+      if (!coords) return;
+      const isAway = t.abbr === focusedIntlGame.away;
+      const isHome = t.abbr === focusedIntlGame.home;
+      const isMatchup = isAway || isHome;
+
+      const g = dotsGroup.append("g")
+        .attr("transform", `translate(${coords[0]},${coords[1]})`)
+        .style("cursor", "pointer").attr("data-abbr", t.abbr);
+
+      if (isMatchup) {
+        g.append("circle").attr("r", 6).attr("fill", "none")
+          .attr("stroke", t.color).attr("stroke-width", 1.5).attr("opacity", 0.5)
+          .style("animation", "dest-ring 3s ease-out infinite");
+        g.append("circle").attr("r", 6).attr("fill", t.color).attr("opacity", 0.35)
+          .attr("filter", "url(#dot-glow)");
+        g.append("circle").attr("r", 5.5).attr("fill", "#ffffff")
+          .attr("stroke", t.color).attr("stroke-width", 2.5);
+        g.append("text")
+          .attr("y", -11).attr("text-anchor", "middle")
+          .attr("fill", "rgba(255,255,255,0.9)").attr("font-size", "6.5px").attr("font-weight", "700")
+          .attr("font-family", "Inter, sans-serif")
+          .text(t.abbr);
+      } else {
+        g.append("circle").attr("r", 4).attr("fill", "rgba(255,255,255,0.08)")
+          .attr("filter", "url(#dot-glow)");
+        g.append("circle").attr("r", 4).attr("fill", "rgba(255,255,255,0.7)")
+          .attr("stroke", "rgba(255,255,255,0.2)").attr("stroke-width", 1);
+      }
+
+      // Tooltip
+      const tooltip = document.getElementById('map-tooltip');
+      g.on("mouseenter", (event) => {
+        const dist = isMatchup ? (isAway ? awayDist : homeDist) : null;
+        tooltip.innerHTML = `
+          <div class="text-xs font-bold mb-1" style="color:${t.color}">${fullName(t)}</div>
+          <div class="text-[10px] text-white/50">${t.city}, ${t.state}</div>
+          <div class="text-[10px] text-white/40">${t.stadium}</div>
+          ${isMatchup ? `<div class="text-[10px] text-brand-400 mt-1.5 font-medium">✈ ${Number(dist).toLocaleString()} mi to ${focusedIntlGame.city}</div>` :
+            `<div class="text-[10px] font-mono mt-1.5 text-white/30">Not in this game</div>`}
+        `;
+        tooltip.classList.add('visible');
+        positionTooltip(event);
+      })
+      .on("mousemove", positionTooltip)
+      .on("mouseleave", () => tooltip.classList.remove('visible'));
+    });
+
+    return; // Stop execution so it doesn't render the single-team map below
+  }
+
+  // ==========================================
+  // STANDARD SINGLE-TEAM TRAVEL VIEW
+  // ==========================================
   const abbr=document.getElementById('travel-team-select').value;
   const team=getTeam(abbr);
   if(!team)return;
@@ -859,7 +1006,6 @@ function renderMap(){
   });
   awayGamesData.sort((a,b)=>b.distance-a.distance);
 
-  // THIS WAS MISSING - extract abbreviations so the dot renderer knows who is an away opponent
   const awayAbbrs = awayGamesData.map(g => g.abbr);
 
   document.getElementById('sidebar-team-name').textContent=fullName(team)+' Travel Destinations';
@@ -892,7 +1038,6 @@ function renderMap(){
   linesGroup.selectAll("*").remove();
 
   awayGamesData.forEach((g,i)=>{
-    // Use g.lng, g.lat so international games return null coordinates and skip drawing lines to the wrong US city
     const destCoords=projection([g.lng, g.lat]);
     if(!destCoords)return;
     const isLong=g.distance>1500;
