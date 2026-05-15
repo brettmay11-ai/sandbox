@@ -859,6 +859,9 @@ function renderMap(){
   });
   awayGamesData.sort((a,b)=>b.distance-a.distance);
 
+  // THIS WAS MISSING - extract abbreviations so the dot renderer knows who is an away opponent
+  const awayAbbrs = awayGamesData.map(g => g.abbr);
+
   document.getElementById('sidebar-team-name').textContent=fullName(team)+' Travel Destinations';
   document.getElementById('sidebar-team-subtitle').textContent=`${team.city}, ${team.state} • ${team.tz}`;
   document.getElementById('sidebar-total-miles').textContent=totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")+' mi';
@@ -889,7 +892,8 @@ function renderMap(){
   linesGroup.selectAll("*").remove();
 
   awayGamesData.forEach((g,i)=>{
-    const destCoords=projection([g.team.lng,g.team.lat]);
+    // Use g.lng, g.lat so international games return null coordinates and skip drawing lines to the wrong US city
+    const destCoords=projection([g.lng, g.lat]);
     if(!destCoords)return;
     const isLong=g.distance>1500;
     const baseColor=isLong?"rgba(239,68,68,":"rgba(1,51,105,";
@@ -962,13 +966,27 @@ function renderMap(){
     // Tooltip
     const tooltip=document.getElementById('map-tooltip');
     g.on("mouseenter",(event)=>{
-      const dist=isHome?null:haversine(team.lat,team.lng,t.lat,t.lng).toFixed(0);
+      const awayGameData = awayGamesData.find(ag => ag.abbr === t.abbr);
+      let distStr = '';
+      if (isHome) {
+        distStr = '';
+      } else if (awayGameData) {
+        const distNum = Number(awayGameData.distance.toFixed(0)).toLocaleString();
+        distStr = `↗ ${distNum} mi from ${team.location}`;
+        if (awayGameData.isIntl) {
+           distStr += ` (to ${awayGameData.city})`;
+        }
+      } else {
+        const distNum = Number(haversine(team.lat,team.lng,t.lat,t.lng).toFixed(0)).toLocaleString();
+        distStr = `↗ ${distNum} mi from ${team.location}`;
+      }
+
       tooltip.innerHTML=`
         <div class="text-xs font-bold mb-1" style="color:${isHome?'#013369':t.color}">${fullName(t)}</div>
         <div class="text-[10px] text-white/50">${t.city}, ${t.state}</div>
         <div class="text-[10px] text-white/40">${t.stadium}</div>
         ${isHome?'<div class="text-[10px] text-brand-400 mt-1.5 font-medium">⬤ HOME</div>':
-          `<div class="text-[10px] font-mono mt-1.5 ${isAway?'text-brand-400':'text-white/30'}">↗ ${Number(dist).toLocaleString()} mi from ${team.location}</div>`}
+          `<div class="text-[10px] font-mono mt-1.5 ${isAway?'text-brand-400':'text-white/30'}">${distStr}</div>`}
       `;
       tooltip.classList.add('visible');
       positionTooltip(event);
