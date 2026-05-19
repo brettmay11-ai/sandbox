@@ -682,32 +682,6 @@ async function fetchLiveWeather(lat, lng, dateStr) {
   return null;
 }
 
-function getHistoricalWeather(abbr, weekNum) {
-  const team = getTeam(abbr);
-  const facts = STADIUM_FACTS[abbr];
-  if (!team || !facts) return { temp: "72°F", precip: "0%", icon: "lucide:thermometer", desc: "Indoors" };
-  if (facts.roof === "Fixed") return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Climate Controlled (Indoors)" };
-
-  const month = weekNum <= 4 ? 9 : weekNum <= 8 ? 10 : weekNum <= 12 ? 11 : weekNum <= 16 ? 12 : 1;
-  const lat = team.lat;
-  let baseTemp = 0, precipBase = 0, condition = "Partly Cloudy", icon = "lucide:cloud-sun";
-
-  if (month === 9) { baseTemp = 82 - (lat - 25) * 1.1; precipBase = 20; condition = "Late Summer Heat"; icon = "lucide:sun"; }
-  else if (month === 10) { baseTemp = 66 - (lat - 25) * 1.1; precipBase = 25; condition = "Autumn Weather"; icon = "lucide:cloud-sun"; }
-  else if (month === 11) { baseTemp = 50 - (lat - 25) * 1.2; precipBase = 30; condition = "Chilly"; icon = "lucide:cloud"; }
-  else if (month === 12) { baseTemp = 38 - (lat - 25) * 1.5; precipBase = 35; condition = "Cold"; icon = "lucide:cloud-snow"; }
-  else if (month === 1) { baseTemp = 32 - (lat - 25) * 1.5; precipBase = 40; condition = "Winter Cold"; icon = "lucide:snowflake"; }
-
-  if (facts.roof === "Retractable" && (baseTemp < 35 || precipBase > 50)) return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Roof Closed (Climate Controlled)" };
-  if (facts.roof === "Retractable") condition += " (Roof Open)";
-
-  if (team.state === "FL" && month >= 9 && month <= 10) { precipBase = 55; condition = "Thunderstorms Possible"; icon = "lucide:cloud-lightning"; }
-  if (lat > 43 && month >= 12) { precipBase = 65; condition = "Snow Likely"; icon = "lucide:snowflake"; }
-  if (team.abbr === "DEN" && month >= 10) { baseTemp -= 8; condition = "Mile High Cold"; icon = "lucide:thermometer"; }
-
-  return { temp: `${Math.round(baseTemp)}°F`, precip: `${Math.min(90, Math.round(precipBase + (Math.random() * 10 - 5)))}%`, icon, desc: condition };
-}
-
 async function getWeather(awayAbbr, homeAbbr, weekNum, dayStr) {
   const homeTeam = getTeam(homeAbbr);
   if (!homeTeam) return { temp: "72°F", precip: "0%", icon: "lucide:thermometer", desc: "Indoors" };
@@ -1427,7 +1401,7 @@ function initScrollReveal(){const observer=new IntersectionObserver(entries=>{en
 document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',function(e){e.preventDefault();const t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
 
 /* ===== Team Info & Compare Modals ===== */
-function function showTeamInfoModal(abbr){
+function showTeamInfoModal(abbr){
   const team=getTeam(abbr);if(!team)return;
   const facts=STADIUM_FACTS[abbr];
   const offPPG=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===abbr)+1;
