@@ -879,7 +879,7 @@ function renderMap(){
   // ==========================================
   // INTERNATIONAL GAME FOCUS VIEW
   // ==========================================
-  if (focusedIntlGame) {
+    if (focusedIntlGame) {
     const awayTeam = getTeam(focusedIntlGame.away);
     const homeTeam = getTeam(focusedIntlGame.home);
     if(!awayTeam || !homeTeam) return;
@@ -912,26 +912,10 @@ function renderMap(){
     const awayCoords = projection([awayTeam.lng, awayTeam.lat]);
     const homeCoords = projection([homeTeam.lng, homeTeam.lat]);
 
+    // --- Clear and Draw Lines ---
     const linesGroup = svg.select("#svg-lines");
     linesGroup.selectAll("*").remove();
 
-  
-    // Draw the dots
-    const dotsGroup = svg.select("#svg-dots");
-    dotsGroup.selectAll("*").remove();
-
-    NFL_TEAMS.forEach(t => {
-      const coords = projection([t.lng, t.lat]);
-      if (!coords) return;
-      const isAway = t.abbr === focusedIntlGame.away;
-      const isHome = t.abbr === focusedIntlGame.home;
-      const isMatchup = isAway || isHome;
-
-      const g = dotsGroup.append("g")
-        .attr("transform", `translate(${coords[0]},${coords[1]})`)
-        .style("cursor", "pointer").attr("data-abbr", t.abbr);
-
-               // --- Direction Lines to International Game ---
     if (awayCoords) {
       const cLng = awayTeam.lng + (focusedIntlGame.lng - awayTeam.lng) * 0.01;
       const cLat = awayTeam.lat + (focusedIntlGame.lat - awayTeam.lat) * 0.01;
@@ -971,7 +955,7 @@ function renderMap(){
       }
     }
 
-    // Draw the dots
+    // --- Clear and Draw Dots ---
     const dotsGroup = svg.select("#svg-dots");
     dotsGroup.selectAll("*").remove();
 
@@ -987,7 +971,6 @@ function renderMap(){
         .style("cursor", "pointer").attr("data-abbr", t.abbr);
 
       if (isMatchup) {
-        // Keeping dots the standard away-game size
         g.append("circle").attr("r", 6).attr("fill", "none")
           .attr("stroke", t.color).attr("stroke-width", 1.5).attr("opacity", 0.5)
           .style("animation", "dest-ring 3s ease-out infinite");
@@ -1001,7 +984,6 @@ function renderMap(){
           .attr("font-family", "Inter, sans-serif")
           .text(t.abbr);
       } else {
-        // Rest of the teams stay as subtle background dots
         g.append("circle").attr("r", 4).attr("fill", "rgba(255,255,255,0.08)")
           .attr("filter", "url(#dot-glow)");
         g.append("circle").attr("r", 4).attr("fill", "rgba(255,255,255,0.7)")
