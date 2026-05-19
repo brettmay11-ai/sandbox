@@ -749,10 +749,12 @@ async function getWeather(awayAbbr, homeAbbr, weekNum, dayStr) {
     }
   }
   
-  return getHistoricalWeather(lat, weekNum, locationName, roof);
+  // Added `lng` to the function call
+  return getHistoricalWeather(lat, lng, weekNum, locationName, roof);
 }
 
-function getHistoricalWeather(lat, weekNum, locationName, roof) {
+// Added `lng` to the function parameters
+function getHistoricalWeather(lat, lng, weekNum, locationName, roof) {
   const month = weekNum <= 4 ? 9 : weekNum <= 8 ? 10 : weekNum <= 12 ? 11 : weekNum <= 16 ? 12 : 1;
   let baseTemp = 0, precipBase = 0, condition = "", icon = "";
 
