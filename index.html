@@ -255,35 +255,7 @@ select option{background:#1a1a1a;color:#fff}
       </div>
     </div>
 
-    <!-- ===== CHATBOT UI ===== -->
-<div id="chatbot-btn" onclick="toggleChatbot()" class="fixed bottom-6 right-6 w-14 h-14 bg-brand-500 rounded-full shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition z-50">
-  <iconify-icon icon="lucide:message-circle" class="text-white text-2xl"></iconify-icon>
-</div>
-
-<div id="chatbot-window" class="hidden fixed bottom-24 right-6 w-80 h-96 glass-panel rounded-xl border border-white/10 flex flex-col z-50 overflow-hidden">
-  <div class="bg-brand-500 p-3 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <iconify-icon icon="lucide:bot" class="text-white text-lg"></iconify-icon>
-      <span class="text-sm font-semibold text-white">NFL Data Assistant</span>
-    </div>
-    <button onclick="toggleChatbot()" class="text-white/60 hover:text-white"><iconify-icon icon="lucide:x"></iconify-icon></button>
-  </div>
-  
-  <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-[12px]">
-    <div class="flex gap-2">
-      <div class="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center shrink-0"><iconify-icon icon="lucide:bot" class="text-brand-400 text-[10px]"></iconify-icon></div>
-      <div class="bg-white/5 rounded-lg p-2 text-white/70 max-w-[85%]">Hi! Ask me about NFL teams, player stats, or stadium facts. Try "Who is the QB for the Chiefs?" or "Tell me about the Bills stadium".</div>
-    </div>
-  </div>
-  
-  <div class="p-2 border-t border-white/10">
-    <div class="flex gap-2">
-      <input type="text" id="chat-input" placeholder="Ask a question..." class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[12px] text-white placeholder-white/30 outline-none focus:border-brand-500" onkeypress="if(event.key==='Enter')sendChatMessage()">
-      <button onclick="sendChatMessage()" class="bg-brand-500 hover:bg-brand-600 text-white px-3 rounded-lg transition"><iconify-icon icon="lucide:send" class="text-sm"></iconify-icon></button>
-    </div>
-  </div>
-</div>
-
+   
 <!-- International Games Side Box -->
     <div class="mb-8 glass-panel rounded-2xl p-6">
       <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:globe" class="text-brand-400"></iconify-icon> 2026 International Series</h3>
@@ -354,7 +326,35 @@ select option{background:#1a1a1a;color:#fff}
     </div>
   </div>
 </footer>
+  
+<!-- ===== CHATBOT UI ===== -->
+    <div id="chatbot-btn" onclick="toggleChatbot()" class="fixed bottom-6 right-6 w-14 h-14 bg-brand-500 rounded-full shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition z-50">
+      <iconify-icon icon="lucide:message-circle" class="text-white text-2xl"></iconify-icon>
+    </div>
 
+    <div id="chatbot-window" class="hidden fixed bottom-24 right-6 w-80 h-96 glass-panel rounded-xl border border-white/10 flex flex-col z-50 overflow-hidden">
+      <div class="bg-brand-500 p-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <iconify-icon icon="lucide:bot" class="text-white text-lg"></iconify-icon>
+          <span class="text-sm font-semibold text-white">NFL Data Assistant</span>
+        </div>
+        <button onclick="toggleChatbot()" class="text-white/60 hover:text-white"><iconify-icon icon="lucide:x"></iconify-icon></button>
+      </div>
+      
+      <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-[12px]">
+        <div class="flex gap-2">
+          <div class="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center shrink-0"><iconify-icon icon="lucide:bot" class="text-brand-400 text-[10px]"></iconify-icon></div>
+          <div class="bg-white/5 rounded-lg p-2 text-white/70 max-w-[85%]">Hi! Ask me about NFL teams, player stats, or stadium facts. Try "Who is the QB for the Chiefs?" or "Tell me about the Bills stadium".</div>
+        </div>
+      </div>
+      
+      <div class="p-2 border-t border-white/10">
+        <div class="flex gap-2">
+          <input type="text" id="chat-input" placeholder="Ask a question..." class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[12px] text-white placeholder-white/30 outline-none focus:border-brand-500" onkeypress="if(event.key==='Enter')sendChatMessage()">
+          <button onclick="sendChatMessage()" class="bg-brand-500 hover:bg-brand-600 text-white px-3 rounded-lg transition"><iconify-icon icon="lucide:send" class="text-sm"></iconify-icon></button>
+        </div>
+      </div>
+    </div>
 <script src="script.js"></script>
 </body>
 </html>
