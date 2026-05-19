@@ -708,28 +708,92 @@ function getHistoricalWeather(abbr, weekNum) {
   return { temp: `${Math.round(baseTemp)}°F`, precip: `${Math.min(90, Math.round(precipBase + (Math.random() * 10 - 5)))}%`, icon, desc: condition };
 }
 
-async function getWeather(abbr, weekNum, dayStr) {
-  const team = getTeam(abbr);
-  const facts = STADIUM_FACTS[abbr];
-  if (facts.roof === "Fixed") return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Climate Controlled (Indoors)" };
+async function getWeather(awayAbbr, homeAbbr, weekNum, dayStr) {
+  const homeTeam = getTeam(homeAbbr);
+  if (!homeTeam) return { temp: "72°F", precip: "0%", icon: "lucide:thermometer", desc: "Indoors" };
+
+  // Check if this is an international game
+  const intlGame = INTERNATIONAL_GAMES.find(g => g.week === weekNum && g.away === awayAbbr && g.home === homeAbbr);
+  
+  let lat, lng, roof, locationName;
+  
+  if (intlGame) {
+    lat = intlGame.lat;
+    lng = intlGame.lng;
+    roof = "Outdoor"; // International games are outdoors
+    locationName = `${intlGame.city}, ${intlGame.country}`;
+  } else {
+    const facts = STADIUM_FACTS[homeAbbr];
+    lat = homeTeam.lat;
+    lng = homeTeam.lng;
+    roof = facts.roof;
+    locationName = `${homeTeam.city}, ${homeTeam.state}`;
+  }
+
+  if (roof === "Fixed") return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Climate Controlled (Indoors)" };
 
   const dateStr = getGameDate(weekNum, dayStr);
   if (dateStr) {
     const today = new Date().toISOString().split('T')[0];
     const daysUntil = (new Date(dateStr) - new Date(today)) / (1000 * 60 * 60 * 24);
     if (daysUntil >= 0 && daysUntil <= 16) {
-      const live = await fetchLiveWeather(team.lat, team.lng, dateStr);
+      const live = await fetchLiveWeather(lat, lng, dateStr);
       if (live) {
-        if (facts.roof === "Retractable" && (parseInt(live.temp) < 35 || parseInt(live.precip) > 50)) {
+        if (roof === "Retractable" && (parseInt(live.temp) < 35 || parseInt(live.precip) > 50)) {
           return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Roof Closed (Climate Controlled)" };
         }
-        live.desc += " (Live Forecast)";
-        if (facts.roof === "Retractable") live.desc += " - Roof Open";
+        live.desc += ` (Live Forecast - ${locationName})`;
+        if (roof === "Retractable") live.desc += " - Roof Open";
         return live;
       }
     }
   }
-  return getHistoricalWeather(abbr, weekNum);
+  
+  return getHistoricalWeather(lat, weekNum, locationName, roof);
+}
+
+function getHistoricalWeather(lat, weekNum, locationName, roof) {
+  const month = weekNum <= 4 ? 9 : weekNum <= 8 ? 10 : weekNum <= 12 ? 11 : weekNum <= 16 ? 12 : 1;
+  let baseTemp = 0, precipBase = 0, condition = "", icon = "";
+
+  // Southern Hemisphere (Melbourne, Rio)
+  if (lat < 0) {
+    if (month >= 9 && month <= 10) { baseTemp = 65; precipBase = 30; condition = "Early Spring"; icon = "lucide:cloud-sun"; }
+    else if (month >= 11 && month <= 12) { baseTemp = 80; precipBase = 40; condition = "Summer"; icon = "lucide:sun"; }
+    else { baseTemp = 82; precipBase = 50; condition = "Peak Summer"; icon = "lucide:sun"; }
+    if (lat > -25) { baseTemp += 10; precipBase += 20; condition = "Warm & Humid"; icon = "lucide:cloud-rain"; } // Rio
+  } 
+  // Europe (London, Munich, Paris, Madrid)
+  else if (lat > 40 && lat < 55 && lng > -10) {
+    if (month === 9) { baseTemp = 65; precipBase = 30; condition = "Autumn"; icon = "lucide:cloud-sun"; }
+    else if (month === 10) { baseTemp = 55; precipBase = 40; condition = "Cool & Damp"; icon = "lucide:cloud-rain"; }
+    else if (month === 11) { baseTemp = 45; precipBase = 45; condition = "Chilly"; icon = "lucide:cloud"; }
+    else { baseTemp = 40; precipBase = 50; condition = "Cold/Wet"; icon = "lucide:cloud-snow"; }
+    if (lng > -5) precipBase += 10; // UK/France wetter
+  }
+  // Mexico City
+  else if (lat > 15 && lat < 25 && lng < -90) {
+    if (month >= 9 && month <= 10) { baseTemp = 72; precipBase = 60; condition = "Rainy Season"; icon = "lucide:cloud-rain"; }
+    else { baseTemp = 65; precipBase = 15; condition = "Dry Season"; icon = "lucide:sun"; }
+  }
+  // Standard US Calculation
+  else {
+    if (month === 9) { baseTemp = 82 - (lat - 25) * 1.1; precipBase = 20; condition = "Late Summer Heat"; icon = "lucide:sun"; }
+    else if (month === 10) { baseTemp = 66 - (lat - 25) * 1.1; precipBase = 25; condition = "Autumn Weather"; icon = "lucide:cloud-sun"; }
+    else if (month === 11) { baseTemp = 50 - (lat - 25) * 1.2; precipBase = 30; condition = "Chilly"; icon = "lucide:cloud"; }
+    else if (month === 12) { baseTemp = 38 - (lat - 25) * 1.5; precipBase = 35; condition = "Cold"; icon = "lucide:cloud-snow"; }
+    else if (month === 1) { baseTemp = 32 - (lat - 25) * 1.5; precipBase = 40; condition = "Winter Cold"; icon = "lucide:snowflake"; }
+  }
+
+  if (roof === "Retractable" && (baseTemp < 35 || precipBase > 50)) {
+    return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Roof Closed (Climate Controlled)" };
+  }
+  if (roof === "Retractable") condition += " (Roof Open)";
+
+  const temp = Math.round(baseTemp);
+  const precip = Math.min(90, Math.round(precipBase + (Math.random() * 10 - 5)));
+
+  return { temp: `${temp}°F`, precip: `${precip}%`, icon, desc: `${condition} in ${locationName}` };
 }
   
 function renderMatchups(){
@@ -829,7 +893,7 @@ async function showMatchupModal(awayAbbr, homeAbbr, weekNum, dayStr){
   const dist=haversine(t1.lat,t1.lng,t2.lat,t2.lng).toFixed(0);
 
   // Fetch weather (Live API if within 16 days, otherwise Historical Simulator)
-  const weather = await getWeather(homeAbbr, weekNum, dayStr);
+  const weather = await getWeather(awayAbbr, homeAbbr, weekNum, dayStr);
 
   const infoRows=[
     {label:'City',v1:`${t1.city}, ${t1.state}`,v2:`${t2.city}, ${t2.state}`},
@@ -1361,7 +1425,7 @@ function initScrollReveal(){const observer=new IntersectionObserver(entries=>{en
 document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',function(e){e.preventDefault();const t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
 
 /* ===== Team Info & Compare Modals ===== */
-function showTeamInfoModal(abbr){
+function function showTeamInfoModal(abbr){
   const team=getTeam(abbr);if(!team)return;
   const facts=STADIUM_FACTS[abbr];
   const offPPG=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===abbr)+1;
@@ -1372,21 +1436,6 @@ function showTeamInfoModal(abbr){
   const qb = findPlayer('passing', abbr);
   const rb = findPlayer('rushing', abbr);
   const wr = findPlayer('receiving', abbr);
-
-  const buildPlayerCard = (player, pos, ydsIdx, tdIdx) => {
-    if (!player) return `<div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">${pos}</div><div class="text-[11px] text-white/30 italic">No data</div></div>`;
-    return `
-      <div class="bg-white/5 rounded-lg p-3">
-        <div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">${pos}</div>
-        <div class="text-[12px] font-semibold">${player[1]}</div>
-        <div class="text-[10px] text-white/50 mt-1">${player[ydsIdx].toLocaleString()} Yds • ${player[tdIdx]} TD</div>
-      </div>
-    `;
-  };
-
-  // Passing: [Rank, Name, Team, Cmp, Att, Yds(5), TD(6), INT, QBR]
-  // Rushing: [Rank, Name, Team, Att, Yds(4), Avg, TD(6), Lng, FUM]
-  // Receiving: [Rank, Name, Team, Rec, Tgt, Yds(5), Avg, TD(7), Lng]
 
   const content=document.getElementById('team-modal-content');
   content.innerHTML=`
@@ -1400,9 +1449,32 @@ function showTeamInfoModal(abbr){
     <!-- IMPACT PLAYERS -->
     <h3 class="text-sm font-semibold mb-3 text-white/70 flex items-center gap-2"><iconify-icon icon="lucide:star"></iconify-icon> Impact Players</h3>
     <div class="grid grid-cols-3 gap-3 mb-6">
-      ${buildPlayerCard(qb, 'Quarterback', 5, 6)}
-      ${buildPlayerCard(rb, 'Running Back', 4, 6)}
-      ${buildPlayerCard(wr, 'Wide Receiver', 5, 7)}
+      ${qb ? `
+        <div class="bg-white/5 rounded-lg p-3">
+          <div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">Quarterback</div>
+          <div class="text-[12px] font-semibold">${qb[1]}</div>
+          <div class="text-[10px] text-white/50 mt-1">${qb[3]}/${qb[4]} Cmp/Att</div>
+          <div class="text-[10px] text-white/50">${qb[5].toLocaleString()} Yds • ${qb[6]} TD</div>
+        </div>
+      ` : `<div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">Quarterback</div><div class="text-[11px] text-white/30 italic">No data</div></div>`}
+      
+      ${rb ? `
+        <div class="bg-white/5 rounded-lg p-3">
+          <div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">Running Back</div>
+          <div class="text-[12px] font-semibold">${rb[1]}</div>
+          <div class="text-[10px] text-white/50 mt-1">${rb[3]} Att</div>
+          <div class="text-[10px] text-white/50">${rb[4].toLocaleString()} Yds • ${rb[6]} TD</div>
+        </div>
+      ` : `<div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">Running Back</div><div class="text-[11px] text-white/30 italic">No data</div></div>`}
+      
+      ${wr ? `
+        <div class="bg-white/5 rounded-lg p-3">
+          <div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">Wide Receiver</div>
+          <div class="text-[12px] font-semibold">${wr[1]}</div>
+          <div class="text-[10px] text-white/50 mt-1">${wr[3]} Rec</div>
+          <div class="text-[10px] text-white/50">${wr[5].toLocaleString()} Yds • ${wr[7]} TD</div>
+        </div>
+      ` : `<div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase tracking-wider mb-1">Wide Receiver</div><div class="text-[11px] text-white/30 italic">No data</div></div>`}
     </div>
 
     <div class="glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:sparkles" class="text-brand-400 text-sm"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Fun Fact</span></div><div class="text-[12px] text-white/60 leading-relaxed">${facts.trivia}</div></div>
