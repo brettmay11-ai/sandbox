@@ -1497,7 +1497,7 @@ async function showTeamInfoModal(abbr){
   document.getElementById('team-modal').classList.add('flex');
 
   // Fetch news after modal opens so the user doesn't wait
-  const news = await fetchTeamNews(team.espn);
+  const news = await fetchTeamNews(team.espn, team.abbr);
   const newsContainer = document.getElementById('team-news-container');
   
   if (news.length === 0) {
@@ -1527,21 +1527,70 @@ function toggleCompareTeam(abbr){
   else{btn.classList.add('hidden');btn.classList.remove('inline-flex')}
 }
 
-  /* ===== LIVE NEWS API ===== */
-async function fetchTeamNews(espnAbbr) {
+/* ===== LIVE NEWS API ===== */
+async function fetchTeamNews(espnAbbr, teamAbbr) {
   try {
+    // Attempt 1: Specific team news
     const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${espnAbbr}/news`);
     const data = await res.json();
-    const articles = data.articles || data.items || [];
-    return articles.slice(0, 3).map(a => ({
-      title: a.headline || a.title || 'NFL News',
-      description: a.description || a.preview || '',
-      link: (a.links && a.links.web && a.links.web.href) || a.link || '#'
-    }));
+    
+    // Log the data so we can see exactly what ESPN is giving us
+    console.log(`ESPN Team News Response for ${espnAbbr}:`, data);
+    
+    // Check multiple possible key names
+    let articles = data.articles || data.items || data.headlines || data.results || [];
+
+    if (articles.length > 0) {
+      console.log("Found team news!");
+      return articles.slice(0, 3).map(a => ({
+        title: a.headline || a.title || a.shortTitle || 'NFL News',
+        description: a.description || a.preview || a.text || '',
+        link: (a.links && a.links.web && a.links.web.href) || a.link || a.webUrl || '#'
+      }));
+    }
+
+    // Attempt 2: General NFL news fallback
+    const fallbackRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/news`);
+    const fallbackData = await fallbackRes.json();
+    
+    console.log("ESPN General News Fallback Response:", fallbackData);
+
+    let fallbackArticles = fallbackData.articles || fallbackData.items || fallbackData.headlines || fallbackData.results || [];
+    
+    if (fallbackArticles.length > 0) {
+      console.log("Found general NFL news!");
+      return fallbackArticles.slice(0, 3).map(a => ({
+        title: a.headline || a.title || a.shortTitle || 'NFL News',
+        description: a.description || a.preview || a.text || 'Click to read more on ESPN.',
+        link: (a.links && a.links.web && a.links.web.href) || a.link || a.webUrl || '#'
+      }));
+    }
+    
+    console.log("News arrays are empty, using educational fallback.");
+
   } catch (e) {
-    console.error("News fetch failed", e);
-    return [];
+    console.warn("ESPN API fetch failed (CORS/Network error). Using educational fallback.", e);
   }
+
+  // Attempt 3: Educational Fallback (If API is blocked, empty, or fails)
+  const team = getTeam(teamAbbr);
+  return [
+    {
+      title: `The Science of the Football Spiral`,
+      description: `Discover how the shape of the football affects aerodynamics and why quarterbacks throw spirals.`,
+      link: `https://www.sciencefriday.com/educational-resources/physics-football/`
+    },
+    {
+      title: `How Stadiums Are Built`,
+      description: `Learn about the engineering and architecture that goes into building massive venues like ${team ? team.stadium : 'NFL stadiums'}.`,
+      link: `https://www.pbs.org/wgbh/building-big/`
+    },
+    {
+      title: `NFL Geography & Travel Math`,
+      description: `Explore how NFL teams travel across the country and the math behind flight distances.`,
+      link: `https://www.nfl.com/news/`
+    }
+  ];
 }
 
   /* ===== CHATBOT LOGIC ===== */
