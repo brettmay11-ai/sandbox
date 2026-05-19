@@ -636,6 +636,102 @@ function renderFeaturedGame(){
   document.getElementById('featured-discussion').textContent=fg.discussion;
 }
 
+  /* ===== WEATHER ENGINE ===== */
+const SEASON_2026_DATES = {
+  1:  { Thursday: '2026-09-10', Sunday: '2026-09-13', Monday: '2026-09-14' },
+  2:  { Thursday: '2026-09-17', Sunday: '2026-09-20', Monday: '2026-09-21' },
+  3:  { Thursday: '2026-09-24', Sunday: '2026-09-27', Monday: '2026-09-28' },
+  4:  { Thursday: '2026-10-01', Sunday: '2026-10-04', Monday: '2026-10-05' },
+  5:  { Thursday: '2026-10-08', Sunday: '2026-10-11', Monday: '2026-10-12' },
+  6:  { Thursday: '2026-10-15', Sunday: '2026-10-18', Monday: '2026-10-19' },
+  7:  { Thursday: '2026-10-22', Sunday: '2026-10-25', Monday: '2026-10-26' },
+  8:  { Thursday: '2026-10-29', Sunday: '2026-11-01', Monday: '2026-11-02' },
+  9:  { Thursday: '2026-11-05', Sunday: '2026-11-08', Monday: '2026-11-09' },
+  10: { Thursday: '2026-11-12', Sunday: '2026-11-15', Monday: '2026-11-16' },
+  11: { Thursday: '2026-11-19', Sunday: '2026-11-22', Monday: '2026-11-23' },
+  12: { Thursday: '2026-11-26', Sunday: '2026-11-29', Monday: '2026-11-30' },
+  13: { Thursday: '2026-12-03', Sunday: '2026-12-06', Monday: '2026-12-07' },
+  14: { Thursday: '2026-12-10', Sunday: '2026-12-13', Monday: '2026-12-14' },
+  15: { Thursday: '2026-12-17', Sunday: '2026-12-20', Monday: '2026-12-21' },
+  16: { Thursday: '2026-12-24', Sunday: '2026-12-27', Monday: '2026-12-28' },
+  17: { Thursday: '2026-12-31', Sunday: '2027-01-03', Monday: '2027-01-04' },
+  18: { Thursday: '2027-01-07', Sunday: '2027-01-10', Monday: '2027-01-11' }
+};
+
+function getGameDate(weekNum, dayStr) {
+  const weekDates = SEASON_2026_DATES[weekNum];
+  if (!weekDates) return null;
+  if (dayStr === 'Thursday' && weekDates.Thursday) return weekDates.Thursday;
+  if (dayStr === 'Monday' && weekDates.Monday) return weekDates.Monday;
+  return weekDates.Sunday; // Default
+}
+
+async function fetchLiveWeather(lat, lng, dateStr) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=temperature_2m_max,precipitation_probability_max&temperature_unit=fahrenheit&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.daily && data.daily.temperature_2m_max && data.daily.temperature_2m_max.length > 0) {
+      const temp = Math.round(data.daily.temperature_2m_max[0]);
+      const precip = data.daily.precipitation_probability_max[0] || 0;
+      const icon = precip > 50 ? "lucide:cloud-rain" : temp < 35 ? "lucide:snowflake" : "lucide:cloud-sun";
+      const desc = precip > 50 ? "Rain Expected" : temp < 35 ? "Cold/Snow" : "Forecast Available";
+      return { temp: `${temp}°F`, precip: `${precip}%`, icon, desc };
+    }
+  } catch (e) { console.error("Weather fetch failed", e); }
+  return null;
+}
+
+function getHistoricalWeather(abbr, weekNum) {
+  const team = getTeam(abbr);
+  const facts = STADIUM_FACTS[abbr];
+  if (!team || !facts) return { temp: "72°F", precip: "0%", icon: "lucide:thermometer", desc: "Indoors" };
+  if (facts.roof === "Fixed") return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Climate Controlled (Indoors)" };
+
+  const month = weekNum <= 4 ? 9 : weekNum <= 8 ? 10 : weekNum <= 12 ? 11 : weekNum <= 16 ? 12 : 1;
+  const lat = team.lat;
+  let baseTemp = 0, precipBase = 0, condition = "Partly Cloudy", icon = "lucide:cloud-sun";
+
+  if (month === 9) { baseTemp = 82 - (lat - 25) * 1.1; precipBase = 20; condition = "Late Summer Heat"; icon = "lucide:sun"; }
+  else if (month === 10) { baseTemp = 66 - (lat - 25) * 1.1; precipBase = 25; condition = "Autumn Weather"; icon = "lucide:cloud-sun"; }
+  else if (month === 11) { baseTemp = 50 - (lat - 25) * 1.2; precipBase = 30; condition = "Chilly"; icon = "lucide:cloud"; }
+  else if (month === 12) { baseTemp = 38 - (lat - 25) * 1.5; precipBase = 35; condition = "Cold"; icon = "lucide:cloud-snow"; }
+  else if (month === 1) { baseTemp = 32 - (lat - 25) * 1.5; precipBase = 40; condition = "Winter Cold"; icon = "lucide:snowflake"; }
+
+  if (facts.roof === "Retractable" && (baseTemp < 35 || precipBase > 50)) return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Roof Closed (Climate Controlled)" };
+  if (facts.roof === "Retractable") condition += " (Roof Open)";
+
+  if (team.state === "FL" && month >= 9 && month <= 10) { precipBase = 55; condition = "Thunderstorms Possible"; icon = "lucide:cloud-lightning"; }
+  if (lat > 43 && month >= 12) { precipBase = 65; condition = "Snow Likely"; icon = "lucide:snowflake"; }
+  if (team.abbr === "DEN" && month >= 10) { baseTemp -= 8; condition = "Mile High Cold"; icon = "lucide:thermometer"; }
+
+  return { temp: `${Math.round(baseTemp)}°F`, precip: `${Math.min(90, Math.round(precipBase + (Math.random() * 10 - 5)))}%`, icon, desc: condition };
+}
+
+async function getWeather(abbr, weekNum, dayStr) {
+  const team = getTeam(abbr);
+  const facts = STADIUM_FACTS[abbr];
+  if (facts.roof === "Fixed") return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Climate Controlled (Indoors)" };
+
+  const dateStr = getGameDate(weekNum, dayStr);
+  if (dateStr) {
+    const today = new Date().toISOString().split('T')[0];
+    const daysUntil = (new Date(dateStr) - new Date(today)) / (1000 * 60 * 60 * 24);
+    if (daysUntil >= 0 && daysUntil <= 16) {
+      const live = await fetchLiveWeather(team.lat, team.lng, dateStr);
+      if (live) {
+        if (facts.roof === "Retractable" && (parseInt(live.temp) < 35 || parseInt(live.precip) > 50)) {
+          return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Roof Closed (Climate Controlled)" };
+        }
+        live.desc += " (Live Forecast)";
+        if (facts.roof === "Retractable") live.desc += " - Roof Open";
+        return live;
+      }
+    }
+  }
+  return getHistoricalWeather(abbr, weekNum);
+}
+  
 function renderMatchups(){const grid=document.getElementById('matchups-grid');const week=WEEKS[currentWeek];document.getElementById('week-label').textContent=`Week ${week.week}`;grid.innerHTML='';week.games.forEach(game=>{const awayTeam=getTeam(game.away);const homeTeam=getTeam(game.home);if(!awayTeam||!homeTeam)return;const isRel=compareTeams.includes(game.away)||compareTeams.includes(game.home);const isIntlGame = getInternationalGame(week.week, game.away, game.home);const isIntl = !!isIntlGame;
 
 let distStr = "";
@@ -656,7 +752,7 @@ if (isIntl) {
 const card=document.createElement('div');
 card.className=`matchup-card glass-panel rounded-xl p-4 ${isRel?'border-brand-500/30':''} ${isIntl?'border-brand-500/20':''}`;
 card.style.cursor='pointer';
-card.onclick=()=>showMatchupModal(game.away,game.home);
+card.onclick=()=>showMatchupModal(game.away,game.home,week.week,game.day);
 
 card.innerHTML=`
   <div class="flex items-center justify-between mb-3">
@@ -686,11 +782,14 @@ function renderTeamCards(){const grid=document.getElementById('teams-grid');grid
 function filterTeams(conf){currentConfFilter=conf;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===conf);b.classList.toggle('text-white/50',b.dataset.filter!==conf)});renderTeamCards()}
 function filterDivision(div){currentDivFilter=div;document.querySelectorAll('.division-btn').forEach(b=>{const a=b.dataset.div===div;b.classList.toggle('!bg-brand-500/15',a);b.classList.toggle('!text-brand-400',a);b.classList.toggle('!border-brand-500/30',a)});renderTeamCards()}
 
-function showMatchupModal(awayAbbr, homeAbbr){
+async function showMatchupModal(awayAbbr, homeAbbr, weekNum, dayStr){
   const t1=getTeam(awayAbbr);const t2=getTeam(homeAbbr);
   if(!t1||!t2)return;
   const f1=STADIUM_FACTS[awayAbbr];const f2=STADIUM_FACTS[homeAbbr];
   const dist=haversine(t1.lat,t1.lng,t2.lat,t2.lng).toFixed(0);
+
+  // Fetch weather (Live API if within 16 days, otherwise Historical Simulator)
+  const weather = await getWeather(homeAbbr, weekNum, dayStr);
 
   const infoRows=[
     {label:'City',v1:`${t1.city}, ${t1.state}`,v2:`${t2.city}, ${t2.state}`},
@@ -726,9 +825,31 @@ function showMatchupModal(awayAbbr, homeAbbr){
         ${logo(t2.abbr,64)}<div class="font-bold">${fullName(t2)}</div>
       </div>
     </div>
-    <div class="glass-panel rounded-xl p-3 mb-6 text-center text-[11px] text-white/40 flex items-center justify-center gap-4">
+    <div class="glass-panel rounded-xl p-3 mb-4 text-center text-[11px] text-white/40 flex items-center justify-center gap-4">
       <iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon> ${dist} miles apart
     </div>
+    
+    <!-- WEATHER BLOCK -->
+    <div class="glass-panel rounded-xl p-4 mb-6 border border-white/6">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-[9px] font-mono text-white/30 uppercase tracking-wider mb-1">Expected Game Weather</div>
+          <div class="text-[11px] font-medium">${weather.desc}</div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-center">
+            <iconify-icon icon="${weather.icon}" class="text-2xl text-white/70"></iconify-icon>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-bold text-white">${weather.temp}</div>
+            <div class="text-[10px] text-white/40 flex items-center gap-1 justify-end">
+              <iconify-icon icon="lucide:droplets" class="text-[9px]"></iconify-icon> ${weather.precip} precip
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <h3 class="text-sm font-semibold mb-3 text-white/70 flex items-center gap-2"><iconify-icon icon="lucide:info"></iconify-icon> Team Info</h3>
     <div class="mb-6">
       ${infoRows.map(r=>`
