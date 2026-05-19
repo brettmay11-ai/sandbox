@@ -1527,45 +1527,45 @@ function toggleCompareTeam(abbr){
   else{btn.classList.add('hidden');btn.classList.remove('inline-flex')}
 }
 
-/* ===== LIVE NEWS API (VIA NFL RSS) ===== */
+/* ===== LIVE NEWS API WITH CORS PROXY ===== */
 async function fetchTeamNews(espnAbbr, teamAbbr) {
   try {
-    const team = getTeam(teamAbbr);
-    // NFL RSS feeds use the full team name (e.g., 'bills', 'chiefs')
-    const teamName = team ? team.name.toLowerCase() : 'nfl';
+    // Attempt 1: Use a CORS proxy to bypass Railway/ESPN restrictions
+    const proxyUrl = 'https://corsproxy.io/?';
+    const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${espnAbbr}/news`;
+    const res = await fetch(proxyUrl + encodeURIComponent(espnUrl));
+    const data = await res.json();
     
-    // Attempt 1: Team-specific NFL News
-    const teamRssUrl = `https://www.nfl.com/rss/team/${teamName}/news`;
-    const teamRes = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(teamRssUrl)}`);
-    const teamData = await teamRes.json();
-    
-    if (teamData.status === 'ok' && teamData.items && teamData.items.length > 0) {
-      return teamData.items.slice(0, 3).map(item => ({
-        title: item.title,
-        // Strip HTML tags from the description and truncate it
-        description: item.description ? item.description.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 'Click to read more on NFL.com.',
-        link: item.link
+    let articles = data.articles || data.items || data.headlines || [];
+
+    if (articles.length > 0) {
+      return articles.slice(0, 3).map(a => ({
+        title: a.headline || a.title || a.shortTitle || 'NFL News',
+        description: a.description || a.preview || a.text || '',
+        link: (a.links && a.links.web && a.links.web.href) || a.link || a.webUrl || '#'
       }));
     }
 
-    // Attempt 2: General NFL News (if the team feed is empty/offline)
-    const genRssUrl = 'https://www.nfl.com/rss/rssstorylanding';
-    const genRes = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(genRssUrl)}`);
+    // Attempt 2: General NFL news via proxy (if team news is empty)
+    const genEspnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/news`;
+    const genRes = await fetch(proxyUrl + encodeURIComponent(genEspnUrl));
     const genData = await genRes.json();
     
-    if (genData.status === 'ok' && genData.items && genData.items.length > 0) {
-      return genData.items.slice(0, 3).map(item => ({
-        title: item.title,
-        description: item.description ? item.description.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 'Click to read more on NFL.com.',
-        link: item.link
+    let fallbackArticles = genData.articles || genData.items || genData.headlines || [];
+    
+    if (fallbackArticles.length > 0) {
+      return fallbackArticles.slice(0, 3).map(a => ({
+        title: a.headline || a.title || a.shortTitle || 'NFL News',
+        description: a.description || a.preview || a.text || 'Click to read more on ESPN.',
+        link: (a.links && a.links.web && a.links.web.href) || a.link || a.webUrl || '#'
       }));
     }
 
   } catch (e) {
-    console.warn("NFL RSS fetch failed, using educational fallback.", e);
+    console.warn("ESPN API fetch failed (CORS/Network error). Using educational fallback.", e);
   }
 
-  // Attempt 3: Educational Fallback (If API is blocked by school network)
+  // Attempt 3: Educational Fallback (If API is blocked, empty, or fails)
   const team = getTeam(teamAbbr);
   return [
     {
