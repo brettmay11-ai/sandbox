@@ -79,6 +79,7 @@ select option{background:#1a1a1a;color:#fff}
       <a href="#writing" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Writing</a>
       <a href="#cities" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Cities</a>
       <a href="#facts" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Fun Facts</a>
+      <a href="#TCU" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">TCU</a>
     </div>
     <button onclick="openCompareModal()" id="compare-nav-btn" class="hidden items-center gap-2 text-[11px] px-3 py-1.5 rounded-lg border border-nfl-blue/40 bg-nfl-blue/10 text-brand-400 hover:bg-nfl-blue/20 transition uppercase tracking-wider font-semibold">
       <iconify-icon icon="lucide:git-compare" class="text-sm"></iconify-icon> Compare 2 Teams
@@ -325,6 +326,46 @@ select option{background:#1a1a1a;color:#fff}
       <a href="https://www.nfl.com" target="_blank" class="text-xs text-white/40 hover:text-brand-400 transition flex items-center gap-1"><iconify-icon icon="lucide:external-link" class="text-[10px]"></iconify-icon> NFL.com</a>
     </div>
   </div>
+
+  <!-- ===== TCU HORNED FROGS SECTION ===== -->
+<div id="tcu-section" class="hidden section-reveal max-w-7xl mx-auto px-4 py-12">
+  <div class="text-center mb-10">
+    <div class="flex items-center justify-center gap-4 mb-2">
+      <img src="https://a.espncdn.com/i/teamlogos/ncaa/football/130.png" alt="TCU Logo" class="w-20 h-20" onerror="this.style.display='none'">
+      <h2 class="text-4xl font-bold text-white">TCU Horned Frogs</h2>
+    </div>
+    <p class="text-white/40 text-sm">Fort Worth, TX • Amon G. Carter Stadium • Big 12 Conference</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Schedule Column -->
+    <div class="lg:col-span-1">
+      <div class="glass-panel rounded-xl p-5">
+        <h3 class="text-sm font-semibold mb-4 flex items-center gap-2 text-white/70"><iconify-icon icon="lucide:calendar" class="text-brand-400"></iconify-icon> 2024 Schedule</h3>
+        <div id="tcu-schedule-list" class="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+          <!-- Schedule renders here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Column -->
+    <div class="lg:col-span-2">
+      <div class="flex gap-2 mb-4">
+        <button onclick="switchTCUTab('passing')" data-tcutab="passing" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 transition active">Passing</button>
+        <button onclick="switchTCUTab('rushing')" data-tcutab="rushing" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 transition">Rushing</button>
+        <button onclick="switchTCUTab('receiving')" data-tcutab="receiving" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 transition">Receiving</button>
+      </div>
+      <div class="glass-panel rounded-xl overflow-hidden">
+        <table class="w-full text-left">
+          <thead id="tcu-thead" class="border-b border-white/6"></thead>
+          <tbody id="tcu-tbody" class="divide-y divide-white/4"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
 </footer>
   
 <!-- ===== CHATBOT UI ===== -->
@@ -1585,6 +1626,110 @@ async function fetchTeamNews(espnAbbr, teamAbbr) {
     }
   ];
 }
+
+  /* ===== TCU HORNED FROGS DATA ===== */
+const TCU_TEAM_INFO = { color: "#4D1979", secColor: "#8BA8C4" };
+
+const TCU_STATS = {
+  passing: {
+    headers: ["Player", "Cmp", "Att", "Yds", "TD", "INT", "Rate"],
+    players: [
+      ["Josh Hoover", 132, 198, 1560, 12, 4, 152.3],
+      ["Trenton Jones", 15, 28, 180, 1, 1, 110.5]
+    ]
+  },
+  rushing: {
+    headers: ["Player", "Att", "Yds", "Avg", "TD", "Lng"],
+    players: [
+      ["Emani Bailey", 45, 215, 4.8, 3, 35],
+      ["Savion Williams", 22, 130, 5.9, 1, 42],
+      ["Josh Hoover", 18, 55, 3.1, 0, 12]
+    ]
+  },
+  receiving: {
+    headers: ["Player", "Rec", "Tgt", "Yds", "Avg", "TD", "Lng"],
+    players: [
+      ["JP Richardson", 22, 30, 285, 13.0, 2, 45],
+      ["Savion Williams", 16, 22, 210, 13.1, 2, 38],
+      ["Jack Bech", 14, 20, 195, 13.9, 1, 40],
+      ["Gabe Doherty", 10, 14, 120, 12.0, 1, 25]
+    ]
+  }
+};
+
+const TCU_SCHEDULE_2024 = [
+  { week: 1, opp: "@ Stanford", date: "Aug 30", result: "W 34-27" },
+  { week: 2, opp: "LIU", date: "Sep 7", result: "W 45-0" },
+  { week: 3, opp: "UCF", date: "Sep 14", result: "L 28-35" },
+  { week: 4, opp: "@ SMU", date: "Sep 21", result: "L 17-28" },
+  { week: 5, opp: "Kansas", date: "Sep 28", result: "" },
+  { week: 6, opp: "@ Houston", date: "Oct 5", result: "" },
+  { week: 7, opp: "BYE", date: "Oct 12", result: "" },
+  { week: 8, opp: "Oklahoma State", date: "Oct 19", result: "" },
+  { week: 9, opp: "@ Texas Tech", date: "Oct 26", result: "" },
+  { week: 10, opp: "Baylor", date: "Nov 2", result: "" },
+  { week: 11, opp: "@ Utah", date: "Nov 9", result: "" },
+  { week: 12, opp: "Kansas State", date: "Nov 16", result: "" },
+  { week: 13, opp: "@ Cincinnati", date: "Nov 23", result: "" },
+  { week: 14, opp: "Iowa State", date: "Nov 30", result: "" }
+];
+
+let currentTCUTab = 'passing';
+
+function renderTCUSection() {
+  // Render Schedule
+  const schedList = document.getElementById('tcu-schedule-list');
+  if (schedList) {
+    schedList.innerHTML = TCU_SCHEDULE_2024.map(g => {
+      const isWin = g.result.startsWith('W');
+      const isLoss = g.result.startsWith('L');
+      const isBye = g.opp === "BYE";
+      const isFuture = !g.result && !isBye;
+
+      return `<div class="flex items-center justify-between p-2.5 rounded-lg ${isBye ? 'bg-white/2' : 'bg-white/3'} border border-white/5">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-mono text-white/30 w-6">W${g.week}</span>
+          <span class="text-[11px] font-medium ${isBye ? 'text-white/30 italic' : ''}">${g.opp}</span>
+        </div>
+        <div class="text-right">
+          <div class="text-[9px] text-white/30">${g.date}</div>
+          ${isFuture ? '<div class="text-[9px] text-brand-400">Upcoming</div>' : 
+            isBye ? '' : `<div class="text-[10px] font-semibold ${isWin ? 'text-green-400' : 'text-red-400'}">${g.result}</div>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  
+  renderTCUStats();
+}
+
+function switchTCUTab(tab) {
+  currentTCUTab = tab;
+  document.querySelectorAll('.tcutab-btn').forEach(b => {
+    b.classList.toggle('!bg-brand-500/15', b.dataset.tcutab === tab);
+    b.classList.toggle('!text-brand-400', b.dataset.tcutab === tab);
+    b.classList.toggle('!border-brand-500/30', b.dataset.tcutab === tab);
+  });
+  renderTCUStats();
+}
+
+function renderTCUStats() {
+  const data = TCU_STATS[currentTCUTab];
+  const thead = document.getElementById('tcu-thead');
+  const tbody = document.getElementById('tcu-tbody');
+
+  thead.innerHTML = `<tr class="border-b border-white/6">${data.headers.map(h => 
+    `<th class="px-4 py-3 text-left text-[10px] font-mono text-white/40 uppercase tracking-wider whitespace-nowrap">${h}</th>`
+  ).join('')}</tr>`;
+
+  tbody.innerHTML = data.players.map(p => `
+    <tr class="player-row border-b border-white/4 transition">
+      <td class="px-4 py-3 text-[12px] font-semibold whitespace-nowrap text-brand-300">${p[0]}</td>
+      ${p.slice(1).map(val => `<td class="px-4 py-3 text-[11px] font-mono text-white/60">${val}</td>`).join('')}
+    </tr>
+  `).join('');
+}
+  
   /* ===== CHATBOT LOGIC ===== */
 function toggleChatbot() {
   const win = document.getElementById('chatbot-window');
