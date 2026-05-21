@@ -1541,7 +1541,7 @@ async function showTeamInfoModal(abbr){
   document.getElementById('team-modal').classList.add('flex');
 
   // Fetch news after modal opens so the user doesn't wait
-  const news = await fetchTeamNews(team.espn, team.abbr);
+  const news = await fetchTeamNews(team.abbr);
   const newsContainer = document.getElementById('team-news-container');
   
   if (news.length === 0) {
@@ -1571,45 +1571,47 @@ function toggleCompareTeam(abbr){
   else{btn.classList.add('hidden');btn.classList.remove('inline-flex')}
 }
 
-/* ===== LIVE NEWS API WITH CORS PROXY ===== */
-async function fetchTeamNews(espnAbbr, teamAbbr) {
+/* ===== SPORTSDATA.IO NEWS API ===== */
+async function fetchTeamNews(teamAbbr) {
+  const API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
+  
   try {
-    // Attempt 1: Use a CORS proxy to bypass Railway/ESPN restrictions
-    const proxyUrl = 'https://corsproxy.io/?';
-    const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${espnAbbr}/news`;
-    const res = await fetch(proxyUrl + encodeURIComponent(espnUrl));
-    const data = await res.json();
+    // Attempt 1: SportsData.io Team News
+    const res = await fetch(`https://api.sportsdata.io/v3/nfl/news-rotoballer/json/RotoBallerPremiumNewsByTeam/${teamAbbr}?key=${API_KEY}`);
     
-    let articles = data.articles || data.items || data.headlines || [];
-
-    if (articles.length > 0) {
-      return articles.slice(0, 3).map(a => ({
-        title: a.headline || a.title || a.shortTitle || 'NFL News',
-        description: a.description || a.preview || a.text || '',
-        link: (a.links && a.links.web && a.links.web.href) || a.link || a.webUrl || '#'
-      }));
+    if (res.ok) {
+      const data = await res.json();
+      
+      if (data && data.length > 0) {
+        return data.slice(0, 3).map(a => ({
+          title: a.Title || 'NFL News',
+          // Strip HTML tags from the content and truncate it
+          description: a.Content ? a.Content.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 'Click to read the full article.',
+          link: a.Url || '#'
+        }));
+      }
+    } else {
+      console.warn("SportsData API returned status:", res.status);
     }
 
-    // Attempt 2: General NFL news via proxy (if team news is empty)
-    const genEspnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/news`;
-    const genRes = await fetch(proxyUrl + encodeURIComponent(genEspnUrl));
-    const genData = await genRes.json();
-    
-    let fallbackArticles = genData.articles || genData.items || genData.headlines || [];
-    
-    if (fallbackArticles.length > 0) {
-      return fallbackArticles.slice(0, 3).map(a => ({
-        title: a.headline || a.title || a.shortTitle || 'NFL News',
-        description: a.description || a.preview || a.text || 'Click to read more on ESPN.',
-        link: (a.links && a.links.web && a.links.web.href) || a.link || a.webUrl || '#'
-      }));
+    // Attempt 2: General NFL News (if specific team news is empty)
+    const genRes = await fetch(`https://api.sportsdata.io/v3/nfl/news-rotoballer/json/RotoBallerPremiumNews?key=${API_KEY}`);
+    if (genRes.ok) {
+      const genData = await genRes.json();
+      if (genData && genData.length > 0) {
+        return genData.slice(0, 3).map(a => ({
+          title: a.Title || 'NFL News',
+          description: a.Content ? a.Content.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 'Click to read the full article.',
+          link: a.Url || '#'
+        }));
+      }
     }
 
   } catch (e) {
-    console.warn("ESPN API fetch failed (CORS/Network error). Using educational fallback.", e);
+    console.warn("SportsData API fetch failed, using educational fallback.", e);
   }
 
-  // Attempt 3: Educational Fallback (If API is blocked, empty, or fails)
+  // Attempt 3: Educational Fallback (If API limits are hit or network blocks it)
   const team = getTeam(teamAbbr);
   return [
     {
