@@ -1639,37 +1639,39 @@ const CFB_API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
 
 async function fetchTCUProfile() {
   try {
-    // Route through CORS proxy to bypass SportsData.io browser restrictions
+    // Use the SINGULAR endpoint to only fetch TCU data
+    const apiUrl = `https://api.sportsdata.io/v3/cfb/scores/json/Team/TCU?key=${CFB_API_KEY}`;
     const proxyUrl = 'https://corsproxy.io/?';
-    const apiUrl = `https://api.sportsdata.io/v3/cfb/scores/json/Teams?key=${CFB_API_KEY}`;
     
     const res = await fetch(proxyUrl + encodeURIComponent(apiUrl));
-    const data = await res.json();
     
-    // Find TCU in the array of all CFB teams
-    const tcu = data.find(t => t.Key === 'TCU' || t.School === 'Texas Christian');
+    if (!res.ok) throw new Error(`API returned status: ${res.status}`);
     
-    if (tcu) {
-      console.log("TCU Data Found:", tcu);
+    const tcu = await res.json();
+    
+    // The singular endpoint usually returns the team object directly, 
+    // but sometimes it returns an array with one item. We'll handle both.
+    const teamData = Array.isArray(tcu) ? tcu[0] : tcu;
+
+    if (teamData && teamData.School) {
+      console.log("TCU Data Found:", teamData);
       
       // Update the UI with live data
-      document.getElementById('tcu-team-name').textContent = `${tcu.School} ${tcu.Name}`;
+      document.getElementById('tcu-team-name').textContent = `${teamData.School} ${teamData.Name}`;
       
-      // Format the subtitle with Stadium, City, and Conference
-      const stadiumName = tcu.Stadium ? tcu.Stadium.Name : 'Amon G. Carter Stadium';
-      const subtitle = `${tcu.City || 'Fort Worth'}, ${tcu.State || 'TX'} • ${stadiumName} • ${tcu.Conference || 'Big 12'}`;
+      const stadiumName = teamData.Stadium ? teamData.Stadium.Name : 'Amon G. Carter Stadium';
+      const subtitle = `${teamData.City || 'Fort Worth'}, ${teamData.State || 'TX'} • ${stadiumName} • ${teamData.Conference || 'Big 12'}`;
       document.getElementById('tcu-team-subtitle').textContent = subtitle;
       
-      return tcu; 
+      return teamData; 
     } else {
-      console.warn("TCU not found in the API response. Check the Key/School names.");
-      throw new Error("TCU not found");
+      throw new Error("TCU data was empty or formatted unexpectedly.");
     }
 
   } catch (e) {
     console.warn("CFB API fetch failed, using fallback TCU data.", e);
     
-    // Fallback if API fails or gets blocked
+    // Fallback if API fails
     const nameEl = document.getElementById('tcu-team-name');
     const subEl = document.getElementById('tcu-team-subtitle');
     if (nameEl) nameEl.textContent = "TCU Horned Frogs";
