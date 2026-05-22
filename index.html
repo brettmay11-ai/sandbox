@@ -1634,16 +1634,19 @@ async function fetchTeamNews(teamAbbr) {
   ];
 }
 
-  /* ===== CFB SPORTSDATA API ===== */
+/* ===== CFB SPORTSDATA API ===== */
 const CFB_API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
 
 async function fetchTCUProfile() {
   try {
-    const res = await fetch(`https://api.sportsdata.io/v3/cfb/scores/json/Teams?key=${CFB_API_KEY}`);
+    // Route through CORS proxy to bypass SportsData.io browser restrictions
+    const proxyUrl = 'https://corsproxy.io/?';
+    const apiUrl = `https://api.sportsdata.io/v3/cfb/scores/json/Teams?key=${CFB_API_KEY}`;
+    
+    const res = await fetch(proxyUrl + encodeURIComponent(apiUrl));
     const data = await res.json();
     
     // Find TCU in the array of all CFB teams
-    // SportsData.io usually uses "TCU" as the Key, but we also check the School name just in case
     const tcu = data.find(t => t.Key === 'TCU' || t.School === 'Texas Christian');
     
     if (tcu) {
@@ -1653,29 +1656,28 @@ async function fetchTCUProfile() {
       document.getElementById('tcu-team-name').textContent = `${tcu.School} ${tcu.Name}`;
       
       // Format the subtitle with Stadium, City, and Conference
-      const subtitle = `${tcu.City || 'Fort Worth'}, ${tcu.State || 'TX'} • ${tcu.Stadium?.Name || 'Amon G. Carter Stadium'} • ${tcu.Conference || 'Big 12'}`;
+      const stadiumName = tcu.Stadium ? tcu.Stadium.Name : 'Amon G. Carter Stadium';
+      const subtitle = `${tcu.City || 'Fort Worth'}, ${tcu.State || 'TX'} • ${stadiumName} • ${tcu.Conference || 'Big 12'}`;
       document.getElementById('tcu-team-subtitle').textContent = subtitle;
       
-      // Optional: If you want to dynamically change the purple accent to TCU's exact colors:
-      // tcu.PrimaryColor (usually hex like 4D1979)
-      // tcu.SecondaryColor
-      
-      return tcu; // Return the data in case we need it later
+      return tcu; 
     } else {
-      throw new Error("TCU not found in API response");
+      console.warn("TCU not found in the API response. Check the Key/School names.");
+      throw new Error("TCU not found");
     }
 
   } catch (e) {
     console.warn("CFB API fetch failed, using fallback TCU data.", e);
     
-    // Fallback if API fails
-    document.getElementById('tcu-team-name').textContent = "TCU Horned Frogs";
-    document.getElementById('tcu-team-subtitle').textContent = "Fort Worth, TX • Amon G. Carter Stadium • Big 12 Conference";
+    // Fallback if API fails or gets blocked
+    const nameEl = document.getElementById('tcu-team-name');
+    const subEl = document.getElementById('tcu-team-subtitle');
+    if (nameEl) nameEl.textContent = "TCU Horned Frogs";
+    if (subEl) subEl.textContent = "Fort Worth, TX • Amon G. Carter Stadium • Big 12 Conference";
     
     return null;
   }
 }
-
   /* ===== TCU HORNED FROGS DATA ===== */
 const TCU_TEAM_INFO = { color: "#4D1979", secColor: "#8BA8C4" };
 
