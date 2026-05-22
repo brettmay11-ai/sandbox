@@ -305,17 +305,19 @@ select option{background:#1a1a1a;color:#fff}
 </section>
 
   <!-- ===== TCU HORNED FROGS SECTION ===== -->
-  <section id="TCU" class="py-24 px-4 md:px-6 section-reveal">
-<div id="tcu-section" class="section-reveal max-w-7xl mx-auto px-4 py-12">
-  <div class="text-center mb-10">
-    <div class="flex items-center justify-center gap-4 mb-2">
-      <img src="https://a.espncdn.com/i/teamlogos/ncaa/football/130.png" alt="TCU Logo" class="w-20 h-20" onerror="this.style.display='none'">
-      <h2 class="text-4xl font-bold text-white">TCU Horned Frogs</h2>
+<section id="TCU" class="py-24 px-4 md:px-6 section-reveal">
+  <div class="max-w-7xl mx-auto">
+    
+    <!-- Dynamic Header -->
+    <div id="tcu-header" class="text-center mb-10">
+      <div class="flex items-center justify-center gap-4 mb-2">
+        <img src="https://a.espncdn.com/i/teamlogos/ncaa/football/130.png" alt="TCU Logo" class="w-20 h-20" onerror="this.style.display='none'">
+        <h2 id="tcu-team-name" class="text-4xl font-bold text-white">Loading TCU Data...</h2>
+      </div>
+      <p id="tcu-team-subtitle" class="text-white/40 text-sm">Fetching from SportsData.io...</p>
     </div>
-    <p class="text-white/40 text-sm">Fort Worth, TX • Amon G. Carter Stadium • Big 12 Conference</p>
-  </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     
     <!-- Schedule Column -->
     <div class="lg:col-span-1">
@@ -1632,6 +1634,48 @@ async function fetchTeamNews(teamAbbr) {
   ];
 }
 
+  /* ===== CFB SPORTSDATA API ===== */
+const CFB_API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
+
+async function fetchTCUProfile() {
+  try {
+    const res = await fetch(`https://api.sportsdata.io/v3/cfb/scores/json/Teams?key=${CFB_API_KEY}`);
+    const data = await res.json();
+    
+    // Find TCU in the array of all CFB teams
+    // SportsData.io usually uses "TCU" as the Key, but we also check the School name just in case
+    const tcu = data.find(t => t.Key === 'TCU' || t.School === 'Texas Christian');
+    
+    if (tcu) {
+      console.log("TCU Data Found:", tcu);
+      
+      // Update the UI with live data
+      document.getElementById('tcu-team-name').textContent = `${tcu.School} ${tcu.Name}`;
+      
+      // Format the subtitle with Stadium, City, and Conference
+      const subtitle = `${tcu.City || 'Fort Worth'}, ${tcu.State || 'TX'} • ${tcu.Stadium?.Name || 'Amon G. Carter Stadium'} • ${tcu.Conference || 'Big 12'}`;
+      document.getElementById('tcu-team-subtitle').textContent = subtitle;
+      
+      // Optional: If you want to dynamically change the purple accent to TCU's exact colors:
+      // tcu.PrimaryColor (usually hex like 4D1979)
+      // tcu.SecondaryColor
+      
+      return tcu; // Return the data in case we need it later
+    } else {
+      throw new Error("TCU not found in API response");
+    }
+
+  } catch (e) {
+    console.warn("CFB API fetch failed, using fallback TCU data.", e);
+    
+    // Fallback if API fails
+    document.getElementById('tcu-team-name').textContent = "TCU Horned Frogs";
+    document.getElementById('tcu-team-subtitle').textContent = "Fort Worth, TX • Amon G. Carter Stadium • Big 12 Conference";
+    
+    return null;
+  }
+}
+
   /* ===== TCU HORNED FROGS DATA ===== */
 const TCU_TEAM_INFO = { color: "#4D1979", secColor: "#8BA8C4" };
 
@@ -1681,8 +1725,11 @@ const TCU_SCHEDULE_2024 = [
 
 let currentTCUTab = 'passing';
 
-function renderTCUSection() {
-  // Render Schedule
+async function renderTCUSection() {
+  // 1. Fetch live team profile from SportsData.io
+  await fetchTCUProfile();
+
+  // 2. Render Schedule (Existing code)
   const schedList = document.getElementById('tcu-schedule-list');
   if (schedList) {
     schedList.innerHTML = TCU_SCHEDULE_2024.map(g => {
@@ -1705,7 +1752,21 @@ function renderTCUSection() {
     }).join('');
   }
   
+  // 3. Render Stats (Existing code)
   renderTCUStats();
+
+  // 4. Render News (Existing code from previous step)
+  const newsList = document.getElementById('tcu-news-list');
+  if (newsList) {
+    const news = await fetchTCUNews();
+    newsList.innerHTML = news.map(n => `
+      <a href="${n.link}" target="_blank" rel="noopener noreferrer" class="block p-3 rounded-lg bg-white/3 border border-white/5 hover:bg-white/5 hover:border-brand-500/20 transition">
+        <div class="text-[12px] font-semibold text-brand-400 mb-1 leading-snug">${n.title}</div>
+        <div class="text-[10px] text-white/40 leading-relaxed">${n.description}</div>
+        ${n.date ? `<div class="text-[9px] text-white/20 mt-1.5 font-mono">${n.date}</div>` : ''}
+      </a>
+    `).join('');
+  }
 }
 
 function switchTCUTab(tab) {
