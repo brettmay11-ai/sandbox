@@ -50,40 +50,46 @@ function rewritePortalLinks() {
   });
 }
 
-function buildPortalPagePicker(pageId) {
+function buildPortalTopNavigation(pageId) {
   const nav = document.querySelector('nav');
   if (!nav) return;
 
-  const oldLinks = nav.querySelector('.hidden.lg\\:flex');
+  const brand = nav.firstElementChild;
+  const rightSide = nav.lastElementChild;
+  if (!brand || !rightSide) return;
+
+  const oldLinks = rightSide.firstElementChild;
   if (oldLinks) oldLinks.style.display = 'none';
 
-  const rightSide = nav.lastElementChild;
-  if (!rightSide) return;
+  nav.classList.add('gap-3');
+  brand.classList.add('shrink-0');
+  rightSide.classList.add('flex-1', 'min-w-0', 'justify-end');
 
-  const pickerWrap = document.createElement('label');
-  pickerWrap.className = 'flex items-center gap-2';
-  pickerWrap.innerHTML = `
-    <span class="hidden sm:inline text-[10px] text-white/40 uppercase tracking-wider">Page</span>
-    <select id="portal-page-picker" aria-label="Choose a page" class="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none cursor-pointer">
-      ${PORTAL_PAGES.map(page => `<option value="${page.id}"${page.id === pageId ? ' selected' : ''}>${page.label}</option>`).join('')}
-    </select>`;
+  const menu = document.createElement('div');
+  menu.className = 'flex-1 min-w-0 overflow-x-auto';
+  menu.setAttribute('aria-label', 'Main pages');
+  menu.style.scrollbarWidth = 'none';
+  menu.innerHTML = `
+    <div class="flex items-center justify-start lg:justify-end gap-1 min-w-max px-1">
+      ${PORTAL_PAGES.map(page => {
+        const active = page.id === pageId;
+        return `<a href="${portalPageUrl(page.id)}"${active ? ' aria-current="page"' : ''} class="whitespace-nowrap px-3 py-2 rounded-lg text-[11px] font-medium transition ${active ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30' : 'text-white/55 border border-transparent hover:text-white hover:bg-white/5'}">${page.label}</a>`;
+      }).join('')}
+    </div>`;
 
-  rightSide.prepend(pickerWrap);
-  pickerWrap.querySelector('select').addEventListener('change', event => {
-    window.location.href = portalPageUrl(event.target.value);
+  rightSide.prepend(menu);
+
+  const activeLink = menu.querySelector('[aria-current="page"]');
+  if (activeLink) activeLink.scrollIntoView({ block: 'nearest', inline: 'center' });
+
+  brand.setAttribute('role', 'link');
+  brand.setAttribute('tabindex', '0');
+  brand.setAttribute('aria-label', 'Go to home page');
+  brand.style.cursor = 'pointer';
+  brand.addEventListener('click', () => { window.location.href = portalPageUrl('home'); });
+  brand.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') window.location.href = portalPageUrl('home');
   });
-
-  const brand = nav.firstElementChild;
-  if (brand) {
-    brand.setAttribute('role', 'link');
-    brand.setAttribute('tabindex', '0');
-    brand.setAttribute('aria-label', 'Go to home page');
-    brand.style.cursor = 'pointer';
-    brand.addEventListener('click', () => { window.location.href = portalPageUrl('home'); });
-    brand.addEventListener('keydown', event => {
-      if (event.key === 'Enter' || event.key === ' ') window.location.href = portalPageUrl('home');
-    });
-  }
 }
 
 function addPageFooterNavigation(pageId) {
@@ -106,6 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const pageId = getCurrentPortalPage();
   rewritePortalLinks();
   showCurrentPortalPage(pageId);
-  buildPortalPagePicker(pageId);
+  buildPortalTopNavigation(pageId);
   addPageFooterNavigation(pageId);
 });
