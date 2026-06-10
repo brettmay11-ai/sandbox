@@ -124,5 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     loadPortalEnhancement('live-stats.js');
     loadPortalEnhancement('tcu-live.js');
+    loadPortalEnhancement('tcu-travel.js');
   }, 0);
 });
