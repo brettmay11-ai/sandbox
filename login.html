@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign In | NFL Project</title><script src="https://cdn.tailwindcss.com"></script><script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script><style>body{font-family:Inter,system-ui,sans-serif;background:#0a0a0a;color:#fff}.panel{background:#111;border:1px solid rgba(255,255,255,.1)}</style></head>
+<body class="min-h-screen flex items-center justify-center p-5">
+<main class="w-full max-w-md">
+  <div class="text-center mb-8"><div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-[#013369] flex items-center justify-center"><iconify-icon icon="lucide:trophy" class="text-3xl"></iconify-icon></div><h1 class="text-3xl font-bold">NFL Project</h1><p class="text-white/45 mt-2">Sign in with the username and PIN from your teacher.</p></div>
+  <form id="login-form" class="panel rounded-xl p-6 space-y-5">
+    <label class="block"><span class="text-xs text-white/55">Username</span><input id="username" autocomplete="username" required maxlength="32" class="mt-2 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-blue-500" placeholder="Your username"></label>
+    <label class="block"><span class="text-xs text-white/55">PIN</span><input id="pin" type="password" inputmode="numeric" autocomplete="current-password" required minlength="4" maxlength="8" pattern="[0-9]{4,8}" class="mt-2 w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-xl tracking-widest outline-none focus:border-blue-500" placeholder="••••"></label>
+    <div id="message" class="hidden rounded-lg p-3 text-sm"></div>
+    <button id="submit" class="w-full bg-[#013369] hover:bg-blue-700 rounded-lg py-3 font-semibold transition flex items-center justify-center gap-2"><iconify-icon icon="lucide:log-in"></iconify-icon> Sign In</button>
+  </form>
+</main>
+<script>
+const form=document.getElementById('login-form'),message=document.getElementById('message'),submit=document.getElementById('submit');
+form.addEventListener('submit',async event=>{event.preventDefault();message.classList.add('hidden');submit.disabled=true;submit.textContent='Signing in...';try{const response=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('username').value,pin:document.getElementById('pin').value})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Could not sign in.');window.location.href=data.user.role==='teacher'?'/teacher':'/';}catch(error){message.textContent=error.message;message.className='rounded-lg p-3 text-sm bg-red-500/10 border border-red-500/30 text-red-300';}finally{submit.disabled=false;submit.innerHTML='<iconify-icon icon="lucide:log-in"></iconify-icon> Sign In';}});
+</script></body></html>
