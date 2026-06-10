@@ -108,9 +108,9 @@ function addPageFooterNavigation(pageId) {
   footer.prepend(navigation);
 }
 
-function loadLiveStatistics() {
+function loadPortalEnhancement(source) {
   const script = document.createElement('script');
-  script.src = 'live-stats.js';
+  script.src = source;
   script.defer = true;
   document.body.appendChild(script);
 }
@@ -121,5 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
   showCurrentPortalPage(pageId);
   buildPortalTopNavigation(pageId);
   addPageFooterNavigation(pageId);
-  setTimeout(loadLiveStatistics, 0);
+  setTimeout(() => {
+    loadPortalEnhancement('live-stats.js');
+    loadPortalEnhancement('tcu-live.js');
+  }, 0);
 });
