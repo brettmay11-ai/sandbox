@@ -108,10 +108,18 @@ function addPageFooterNavigation(pageId) {
   footer.prepend(navigation);
 }
 
+function loadLiveStatistics() {
+  const script = document.createElement('script');
+  script.src = 'live-stats.js';
+  script.defer = true;
+  document.body.appendChild(script);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const pageId = getCurrentPortalPage();
   rewritePortalLinks();
   showCurrentPortalPage(pageId);
   buildPortalTopNavigation(pageId);
   addPageFooterNavigation(pageId);
+  setTimeout(loadLiveStatistics, 0);
 });
