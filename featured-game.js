@@ -25,15 +25,15 @@
   }
   async function installFeaturedGame(){
     if(typeof renderFeaturedGame!=='function'||typeof FEATURED_GAME==='undefined')return;
-    const image=document.getElementById('featured-bg-img');if(image){image.removeAttribute('src');image.style.background='#111'}
+    const image=document.getElementById('featured-bg-img');if(image){image.style.opacity='0';image.style.background='#111'}
     try{
       const {featuredGame}=await api('/api/featured-game');
-      if(featuredGame){Object.assign(FEATURED_GAME,featuredGame);FEATURED_GAME.bgImage='';renderFeaturedGame()}
+      if(featuredGame){Object.assign(FEATURED_GAME,featuredGame);FEATURED_GAME.bgImage=fallback;renderFeaturedGame()}
       const home=getTeam(FEATURED_GAME.home);if(!home)return;
-      const photo=await verifiedLocationPhoto(home),venue=photo.venue||VENUES[home.abbr];if(image){image.src=photo.url;image.alt=photo.kind==='stadium'?`${venue?.label||venue?.stadium||home.stadium}, home of the ${fullName(home)}`:`${home.city}, ${home.state}`;image.style.background=''}
+      const photo=await verifiedLocationPhoto(home),venue=photo.venue||VENUES[home.abbr];if(image){image.src=photo.url;image.alt=photo.kind==='stadium'?`${venue?.label||venue?.stadium||home.stadium}, home of the ${fullName(home)}`:`${home.city}, ${home.state}`;image.style.background='';image.onload=()=>{image.style.opacity='1'};image.onerror=()=>{image.src=fallback;image.style.opacity='1'}}
       const venueLabel=document.getElementById('featured-venue');if(venueLabel&&venue)venueLabel.textContent=venue.label||venue.stadium;
       const location=document.getElementById('featured-location');if(location){location.title=`Photo: ${photo.title} via Wikimedia`;location.textContent=photo.kind==='stadium'?`${home.city}, ${home.state} · Verified stadium photo via Wikimedia`:photo.kind==='city'?`${home.city}, ${home.state} · Verified city photo via Wikimedia`:`${home.city}, ${home.state}`}
-    }catch(error){console.warn('Teacher-selected featured game could not load.',error)}
+    }catch(error){if(image)image.style.opacity='1';console.warn('Teacher-selected featured game could not load.',error)}
   }
   installFeaturedGame();
 })();
