@@ -13,6 +13,19 @@ function tokenHash(token){return crypto.createHash('sha256').update(token).diges
 function sendJson(response,status,data){response.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});response.end(JSON.stringify(data))}
 function readJson(request){return new Promise((resolve,reject)=>{let body='';request.on('data',chunk=>{body+=chunk;if(body.length>100000)request.destroy()});request.on('end',()=>{try{resolve(body?JSON.parse(body):{})}catch(error){reject(error)}});request.on('error',reject)})}
 async function getUser(request){const token=parseCookies(request).nfl_session;if(!token)return null;const result=await pool.query(`SELECT u.id,u.username,u.display_name,u.role,u.selected_team FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>NOW() AND u.active=TRUE`,[tokenHash(token)]);return result.rows[0]||null}
+async function initClassroomSettings(){await pool.query(`CREATE TABLE IF NOT EXISTS classroom_settings(setting_key VARCHAR(40) PRIMARY KEY,setting_value JSONB NOT NULL,updated_by BIGINT REFERENCES users(id) ON DELETE SET NULL,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)}
+async function handleFeaturedGame(request,response,pathname,user){
+  if(pathname!=='/api/featured-game')return false;
+  if(!user)return sendJson(response,401,{error:'Please sign in.'}),true;
+  if(request.method==='GET'){const result=await pool.query("SELECT setting_value,updated_at FROM classroom_settings WHERE setting_key='featured_game'");return sendJson(response,200,{featuredGame:result.rows[0]?.setting_value||null,updatedAt:result.rows[0]?.updated_at||null}),true}
+  if(request.method!=='PATCH')return sendJson(response,405,{error:'Method not allowed.'}),true;
+  if(user.role!=='teacher')return sendJson(response,403,{error:'Teacher access required.'}),true;
+  const body=await readJson(request),week=Math.max(1,Math.min(18,Number(body.week)||1)),away=String(body.away||'').toUpperCase(),home=String(body.home||'').toUpperCase();
+  if(!NFL_TEAMS.has(away)||!NFL_TEAMS.has(home)||away===home)return sendJson(response,400,{error:'Choose two different NFL teams.'}),true;
+  const featuredGame={week,away,home,day:String(body.day||'Sunday').slice(0,20),time:String(body.time||'1:00 PM ET').slice(0,30),discussion:String(body.discussion||'').slice(0,1000)};
+  await pool.query("INSERT INTO classroom_settings(setting_key,setting_value,updated_by) VALUES('featured_game',$1,$2) ON CONFLICT(setting_key) DO UPDATE SET setting_value=EXCLUDED.setting_value,updated_by=EXCLUDED.updated_by,updated_at=NOW()",[featuredGame,user.id]);
+  sendJson(response,200,{featuredGame});return true;
+}
 async function handleTeamAssignment(request,response,pathname,user){
   const match=pathname.match(/^\/api\/teacher\/students\/(\d+)\/team$/);
   if(!match||request.method!=='PATCH')return false;
@@ -33,14 +46,15 @@ async function handleStudentProgress(request,response,pathname,user){
 }
 
 (async()=>{
-  await initMathGame(pool);
+  await initMathGame(pool);await initClassroomSettings();
   const createServer=http.createServer.bind(http);
   http.createServer=function classroomGameServer(originalListener){
     return createServer(async(request,response)=>{
       try{
         const pathname=decodeURIComponent(new URL(request.url,`http://${request.headers.host||'localhost'}`).pathname);
-        if(pathname.startsWith('/api/math-game/')||pathname.includes('/team')||(pathname==='/api/progress'&&request.method==='POST')){
+        if(pathname.startsWith('/api/math-game/')||pathname.includes('/team')||pathname==='/api/featured-game'||(pathname==='/api/progress'&&request.method==='POST')){
           const user=await getUser(request);
+          if(await handleFeaturedGame(request,response,pathname,user))return;
           if(await handleTeamAssignment(request,response,pathname,user))return;
           if(await handleStudentProgress(request,response,pathname,user))return;
           if(pathname.startsWith('/api/math-game/')){await handleMathGame({pool,req:request,res:response,path:pathname,user,sendJson,readJson});return;}
