@@ -24,6 +24,13 @@ async function handleTeamAssignment(request,response,pathname,user){
   if(!result.rowCount)return sendJson(response,404,{error:'Student not found.'}),true;
   sendJson(response,200,{student:result.rows[0]});return true;
 }
+async function handleStudentProgress(request,response,pathname,user){
+  if(pathname!=='/api/progress'||request.method!=='POST')return false;
+  if(!user)return sendJson(response,401,{error:'Please sign in.'}),true;
+  const body=await readJson(request);
+  if(body.page)await pool.query('INSERT INTO progress(user_id,page,completed) VALUES($1,$2,$3) ON CONFLICT(user_id,page) DO UPDATE SET completed=EXCLUDED.completed,updated_at=NOW()',[user.id,String(body.page).slice(0,32),Boolean(body.completed)]);
+  sendJson(response,200,{ok:true,selectedTeam:user.selected_team});return true;
+}
 
 (async()=>{
   await initMathGame(pool);
@@ -32,9 +39,10 @@ async function handleTeamAssignment(request,response,pathname,user){
     return createServer(async(request,response)=>{
       try{
         const pathname=decodeURIComponent(new URL(request.url,`http://${request.headers.host||'localhost'}`).pathname);
-        if(pathname.startsWith('/api/math-game/')||pathname.includes('/team')){
+        if(pathname.startsWith('/api/math-game/')||pathname.includes('/team')||(pathname==='/api/progress'&&request.method==='POST')){
           const user=await getUser(request);
           if(await handleTeamAssignment(request,response,pathname,user))return;
+          if(await handleStudentProgress(request,response,pathname,user))return;
           if(pathname.startsWith('/api/math-game/')){await handleMathGame({pool,req:request,res:response,path:pathname,user,sendJson,readJson});return;}
         }
         originalListener(request,response);
