@@ -1,0 +1,22 @@
+async function handleTeacherAnalytics({pool,req,res,path,user,sendJson}){
+  if(path!=='/api/teacher/analytics')return false;
+  if(!user){sendJson(res,401,{error:'Please sign in.'});return true}
+  if(user.role!=='teacher'){sendJson(res,403,{error:'Teacher access required.'});return true}
+  if(req.method!=='GET'){sendJson(res,405,{error:'Method not allowed.'});return true}
+  const students=(await pool.query(`
+    WITH progress_totals AS (SELECT user_id,COUNT(*) FILTER(WHERE completed)::int AS completed_pages FROM progress GROUP BY user_id),
+    engagement_totals AS (SELECT user_id,COUNT(*) FILTER(WHERE event_type='page_view')::int AS page_views,COALESCE(SUM(duration_seconds) FILTER(WHERE event_type='time_spent'),0)::int AS time_seconds,MAX(created_at) AS last_activity FROM engagement_events GROUP BY user_id),
+    weekly AS (SELECT user_id,xp,correct_answers,questions_answered,touchdowns FROM math_weekly_stats WHERE week_start=date_trunc('week',CURRENT_DATE)::date)
+    SELECT u.id,u.display_name,u.username,u.selected_team,u.active,u.last_login_at,
+      COALESCE(p.total_xp,0)::int AS total_xp,COALESCE(w.xp,0)::int AS weekly_xp,COALESCE(p.touchdowns,0)::int AS touchdowns,
+      COALESCE(p.correct_answers,0)::int AS correct_answers,COALESCE(p.questions_answered,0)::int AS questions_answered,
+      CASE WHEN COALESCE(p.questions_answered,0)>0 THEN ROUND(p.correct_answers*100.0/p.questions_answered)::int ELSE 0 END AS accuracy,
+      COALESCE(p.current_streak,0)::int AS current_streak,COALESCE(p.best_streak,0)::int AS best_streak,COALESCE(p.drive_yards,0)::int AS drive_yards,
+      COALESCE(pt.completed_pages,0)::int AS completed_pages,COALESCE(e.page_views,0)::int AS page_views,COALESCE(e.time_seconds,0)::int AS time_seconds,e.last_activity
+    FROM users u LEFT JOIN math_profiles p ON p.user_id=u.id LEFT JOIN weekly w ON w.user_id=u.id LEFT JOIN progress_totals pt ON pt.user_id=u.id LEFT JOIN engagement_totals e ON e.user_id=u.id
+    WHERE u.role='student' ORDER BY u.display_name
+  `)).rows;
+  const active=students.filter(student=>student.active),sum=key=>active.reduce((total,student)=>total+Number(student[key]||0),0),average=key=>active.length?Math.round(sum(key)/active.length):0;
+  sendJson(res,200,{students,summary:{activeStudents:active.length,totalXp:sum('total_xp'),weeklyXp:sum('weekly_xp'),averageAccuracy:average('accuracy'),completedPages:sum('completed_pages'),totalMinutes:Math.round(sum('time_seconds')/60)}});return true
+}
+module.exports={handleTeacherAnalytics};
