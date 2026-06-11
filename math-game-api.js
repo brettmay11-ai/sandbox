@@ -43,10 +43,9 @@ async function handleMathGame({pool,req,res,path,user,sendJson,readJson}){
     sendJson(res,201,{challenge:{id,question:challenge.question,difficulty:challenge.difficulty,xp:challenge.xp,yards:challenge.yards}});return true;
   }
   if(path==='/api/math-game/answer'&&req.method==='POST'){
-    const body=await readJson(req),result=await pool.query('SELECT * FROM math_challenges WHERE id=$1 AND user_id=$2 AND answered_at IS NULL',[String(body.challengeId||''),user.id]);
+    const body=await readJson(req),result=await pool.query('UPDATE math_challenges SET answered_at=NOW() WHERE id=$1 AND user_id=$2 AND answered_at IS NULL RETURNING *',[String(body.challengeId||''),user.id]);
     const challenge=result.rows[0];if(!challenge){sendJson(res,404,{error:'That question is no longer active.'});return true;}
     const correct=Math.abs(Number(body.answer)-Number(challenge.answer))<0.001;
-    await pool.query('UPDATE math_challenges SET answered_at=NOW() WHERE id=$1',[challenge.id]);
     await pool.query('INSERT INTO math_profiles(user_id) VALUES($1) ON CONFLICT DO NOTHING',[user.id]);
     const previous=(await pool.query('SELECT * FROM math_profiles WHERE user_id=$1',[user.id])).rows[0];
     const combined=previous.drive_yards+(correct?challenge.yards:0),newTouchdowns=Math.floor(combined/100),driveYards=combined%100,currentStreak=correct?previous.current_streak+1:0;
