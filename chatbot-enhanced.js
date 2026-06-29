@@ -171,9 +171,17 @@
     safeMessage(text, 'user');
     freshInput.value = '';
     try {
-      await api('/api/coach/log', { method:'POST', body:JSON.stringify({ page, question:text }) });
+      const logged = await api('/api/coach/log', { method:'POST', body:JSON.stringify({ page, question:text }) });
+      if (logged.safety?.blocked) {
+        safeMessage(logged.safety.message);
+        return;
+      }
       if (activeChallenge) {
         const result = await api('/api/coach/answer', { method:'POST', body:JSON.stringify({ challengeId:activeChallenge.id, answer:text }) });
+        if (result.safety?.blocked) {
+          safeMessage(result.safety.message);
+          return;
+        }
         activeChallenge = null;
         window.showEarnedBadges?.(result.awardedBadges);
         safeMessage(result.correct ? `Correct! ${result.explanation} You earned ${result.xpEarned} XP.` : `Good try. ${result.explanation} The answer was ${result.correctAnswer}.`);
