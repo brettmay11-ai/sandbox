@@ -28,6 +28,15 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hid
 .section-reveal{opacity:0;transform:translateY(30px);transition:all 0.8s cubic-bezier(0.4,0,0.2,1)}.section-reveal.visible{opacity:1;transform:translateY(0)}
 @keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(1,51,105,0.3)}50%{box-shadow:0 0 20px rgba(1,51,105,0.6)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
 .fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:rgba(1,51,105,0.3)}
+.tcu-page{position:relative;overflow:hidden;background:radial-gradient(circle at 18% 8%,rgba(77,25,121,.38),transparent 28%),radial-gradient(circle at 84% 20%,rgba(139,168,196,.18),transparent 26%),linear-gradient(180deg,#070509 0,#12091b 48%,#08070a 100%)}
+.tcu-page:before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 86px),linear-gradient(90deg,rgba(77,25,121,.22),transparent 22%,transparent 78%,rgba(255,255,255,.05));opacity:.7}
+.tcu-shell{position:relative;z-index:1}.tcu-hero{position:relative;overflow:hidden;min-height:420px;background:linear-gradient(135deg,#4D1979 0,#241033 48%,#050407 100%);border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 90px rgba(0,0,0,.45)}
+.tcu-hero:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.11) 0 1px,transparent 1px 10%),linear-gradient(180deg,rgba(255,255,255,.12),transparent 45%,rgba(0,0,0,.42));opacity:.5}
+.tcu-hero:after{content:'TCU';position:absolute;right:-20px;bottom:-48px;font-size:180px;font-weight:900;line-height:.8;color:rgba(255,255,255,.045);letter-spacing:-10px}
+.tcu-logo-lockup{background:rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+.tcu-panel{background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.028));border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 60px rgba(0,0,0,.24)}
+.tcu-panel h3 iconify-icon,.tcu-purple{color:#B89CFF}.tcu-tab-active{background:rgba(77,25,121,.34)!important;border-color:rgba(184,156,255,.45)!important;color:#fff!important}
+.tcu-stat-card{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12)}.tcu-row{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}.tcu-row:hover{background:rgba(77,25,121,.18);border-color:rgba(184,156,255,.25)}
 .player-row:hover{background:rgba(255,255,255,0.04)}
 .toast{transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1)}.toast.show{transform:translateY(0);opacity:1}
 .away-row:nth-child(even){background:rgba(255,255,255,0.015)}
@@ -305,45 +314,67 @@ select option{background:#1a1a1a;color:#fff}
 </section>
 
   <!-- ===== TCU HORNED FROGS SECTION ===== -->
-<section id="TCU" class="py-24 px-4 md:px-6 section-reveal">
-  <div class="max-w-7xl mx-auto">
-    
-    <!-- Dynamic Header -->
-    <div id="tcu-header" class="text-center mb-10">
-      <div class="flex items-center justify-center gap-4 mb-2">
-        <img src="https://a.espncdn.com/i/teamlogos/ncaa/football/130.png" alt="TCU Logo" class="w-20 h-20" onerror="this.style.display='none'">
-        <h2 id="tcu-team-name" class="text-4xl font-bold text-white">Loading TCU Data...</h2>
-      </div>
-      <p id="tcu-team-subtitle" class="text-white/40 text-sm">Fetching from SportsData.io...</p>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    
-    <!-- Schedule Column -->
-    <div class="lg:col-span-1">
-      <div class="glass-panel rounded-xl p-5">
-        <h3 class="text-sm font-semibold mb-4 flex items-center gap-2 text-white/70"><iconify-icon icon="lucide:calendar" class="text-brand-400"></iconify-icon> 2024 Schedule</h3>
-        <div id="tcu-schedule-list" class="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-          <!-- Schedule renders here -->
+<section id="TCU" class="tcu-page py-24 px-4 md:px-6 section-reveal">
+  <div class="tcu-shell max-w-7xl mx-auto">
+    <div id="tcu-header" class="tcu-hero mb-8 p-5 md:p-8">
+      <div class="relative z-10 grid lg:grid-cols-[1fr_300px] gap-8 items-center min-h-[360px]">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 border border-white/15 bg-black/25 text-[10px] uppercase tracking-[.24em] text-white/65 font-black mb-5">
+            <span class="w-2 h-2 rounded-full bg-white"></span> Fort Worth Game Day
+          </div>
+          <h2 id="tcu-team-name" class="text-5xl md:text-7xl font-black leading-none tracking-tight text-white">Loading TCU Data...</h2>
+          <p id="tcu-team-subtitle" class="text-white/60 text-sm md:text-base mt-5 max-w-2xl">Fetching from SportsData.io...</p>
+          <div class="grid sm:grid-cols-3 gap-3 mt-8 max-w-3xl">
+            <div class="tcu-stat-card p-4"><div class="text-[9px] uppercase tracking-widest text-white/35 font-black">Colors</div><div class="flex items-center gap-2 mt-2"><span class="w-8 h-8 bg-[#4D1979] border border-white/20"></span><span class="w-8 h-8 bg-white border border-white/20"></span><span class="w-8 h-8 bg-[#8BA8C4] border border-white/20"></span></div></div>
+            <div class="tcu-stat-card p-4"><div class="text-[9px] uppercase tracking-widest text-white/35 font-black">Home</div><div class="text-lg font-black mt-1">Amon G. Carter</div></div>
+            <div class="tcu-stat-card p-4"><div class="text-[9px] uppercase tracking-widest text-white/35 font-black">Mascot</div><div class="text-lg font-black mt-1">Horned Frogs</div></div>
+          </div>
+        </div>
+        <div class="tcu-logo-lockup p-6 flex flex-col items-center text-center">
+          <img src="https://a.espncdn.com/i/teamlogos/ncaa/football/500/2628.png" alt="TCU Horned Frogs logo" class="w-40 h-40 object-contain drop-shadow-2xl" onerror="this.src='https://a.espncdn.com/i/teamlogos/ncaa/football/130.png'">
+          <div class="mt-4 text-[10px] uppercase tracking-[.26em] text-white/45 font-black">Texas Christian University</div>
+          <div class="text-2xl font-black mt-1">Go Frogs</div>
         </div>
       </div>
     </div>
 
-    <!-- Stats Column -->
-    <div class="lg:col-span-2">
-      <div class="flex gap-2 mb-4">
-        <button onclick="switchTCUTab('passing')" data-tcutab="passing" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 transition active">Passing</button>
-        <button onclick="switchTCUTab('rushing')" data-tcutab="rushing" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 transition">Rushing</button>
-        <button onclick="switchTCUTab('receiving')" data-tcutab="receiving" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 transition">Receiving</button>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-1">
+        <div class="tcu-panel p-5">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="text-sm font-black flex items-center gap-2 text-white"><iconify-icon icon="lucide:calendar-days"></iconify-icon> Season Schedule</h3>
+            <span class="text-[9px] uppercase tracking-widest text-white/35">Live</span>
+          </div>
+          <div id="tcu-schedule-list" class="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+            <!-- Schedule renders here -->
+          </div>
+        </div>
       </div>
-      <div class="glass-panel rounded-xl overflow-hidden">
-        <table class="w-full text-left">
-          <thead id="tcu-thead" class="border-b border-white/6"></thead>
-          <tbody id="tcu-tbody" class="divide-y divide-white/4"></tbody>
-        </table>
+
+      <div class="lg:col-span-2">
+        <div class="tcu-panel overflow-hidden">
+          <div class="p-5 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div class="text-[10px] uppercase tracking-[.24em] text-white/35 font-black">Frog Leaders</div>
+              <h3 class="text-2xl font-black mt-1">Player Stats</h3>
+            </div>
+            <div class="flex gap-2 overflow-x-auto">
+              <button onclick="switchTCUTab('passing')" data-tcutab="passing" class="tcutab-btn tcu-tab-active text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 transition active">Passing</button>
+              <button onclick="switchTCUTab('rushing')" data-tcutab="rushing" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 transition">Rushing</button>
+              <button onclick="switchTCUTab('receiving')" data-tcutab="receiving" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 transition">Receiving</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead id="tcu-thead" class="border-b border-white/6"></thead>
+              <tbody id="tcu-tbody" class="divide-y divide-white/4"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
-    </section>
+  </div>
+</section>
 
 <!-- Modals -->
 <div id="team-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
@@ -1742,15 +1773,15 @@ async function renderTCUSection() {
       const isBye = g.opp === "BYE";
       const isFuture = !g.result && !isBye;
 
-      return `<div class="flex items-center justify-between p-2.5 rounded-lg ${isBye ? 'bg-white/2' : 'bg-white/3'} border border-white/5">
-        <div class="flex items-center gap-2">
-          <span class="text-[10px] font-mono text-white/30 w-6">W${g.week}</span>
-          <span class="text-[11px] font-medium ${isBye ? 'text-white/30 italic' : ''}">${g.opp}</span>
+      return `<div class="tcu-row flex items-center justify-between p-3 ${isBye ? 'opacity-60' : ''}">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="grid place-items-center text-[10px] font-black text-white bg-[#4D1979] border border-white/15 w-8 h-8">W${g.week}</span>
+          <span class="text-[12px] font-semibold truncate ${isBye ? 'text-white/35 italic' : ''}">${g.opp}</span>
         </div>
         <div class="text-right">
-          <div class="text-[9px] text-white/30">${g.date}</div>
-          ${isFuture ? '<div class="text-[9px] text-brand-400">Upcoming</div>' : 
-            isBye ? '' : `<div class="text-[10px] font-semibold ${isWin ? 'text-green-400' : 'text-red-400'}">${g.result}</div>`}
+          <div class="text-[9px] text-white/35">${g.date}</div>
+          ${isFuture ? '<div class="text-[9px] tcu-purple font-bold">Upcoming</div>' :
+            isBye ? '' : `<div class="text-[10px] font-semibold ${isWin ? 'text-green-300' : 'text-red-300'}">${g.result}</div>`}
         </div>
       </div>`;
     }).join('');
@@ -1776,9 +1807,7 @@ async function renderTCUSection() {
 function switchTCUTab(tab) {
   currentTCUTab = tab;
   document.querySelectorAll('.tcutab-btn').forEach(b => {
-    b.classList.toggle('!bg-brand-500/15', b.dataset.tcutab === tab);
-    b.classList.toggle('!text-brand-400', b.dataset.tcutab === tab);
-    b.classList.toggle('!border-brand-500/30', b.dataset.tcutab === tab);
+    b.classList.toggle('tcu-tab-active', b.dataset.tcutab === tab);
   });
   renderTCUStats();
 }
@@ -1788,13 +1817,13 @@ function renderTCUStats() {
   const thead = document.getElementById('tcu-thead');
   const tbody = document.getElementById('tcu-tbody');
 
-  thead.innerHTML = `<tr class="border-b border-white/6">${data.headers.map(h => 
-    `<th class="px-4 py-3 text-left text-[10px] font-mono text-white/40 uppercase tracking-wider whitespace-nowrap">${h}</th>`
+  thead.innerHTML = `<tr class="border-b border-white/6 bg-[#4D1979]/20">${data.headers.map(h =>
+    `<th class="px-4 py-3 text-left text-[10px] font-mono text-white/45 uppercase tracking-wider whitespace-nowrap">${h}</th>`
   ).join('')}</tr>`;
 
   tbody.innerHTML = data.players.map(p => `
-    <tr class="player-row border-b border-white/4 transition">
-      <td class="px-4 py-3 text-[12px] font-semibold whitespace-nowrap text-brand-300">${p[0]}</td>
+    <tr class="player-row border-b border-white/4 transition hover:bg-[#4D1979]/15">
+      <td class="px-4 py-3 text-[12px] font-semibold whitespace-nowrap tcu-purple">${p[0]}</td>
       ${p.slice(1).map(val => `<td class="px-4 py-3 text-[11px] font-mono text-white/60">${val}</td>`).join('')}
     </tr>
   `).join('');

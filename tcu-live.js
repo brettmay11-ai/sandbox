@@ -10,7 +10,7 @@ async function fetchTCUJson(path) {
   const timeout = setTimeout(() => controller.abort(), 12000);
   try {
     const separator = path.includes('?') ? '&' : '?';
-    const response = await fetch(`${TCU_CFB_API}/${path}${separator}key=${TCU_CFB_API_KEY}`, { signal: controller.signal });
+    const response = await fetch(`${TCU_CFB_API}/${path}${separator}key=${TCU_CFB_API_KEY}`, { signal:controller.signal });
     if (!response.ok) throw new Error(`SportsData.io CFB returned ${response.status}`);
     return await response.json();
   } finally {
@@ -21,7 +21,7 @@ async function fetchTCUJson(path) {
 function formatTCUValue(value) {
   const number = Number(value || 0);
   if (Number.isInteger(number)) return number.toLocaleString();
-  return number.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  return number.toLocaleString(undefined, { maximumFractionDigits:1 });
 }
 
 async function resolveTCUSeason() {
@@ -72,7 +72,7 @@ function updateTCUPlayerStats() {
 
   const tabs = document.querySelector('[data-tcutab="receiving"]')?.parentElement;
   if (tabs && !tabs.querySelector('[data-tcutab="defense"]')) {
-    tabs.insertAdjacentHTML('beforeend', '<button onclick="switchTCUTab(\'defense\')" data-tcutab="defense" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 transition">Defense</button>');
+    tabs.insertAdjacentHTML('beforeend', '<button onclick="switchTCUTab(\'defense\')" data-tcutab="defense" class="tcutab-btn text-[10px] px-3 py-1.5 rounded-full bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 transition">Defense</button>');
   }
   renderTCUStats();
 }
@@ -80,22 +80,19 @@ function updateTCUPlayerStats() {
 function renderLiveTCUSchedule(games) {
   const list = document.getElementById('tcu-schedule-list');
   if (!list) return;
-
-  list.innerHTML = games
-    .sort((a, b) => Number(a.Week) - Number(b.Week))
-    .map(game => {
-      const isHome = game.HomeTeam === 'TCU';
-      const opponent = isHome ? game.AwayTeamName : game.HomeTeamName;
-      const tcuScore = isHome ? game.HomeTeamScore : game.AwayTeamScore;
-      const opponentScore = isHome ? game.AwayTeamScore : game.HomeTeamScore;
-      const final = game.Status === 'Final' || game.IsClosed;
-      const won = final && Number(tcuScore) > Number(opponentScore);
-      const date = new Date(game.DateTime || game.Day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      return `<div class="flex items-center justify-between p-2.5 rounded-lg bg-white/3 border border-white/5">
-        <div class="flex items-center gap-2 min-w-0"><span class="text-[10px] font-mono text-white/30 w-7">W${game.Week}</span><span class="text-[11px] font-medium truncate">${isHome ? '' : '@ '}${opponent}</span></div>
-        <div class="text-right shrink-0"><div class="text-[9px] text-white/30">${date}${game.Channel ? ` · ${game.Channel}` : ''}</div>${final ? `<div class="text-[10px] font-semibold ${won ? 'text-green-400' : 'text-red-400'}">${won ? 'W' : 'L'} ${formatTCUValue(tcuScore)}-${formatTCUValue(opponentScore)}</div>` : '<div class="text-[9px] text-brand-400">Upcoming</div>'}</div>
-      </div>`;
-    }).join('');
+  list.innerHTML = games.sort((a, b) => Number(a.Week) - Number(b.Week)).map(game => {
+    const isHome = game.HomeTeam === 'TCU';
+    const opponent = isHome ? game.AwayTeamName : game.HomeTeamName;
+    const tcuScore = isHome ? game.HomeTeamScore : game.AwayTeamScore;
+    const opponentScore = isHome ? game.AwayTeamScore : game.HomeTeamScore;
+    const final = game.Status === 'Final' || game.IsClosed;
+    const won = final && Number(tcuScore) > Number(opponentScore);
+    const date = new Date(game.DateTime || game.Day).toLocaleDateString(undefined, { month:'short', day:'numeric' });
+    return `<div class="tcu-row flex items-center justify-between p-3">
+      <div class="flex items-center gap-3 min-w-0"><span class="grid place-items-center text-[10px] font-black text-white bg-[#4D1979] border border-white/15 w-8 h-8">W${game.Week}</span><span class="text-[12px] font-semibold truncate">${isHome ? '' : '@ '}${opponent}</span></div>
+      <div class="text-right shrink-0"><div class="text-[9px] text-white/35">${date}${game.Channel ? ` · ${game.Channel}` : ''}</div>${final ? `<div class="text-[10px] font-semibold ${won ? 'text-green-300' : 'text-red-300'}">${won ? 'W' : 'L'} ${formatTCUValue(tcuScore)}-${formatTCUValue(opponentScore)}</div>` : '<div class="text-[9px] tcu-purple font-bold">Upcoming</div>'}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderTCUSeasonSummary(team, teamStats) {
@@ -110,7 +107,7 @@ function renderTCUSeasonSummary(team, teamStats) {
     summary = document.createElement('div');
     summary.id = 'tcu-live-summary';
     summary.className = 'grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 text-left';
-    header.appendChild(summary);
+    header.querySelector('.relative.z-10 > div:first-child')?.appendChild(summary);
   }
 
   const record = teamStats ? `${teamStats.Wins}-${teamStats.Losses}` : `${team.Wins}-${team.Losses}`;
@@ -120,13 +117,12 @@ function renderTCUSeasonSummary(team, teamStats) {
     ['Big 12 Record', conferenceRecord],
     ['Points For', formatTCUValue(teamStats?.PointsFor)],
     ['Points Against', formatTCUValue(teamStats?.PointsAgainst)]
-  ].map(([label, value]) => `<div class="glass-panel rounded-xl p-4"><div class="text-[9px] text-white/30 uppercase tracking-wider">${label}</div><div class="text-xl font-bold mt-1">${value}</div></div>`).join('');
+  ].map(([label, value]) => `<div class="tcu-stat-card p-4"><div class="text-[9px] text-white/35 uppercase tracking-wider font-black">${label}</div><div class="text-xl font-black mt-1">${value}</div></div>`).join('');
 }
 
 async function initializeLiveTCU() {
   const section = document.getElementById('TCU');
   if (!section) return;
-
   try {
     liveTCUSeason = await resolveTCUSeason();
     const [teams, games, teamStats] = await Promise.all([
