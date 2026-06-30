@@ -27,12 +27,40 @@
     .coach-avatar{background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));box-shadow:0 0 0 1px rgba(255,255,255,.18) inset}
     .coach-send{background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));box-shadow:0 8px 24px rgba(0,0,0,.28)}
     .coach-input-shell{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1)}
+    .sideline-coach{position:fixed;right:86px;bottom:20px;z-index:49;width:92px;height:104px;pointer-events:none;filter:drop-shadow(0 18px 22px rgba(0,0,0,.48));transform-origin:bottom right;animation:coach-bob 3.4s ease-in-out infinite}
+    .sideline-coach.hidden-coach{opacity:0;transform:translateY(12px) scale(.82);animation:none;transition:opacity .2s ease,transform .2s ease}
+    .sideline-coach-body{position:absolute;left:22px;right:14px;bottom:4px;height:58px;border-radius:22px 22px 12px 12px;background:linear-gradient(135deg,var(--student-team-primary,#013369),color-mix(in srgb,var(--student-team-secondary,#D50A0A) 72%,var(--student-team-primary,#013369)));border:2px solid rgba(255,255,255,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.34)}
+    .sideline-coach-body:before{content:'';position:absolute;left:8px;right:8px;top:11px;height:3px;background:rgba(255,255,255,.72);box-shadow:0 10px 0 rgba(255,255,255,.24)}
+    .sideline-coach-head{position:absolute;left:20px;top:12px;width:50px;height:50px;border-radius:50%;background:linear-gradient(145deg,#ffd7aa,#b87546);border:2px solid rgba(255,255,255,.82);box-shadow:inset 0 2px 0 rgba(255,255,255,.35)}
+    .sideline-coach-cap{position:absolute;left:17px;top:6px;width:56px;height:24px;border-radius:22px 22px 12px 12px;background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));border:2px solid rgba(255,255,255,.75);z-index:2}
+    .sideline-coach-cap:after{content:'';position:absolute;right:-12px;top:11px;width:22px;height:8px;border-radius:999px;background:var(--student-team-secondary,#D50A0A);border:1px solid rgba(255,255,255,.62)}
+    .sideline-coach-face{position:absolute;left:29px;top:31px;width:4px;height:4px;border-radius:999px;background:#1f2937;box-shadow:17px 0 0 #1f2937,7px 12px 0 -1px rgba(31,41,55,.85)}
+    .sideline-coach-headset{position:absolute;left:13px;top:20px;width:58px;height:38px;border:4px solid #111827;border-bottom:0;border-radius:32px 32px 0 0;z-index:3}
+    .sideline-coach-headset:before{content:'';position:absolute;left:-5px;top:22px;width:11px;height:16px;border-radius:6px;background:#111827}.sideline-coach-headset:after{content:'';position:absolute;right:-7px;top:24px;width:30px;height:4px;background:#111827;transform:rotate(20deg);transform-origin:left center}
+    .sideline-coach-mic{position:absolute;right:8px;top:49px;width:13px;height:8px;border-radius:999px;background:#111827;z-index:4}
+    .sideline-playsheet{position:absolute;right:0;bottom:22px;width:34px;height:43px;transform:rotate(-8deg);border-radius:5px;background:linear-gradient(180deg,#f8fafc,#dbeafe);border:2px solid rgba(15,23,42,.45);box-shadow:0 8px 14px rgba(0,0,0,.28)}
+    .sideline-playsheet:before{content:'';position:absolute;left:6px;right:6px;top:9px;height:2px;background:#1f7a3a;box-shadow:0 8px 0 #1f7a3a,0 16px 0 #1f7a3a}.sideline-playsheet:after{content:'X';position:absolute;right:6px;bottom:5px;color:#dc2626;font-size:10px;font-weight:900}
+    .sideline-coach-shadow{position:absolute;left:19px;right:10px;bottom:0;height:12px;border-radius:999px;background:rgba(0,0,0,.35);filter:blur(3px)}
+    @media (max-width:640px){.sideline-coach{right:70px;bottom:18px;width:70px;height:80px;transform:scale(.78);transform-origin:bottom right}.sideline-coach.hidden-coach{transform:translateY(10px) scale(.68)}}
+    @keyframes coach-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
   `;
   document.head.appendChild(style);
 
   button.title = 'Open Team Research Coach';
   button.className = 'fixed bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition z-50';
   button.innerHTML = '<iconify-icon icon="lucide:message-circle-more" class="relative text-white text-2xl"></iconify-icon>';
+  let coachBuddy = document.getElementById('sideline-coach');
+  if (!coachBuddy) {
+    coachBuddy = document.createElement('div');
+    coachBuddy.id = 'sideline-coach';
+    coachBuddy.className = 'sideline-coach';
+    coachBuddy.setAttribute('aria-hidden', 'true');
+    coachBuddy.innerHTML = '<div class="sideline-coach-shadow"></div><div class="sideline-coach-body"></div><div class="sideline-coach-head"></div><div class="sideline-coach-cap"></div><div class="sideline-coach-face"></div><div class="sideline-coach-headset"></div><div class="sideline-coach-mic"></div><div class="sideline-playsheet"></div>';
+    document.body.appendChild(coachBuddy);
+  }
+  const syncCoachBuddy = () => coachBuddy.classList.toggle('hidden-coach', !win.classList.contains('hidden'));
+  new MutationObserver(syncCoachBuddy).observe(win, { attributes:true, attributeFilter:['class'] });
+  syncCoachBuddy();
 
   win.className = 'hidden coach-console fixed bottom-24 right-3 sm:right-6 w-[calc(100vw-24px)] sm:w-[430px] h-[620px] max-h-[calc(100vh-120px)] border border-white/10 flex flex-col z-50 overflow-hidden';
   win.innerHTML = `
