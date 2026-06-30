@@ -2,6 +2,7 @@
   const page = typeof getCurrentPortalPage === 'function' ? getCurrentPortalPage() : 'home';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let cachedUser = null;
+  let cachedMath = null;
   const queue = [];
   let animating = false;
 
@@ -20,6 +21,19 @@
     .locker-section{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.022));border:1px solid rgba(255,255,255,.11);box-shadow:0 18px 60px rgba(0,0,0,.22)}
     .locker-cubby{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.12)}
     .locker-cubby:before{content:'';position:absolute;left:12px;right:12px;top:10px;height:4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 9px,transparent 9px 15px);opacity:.45}
+    .player-card{position:relative;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb,var(--student-team-primary,#013369) 72%,#080808),#0d0f13 58%,color-mix(in srgb,var(--student-team-secondary,#D50A0A) 44%,#090909));border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 80px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+    .player-card:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.09),transparent 25%,transparent 75%,rgba(255,255,255,.07)),repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px);opacity:.5}
+    .player-card-logo{background:rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.18)}
+    .field-progress{position:relative;overflow:hidden;background:repeating-linear-gradient(90deg,#143f25 0,#143f25 calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px),rgba(255,255,255,.22) 10%);border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 0 40px rgba(0,0,0,.35)}
+    .field-progress:before,.field-progress:after{content:'END ZONE';position:absolute;top:0;bottom:0;width:42px;display:grid;place-items:center;background:color-mix(in srgb,var(--student-team-primary,#013369) 74%,#07110b);color:rgba(255,255,255,.68);font-size:7px;font-weight:900;writing-mode:vertical-rl;letter-spacing:1px;z-index:2}
+    .field-progress:before{left:0}.field-progress:after{right:0}
+    .field-fill{position:absolute;left:42px;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,214,10,.12),rgba(255,214,10,.32));border-right:3px solid #ffd60a;transition:width .55s ease}
+    .field-ball{position:absolute;top:50%;transform:translate(-50%,-50%);z-index:3;width:34px;height:22px;border-radius:50%;background:#7b3f18;border:2px solid rgba(255,255,255,.75);box-shadow:0 8px 18px rgba(0,0,0,.35)}
+    .field-ball:before{content:'';position:absolute;left:8px;right:8px;top:50%;height:2px;background:#fff;transform:translateY(-50%)}.field-ball:after{content:'';position:absolute;left:50%;top:4px;bottom:4px;width:2px;background:#fff;transform:translateX(-50%)}
+    .trophy-case{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 80px rgba(0,0,0,.28)}
+    .trophy-case:before{content:'';position:absolute;inset:0;background:linear-gradient(110deg,rgba(255,255,255,.18),transparent 16%,transparent 48%,rgba(255,255,255,.08) 52%,transparent 70%);pointer-events:none}
+    .trophy-shelf{position:relative;padding-bottom:18px}.trophy-shelf:after{content:'';position:absolute;left:0;right:0;bottom:0;height:10px;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,0,0,.35));border-top:1px solid rgba(255,255,255,.18)}
+    .trophy-badge{position:relative;text-align:center}.trophy-badge:before{content:'';position:absolute;left:50%;top:-10px;width:72px;height:72px;transform:translateX(-50%);background:radial-gradient(circle,var(--badge-accent,#5b9bd5),transparent 62%);opacity:.18;filter:blur(4px)}
     .locker-badge-grid{perspective:1200px}
     .badge-card{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(24,26,30,.98),rgba(10,11,13,.98));border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 48px rgba(0,0,0,.28);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
     .badge-card:hover{transform:translateY(-3px) rotateX(2deg);border-color:color-mix(in srgb,var(--badge-accent,#5b9bd5) 55%,rgba(255,255,255,.12));box-shadow:0 24px 60px rgba(0,0,0,.38),0 0 38px color-mix(in srgb,var(--badge-accent,#5b9bd5) 16%,transparent)}
@@ -66,13 +80,28 @@
     return (parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : parts[0]?.slice(0, 2) || 'ST').toUpperCase();
   }
 
+  function fieldProgress(label, value, helper = '') {
+    const yards = Math.max(0, Math.min(100, Number(value) || 0));
+    return `<div><div class="flex items-center justify-between gap-3 mb-2"><div class="text-[10px] uppercase tracking-widest text-white/35 font-black">${esc(label)}</div><div class="text-xs text-white/45">${esc(helper || `${yards} yards`)}</div></div><div class="field-progress h-24"><div class="field-fill" style="width:${yards}%"></div><div class="field-ball" style="left:${yards}%"></div></div></div>`;
+  }
+
+  function trophyBadgeMarkup(badge) {
+    return `<div class="trophy-badge" style="--badge-accent:${badge.accent}"><div class="badge-icon w-14 h-14 mx-auto rounded-full grid place-items-center"><iconify-icon icon="lucide:${badge.icon}" class="text-2xl"></iconify-icon></div><div class="text-xs font-black mt-2 truncate">${esc(badge.title)}</div><div class="text-[9px] uppercase tracking-widest text-white/30 mt-1">${esc(badge.rarity)}</div></div>`;
+  }
+
   function renderProfilePage(profile) {
     const section = document.getElementById('profile');
     if (!section) return;
     const recent = profile.earned.slice(0, 4);
     const user = cachedUser || {};
     const team = typeof getNFLTeamBrand === 'function' ? getNFLTeamBrand(user.selectedTeam) : null;
+    const math = cachedMath?.profile || {};
     const percent = profile.total ? Math.round(profile.earnedCount / profile.total * 100) : 0;
+    const accuracy = math.questions_answered ? Math.round(Number(math.correct_answers || 0) / Number(math.questions_answered || 1) * 100) : 0;
+    const levelTotal = Number(math.total_xp || 0) + Number(math.xpToNext || 0);
+    const levelProgress = math.nextLevel && levelTotal ? Math.round(Number(math.total_xp || 0) / levelTotal * 100) : 100;
+    const favoriteBadge = recent[0];
+    const earnedByCategory = profile.categories.map(category => ({ ...category, badges:profile.earned.filter(badge => badge.category === category.category).slice(0, 5) })).filter(category => category.badges.length);
     section.innerHTML = `<div class="locker-room max-w-6xl mx-auto px-4 md:px-6">
       <div class="locker-hero mb-6 p-5 md:p-7">
         <div class="relative z-10 grid lg:grid-cols-[1fr_300px] gap-6 items-stretch">
@@ -100,10 +129,44 @@
           </div>
         </div>
       </div>
+      <div class="grid lg:grid-cols-[360px_1fr] gap-6 mb-6">
+        <div class="player-card p-5">
+          <div class="relative z-10">
+            <div class="flex items-start justify-between gap-4">
+              <div><div class="text-[10px] uppercase tracking-[.24em] text-white/50 font-black">Student Trading Card</div><h2 class="text-3xl font-black mt-2">${esc(user.displayName || 'Student')}</h2><p class="text-xs text-white/55 mt-2">${esc(team?.name || 'Free Agent')} / ${esc(math.level || 'Rookie')}</p></div>
+              <div class="player-card-logo w-20 h-20 grid place-items-center shrink-0">${team?.logo ? `<img src="${esc(team.logo)}" alt="${esc(team.name)} logo" class="w-14 h-14 object-contain">` : `<span class="font-black">${esc(team?.abbr || 'NFL')}</span>`}</div>
+            </div>
+            <div class="mt-6 h-44 grid place-items-center border border-white/12 bg-black/20"><div class="locker-jersey scale-75" style="background:linear-gradient(180deg,${team?.primary || 'var(--student-team-primary,#013369)'},${team?.secondary || 'var(--student-team-secondary,#D50A0A)'})"><div class="relative z-10 text-center"><div class="text-[10px] uppercase tracking-widest text-white/70 font-black">${esc(team?.abbr || 'NFL')}</div><div class="text-5xl font-black leading-none">${esc(initialsFor(user.displayName))}</div></div></div></div>
+            <div class="grid grid-cols-2 gap-px bg-white/10 border border-white/10 mt-5">
+              <div class="bg-black/35 p-3"><div class="text-[8px] uppercase text-white/35 font-black">XP</div><div class="text-xl font-black">${Number(math.total_xp || 0).toLocaleString()}</div></div>
+              <div class="bg-black/35 p-3"><div class="text-[8px] uppercase text-white/35 font-black">Level</div><div class="text-xl font-black truncate">${esc(math.level || 'Rookie')}</div></div>
+              <div class="bg-black/35 p-3"><div class="text-[8px] uppercase text-white/35 font-black">Favorite Badge</div><div class="text-sm font-black truncate">${favoriteBadge ? esc(favoriteBadge.title) : 'None yet'}</div></div>
+              <div class="bg-black/35 p-3"><div class="text-[8px] uppercase text-white/35 font-black">Accuracy</div><div class="text-xl font-black">${accuracy}%</div></div>
+            </div>
+            <div class="mt-5 text-[10px] uppercase tracking-widest text-white/35 font-black">Season Stats</div>
+            <div class="grid grid-cols-3 gap-2 mt-2 text-center"><div class="bg-black/25 border border-white/10 p-2"><div class="text-lg font-black">${math.touchdowns || 0}</div><div class="text-[8px] text-white/35">TD</div></div><div class="bg-black/25 border border-white/10 p-2"><div class="text-lg font-black">${math.current_streak || 0}</div><div class="text-[8px] text-white/35">Streak</div></div><div class="bg-black/25 border border-white/10 p-2"><div class="text-lg font-black">${math.questions_answered || 0}</div><div class="text-[8px] text-white/35">Answers</div></div></div>
+          </div>
+        </div>
+        <div class="locker-section p-5 md:p-6">
+          <div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Animated Field Progress</div>
+          <h2 class="text-2xl font-black mt-2">Season drive board</h2>
+          <div class="grid gap-5 mt-5">
+            ${fieldProgress('Current Drive', math.drive_yards || 0, `${math.drive_yards || 0} of 100 yards`)}
+            ${fieldProgress('Level Progress', levelProgress, math.nextLevel ? `${math.xpToNext} XP to ${math.nextLevel}` : 'Highest level reached')}
+          </div>
+        </div>
+      </div>
+      <div class="trophy-case mb-6 p-5 md:p-6">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
+          <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Badge Trophy Case</div><h2 class="text-2xl md:text-3xl font-black mt-2">Earned badge shelves</h2><p class="text-sm text-white/45 mt-2">Your unlocked patches are spotlighted by category.</p></div>
+          <div class="text-sm text-white/45">${profile.earnedCount} displayed</div>
+        </div>
+        <div class="relative z-10 grid gap-6">${earnedByCategory.length ? earnedByCategory.map(category => `<div class="trophy-shelf"><div class="flex items-center justify-between gap-3 mb-4"><h3 class="text-sm font-black">${esc(category.category)}</h3><span class="text-[10px] text-white/35">${category.earned} / ${category.total}</span></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">${category.badges.map(trophyBadgeMarkup).join('')}</div></div>`).join('') : '<div class="p-8 text-center text-sm text-white/35 border border-white/10 bg-black/20">Earn your first badge to light up the trophy case.</div>'}</div>
+      </div>
       <div class="locker-section mb-6 p-5 md:p-6">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5">
           <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Locker Cubbies</div><h2 class="text-2xl md:text-3xl font-black mt-2">Badge collection</h2><p class="text-sm text-white/45 mt-2">Earn patches from math plays, writing assignments, city scouting, and coach challenges.</p></div>
-          <div class="h-2 w-full md:w-56 bg-white/10 overflow-hidden"><div class="h-full student-team-mark" style="width:${percent}%"></div></div>
+          <div class="w-full md:w-64">${fieldProgress('Badge Completion', percent, `${percent}% complete`)}</div>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">${profile.categories.map(item => `<div class="locker-cubby p-4 pt-6"><div class="text-[9px] uppercase text-white/35 font-black">${esc(item.category)}</div><div class="flex items-end justify-between gap-3 mt-2"><div class="text-3xl font-black">${item.earned}</div><div class="text-xs text-white/35">of ${item.total}</div></div></div>`).join('')}</div>
       </div>
@@ -180,9 +243,9 @@
     api('/api/badges/profile').then(refreshBadgeSurfaces).catch(() => {});
   };
 
-  window.refreshBadgeCollection = () => Promise.all([api('/api/me'), api('/api/badges/profile')]).then(([me, profile]) => { cachedUser = me.user; refreshBadgeSurfaces(profile); });
+  window.refreshBadgeCollection = () => Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile')]).then(([me, profile, math]) => { cachedUser = me.user; cachedMath = math; refreshBadgeSurfaces(profile); });
 
-  Promise.all([api('/api/me'), api('/api/badges/profile')]).then(([me, profile]) => { cachedUser = me.user; refreshBadgeSurfaces(profile); }).catch(error => {
+  Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile')]).then(([me, profile, math]) => { cachedUser = me.user; cachedMath = math; refreshBadgeSurfaces(profile); }).catch(error => {
     const section = document.getElementById('profile');
     if (section && page === 'profile') section.innerHTML = `<div class="p-10 text-red-300">${esc(error.message)}</div>`;
   });
