@@ -27,73 +27,12 @@
     .coach-avatar{background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));box-shadow:0 0 0 1px rgba(255,255,255,.18) inset}
     .coach-send{background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));box-shadow:0 8px 24px rgba(0,0,0,.28)}
     .coach-input-shell{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.1)}
-    .sideline-coach{position:fixed;right:84px;bottom:16px;z-index:49;width:112px;height:112px;pointer-events:none;filter:drop-shadow(0 18px 24px rgba(0,0,0,.48));transform-origin:bottom right;animation:coach-bob 3.4s ease-in-out infinite}
-    .sideline-coach svg{display:block;width:100%;height:100%;overflow:visible}
-    .sideline-coach.hidden-coach{opacity:0;transform:translateY(12px) scale(.82);animation:none;transition:opacity .2s ease,transform .2s ease}
-    .sideline-coach .coach-card-bg{fill:rgba(8,12,18,.92);stroke:rgba(255,255,255,.18);stroke-width:2}
-    .sideline-coach .coach-primary{fill:var(--student-team-primary,#013369)}
-    .sideline-coach .coach-secondary{fill:var(--student-team-secondary,#D50A0A)}
-    .sideline-coach .coach-stroke-primary{stroke:var(--student-team-primary,#013369)}
-    .sideline-coach .coach-stroke-secondary{stroke:var(--student-team-secondary,#D50A0A)}
-    @media (max-width:640px){.sideline-coach{right:70px;bottom:16px;width:86px;height:86px}.sideline-coach.hidden-coach{transform:translateY(10px) scale(.68)}}
-    @keyframes coach-bob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-4px) rotate(1deg)}}
   `;
   document.head.appendChild(style);
 
   button.title = 'Open Team Research Coach';
   button.className = 'fixed bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition z-50';
   button.innerHTML = '<iconify-icon icon="lucide:message-circle-more" class="relative text-white text-2xl"></iconify-icon>';
-  let coachBuddy = document.getElementById('sideline-coach');
-  if (!coachBuddy) {
-    coachBuddy = document.createElement('div');
-    coachBuddy.id = 'sideline-coach';
-    coachBuddy.className = 'sideline-coach';
-    coachBuddy.setAttribute('aria-hidden', 'true');
-    coachBuddy.innerHTML = `
-      <svg viewBox="0 0 128 128" role="img" aria-label="">
-        <defs>
-          <linearGradient id="coachSkin" x1="42" y1="26" x2="84" y2="76" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#ffd9b0"/><stop offset=".58" stop-color="#c98255"/><stop offset="1" stop-color="#87543a"/>
-          </linearGradient>
-          <linearGradient id="coachSheet" x1="86" y1="54" x2="118" y2="104" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbeafe"/>
-          </linearGradient>
-          <radialGradient id="coachGlow" cx="50%" cy="28%" r="78%">
-            <stop offset="0" stop-color="rgba(255,255,255,.28)"/><stop offset=".52" stop-color="rgba(255,255,255,.06)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/>
-          </radialGradient>
-        </defs>
-        <ellipse cx="64" cy="119" rx="43" ry="8" fill="rgba(0,0,0,.34)"/>
-        <circle class="coach-card-bg" cx="58" cy="60" r="48"/>
-        <circle cx="58" cy="60" r="43" fill="url(#coachGlow)" stroke="rgba(255,255,255,.08)"/>
-        <path class="coach-primary" d="M24 102c5-23 18-34 39-34 20 0 33 11 38 34H24Z"/>
-        <path class="coach-secondary" d="M40 75h44l-6 29H47L40 75Z" opacity=".92"/>
-        <path d="M46 78h33" stroke="rgba(255,255,255,.72)" stroke-width="4" stroke-linecap="round"/>
-        <path d="M45 90h36" stroke="rgba(255,255,255,.28)" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="59" cy="48" r="24" fill="url(#coachSkin)" stroke="rgba(255,255,255,.75)" stroke-width="2.5"/>
-        <path d="M35 38c4-15 16-24 31-21 15 2 25 13 24 29-15-9-35-11-55-8Z" fill="#201a18" opacity=".72"/>
-        <path class="coach-secondary" d="M31 31c9-13 39-18 56 4v12c-16-8-37-10-56-4V31Z" stroke="rgba(255,255,255,.8)" stroke-width="2"/>
-        <path class="coach-primary" d="M80 36c13 1 24 4 29 10-8 1-18 1-29-1V36Z" stroke="rgba(255,255,255,.65)" stroke-width="1.5"/>
-        <circle cx="50" cy="48" r="3.2" fill="#111827"/>
-        <circle cx="68" cy="48" r="3.2" fill="#111827"/>
-        <path d="M53 61c5 4 11 4 16 0" stroke="#452818" stroke-width="3" stroke-linecap="round" fill="none"/>
-        <path d="M35 50c-2-19 9-32 24-32 17 0 29 12 28 31" stroke="#111827" stroke-width="6" stroke-linecap="round" fill="none"/>
-        <rect x="29" y="48" width="12" height="20" rx="6" fill="#111827"/>
-        <rect x="82" y="48" width="12" height="20" rx="6" fill="#111827"/>
-        <path d="M88 63c9 3 14 8 16 15" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
-        <circle cx="105" cy="79" r="4" fill="#111827"/>
-        <g transform="rotate(-8 101 82)">
-          <rect x="85" y="58" width="34" height="48" rx="6" fill="url(#coachSheet)" stroke="#172033" stroke-width="2"/>
-          <path d="M93 71h18M93 81h18M93 91h18" stroke="#167a3d" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M98 67l6 6M104 67l-6 6" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round"/>
-          <path d="M99 86l10 8M109 86l-10 8" stroke="#1d4ed8" stroke-width="2.2" stroke-linecap="round"/>
-        </g>
-        <path d="M20 88c11 10 25 16 41 16 17 0 31-6 42-17" stroke="rgba(255,255,255,.18)" stroke-width="2" fill="none"/>
-      </svg>`;
-    document.body.appendChild(coachBuddy);
-  }
-  const syncCoachBuddy = () => coachBuddy.classList.toggle('hidden-coach', !win.classList.contains('hidden'));
-  new MutationObserver(syncCoachBuddy).observe(win, { attributes:true, attributeFilter:['class'] });
-  syncCoachBuddy();
 
   win.className = 'hidden coach-console fixed bottom-24 right-3 sm:right-6 w-[calc(100vw-24px)] sm:w-[430px] h-[620px] max-h-[calc(100vh-120px)] border border-white/10 flex flex-col z-50 overflow-hidden';
   win.innerHTML = `
