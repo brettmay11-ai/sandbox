@@ -40,16 +40,44 @@
     .badge-card.locked{filter:saturate(.18);opacity:.5}
     .badge-card:before{content:'';position:absolute;inset:-1px;background:radial-gradient(circle at 50% 0,var(--badge-accent,rgba(91,155,213,.5)),transparent 42%);opacity:.2;pointer-events:none}
     .badge-card:after{content:'';position:absolute;top:10px;right:12px;width:30px;height:8px;border-top:2px solid rgba(255,255,255,.16);border-bottom:2px solid rgba(255,255,255,.1);opacity:.8}
-    .badge-icon{background:color-mix(in srgb,var(--badge-accent,#5b9bd5) 22%,transparent);border:1px solid color-mix(in srgb,var(--badge-accent,#5b9bd5) 65%,transparent);color:var(--badge-accent,#5b9bd5);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
-    .badge-ribbon{background:linear-gradient(90deg,var(--badge-accent,#5b9bd5),color-mix(in srgb,var(--badge-accent,#5b9bd5) 45%,#fff));height:3px}
     .badge-unlock-overlay{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:radial-gradient(circle at center,rgba(91,155,213,.16),rgba(0,0,0,.78));pointer-events:none;overflow:hidden}
     .badge-unlock-card{position:relative;width:min(420px,calc(100vw - 32px));padding:30px 26px 26px;text-align:center;background:rgba(9,13,20,.92);border:1px solid rgba(255,255,255,.18);box-shadow:0 30px 90px rgba(0,0,0,.58),0 0 80px color-mix(in srgb,var(--badge-accent,#5b9bd5) 38%,transparent);animation:badge-pop .72s cubic-bezier(.2,1.25,.2,1) both}
     .badge-unlock-card:before{content:'';position:absolute;inset:-2px;background:linear-gradient(135deg,var(--badge-accent,#5b9bd5),transparent 38%,rgba(255,255,255,.25),transparent 65%,var(--badge-accent,#5b9bd5));opacity:.55;z-index:-1;filter:blur(10px)}
-    .badge-unlock-icon{width:96px;height:96px;margin:0 auto 18px;display:grid;place-items:center;border-radius:999px;background:color-mix(in srgb,var(--badge-accent,#5b9bd5) 22%,transparent);border:1px solid color-mix(in srgb,var(--badge-accent,#5b9bd5) 70%,transparent);color:var(--badge-accent,#5b9bd5);animation:badge-pulse 1.1s ease-in-out infinite}
     .badge-confetti{position:absolute;width:10px;height:22px;border-radius:999px;background:var(--badge-accent,#5b9bd5);left:50%;top:50%;opacity:.88;transform:rotate(var(--spin)) translateY(-46vh);animation:badge-confetti 1.28s ease-out forwards}
+    .badge-rarity-common{--badge-metal:conic-gradient(from 18deg,#ffffff,#b9c4cf 15%,#f8fafc 28%,#778492 47%,#edf2f7 62%,#9aa7b5 78%,#ffffff);--badge-metal-inner:radial-gradient(circle at 33% 25%,#ffffff,#d8e0e8 28%,#9daab7 58%,#64717e);--badge-metal-edge:#f8fafc;--badge-metal-shadow:#6f7f8f;--badge-metal-glow:rgba(210,226,240,.28);--badge-ink:#1f2937}
+    .badge-rarity-rare{--badge-metal:conic-gradient(from 18deg,#fff8c9,#f3c55b 14%,#fff4a8 31%,#9c6517 48%,#ffd76b 65%,#b97818 82%,#fff8d8);--badge-metal-inner:radial-gradient(circle at 32% 24%,#fff8c9,#ffd76b 34%,#c8851f 65%,#75420d);--badge-metal-edge:#fff2a3;--badge-metal-shadow:#8f5813;--badge-metal-glow:rgba(250,204,21,.36);--badge-ink:#3f2506}
+    .badge-rarity-epic{--badge-metal:conic-gradient(from 18deg,#fffbd1,#f5d66d 13%,#fffef2 26%,#d6aa31 38%,#f3c55b 54%,#ffffff 66%,#9f7aea 78%,#ffd56a);--badge-metal-inner:radial-gradient(circle at 30% 20%,#ffffff,#ffe58a 28%,#d4a528 56%,#6d4a0b 78%,#7c3aed);--badge-metal-edge:#fff7bc;--badge-metal-shadow:#7c4a09;--badge-metal-glow:rgba(251,191,36,.52);--badge-ink:#2f1d05}
+    .badge-card{isolation:isolate;background:linear-gradient(145deg,rgba(255,255,255,.075),transparent 22%),radial-gradient(circle at 72% 0,var(--badge-metal-glow),transparent 34%),linear-gradient(145deg,rgba(24,26,30,.98),rgba(10,11,13,.98));border-color:color-mix(in srgb,var(--badge-metal-edge) 38%,rgba(255,255,255,.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 18px 48px rgba(0,0,0,.28),0 0 34px var(--badge-metal-glow)}
+    .badge-card:hover{border-color:color-mix(in srgb,var(--badge-metal-edge) 70%,rgba(255,255,255,.1));box-shadow:0 24px 66px rgba(0,0,0,.42),0 0 56px var(--badge-metal-glow)}
+    .badge-card:before{background:radial-gradient(circle at 24% 0,var(--badge-metal-glow),transparent 44%),linear-gradient(115deg,transparent 0 34%,rgba(255,255,255,.16) 43%,transparent 52%);opacity:.72}
+    .badge-card:after{top:-45%;right:auto;left:-80%;width:52%;height:190%;border:0;background:linear-gradient(110deg,transparent,rgba(255,255,255,.34),transparent);opacity:.55;transform:rotate(18deg);animation:badge-card-shine 5.8s ease-in-out infinite}
+    .badge-card.locked{filter:saturate(.2);opacity:.48}
+    .badge-card.locked:after{animation:none;opacity:.1}
+    .badge-rarity-label{color:color-mix(in srgb,var(--badge-metal-edge) 70%,rgba(255,255,255,.38))}
+    .badge-medal-wrap{position:relative;display:grid;place-items:center;width:92px;margin:0 auto 16px;filter:drop-shadow(0 16px 24px rgba(0,0,0,.4))}
+    .badge-card-compact .badge-medal-wrap{width:62px;margin:0;filter:drop-shadow(0 10px 16px rgba(0,0,0,.36))}
+    .trophy-badge .badge-medal-wrap{margin:0 auto 12px}
+    .badge-medal{position:relative;display:grid;place-items:center;border-radius:999px;background:var(--badge-metal);color:var(--badge-ink);box-shadow:inset 0 2px 3px rgba(255,255,255,.75),inset 0 -8px 15px rgba(0,0,0,.35),0 0 36px var(--badge-metal-glow)}
+    .badge-medal-lg{width:86px;height:86px}.badge-medal-sm{width:56px;height:56px}
+    .badge-medal:before{content:'';position:absolute;inset:8px;border-radius:inherit;background:var(--badge-metal-inner);box-shadow:inset 0 2px 6px rgba(255,255,255,.52),inset 0 -9px 12px rgba(0,0,0,.34);z-index:0}
+    .badge-medal:after{content:'';position:absolute;inset:15px;border-radius:inherit;border:1px solid rgba(255,255,255,.5);background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.22) 0 8deg,transparent 8deg 18deg);opacity:.62;z-index:1}
+    .badge-medal-star{position:absolute;inset:-12px;background:var(--badge-metal);clip-path:polygon(50% 0,58% 18%,78% 8%,76% 30%,98% 35%,82% 50%,98% 65%,76% 70%,78% 92%,58% 82%,50% 100%,42% 82%,22% 92%,24% 70%,2% 65%,18% 50%,2% 35%,24% 30%,22% 8%,42% 18%);opacity:.46;z-index:-1}
+    .badge-medal-icon{position:relative;z-index:2;display:grid;place-items:center;width:56%;height:56%;border-radius:999px;background:rgba(255,255,255,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 8px rgba(0,0,0,.18)}
+    .badge-medal-pips{position:absolute;left:50%;bottom:11px;z-index:3;display:flex;gap:3px;transform:translateX(-50%)}
+    .badge-medal-sm .badge-medal-pips{bottom:6px;gap:2px}.badge-medal-pips span{width:5px;height:5px;border-radius:999px;background:var(--badge-ink);opacity:.72}.badge-medal-sm .badge-medal-pips span{width:3px;height:3px}
+    .badge-medal-ribbons{position:absolute;top:72%;display:flex;gap:5px;z-index:-2}.badge-medal-ribbons span{width:22px;height:34px;background:linear-gradient(180deg,var(--badge-accent,#5b9bd5),rgba(0,0,0,.28));clip-path:polygon(0 0,100% 0,86% 100%,50% 76%,14% 100%);border:1px solid rgba(255,255,255,.16)}
+    .badge-card-compact .badge-medal-ribbons span{width:15px;height:24px}.badge-card-compact .badge-medal-ribbons{gap:3px}
+    .trophy-badge:before{background:radial-gradient(circle,var(--badge-metal-glow),transparent 68%);opacity:1;width:94px;height:94px;top:-16px}
+    .trophy-badge{filter:drop-shadow(0 20px 22px rgba(0,0,0,.28))}
+    .badge-unlock-overlay{background:radial-gradient(circle at center,var(--badge-metal-glow),rgba(0,0,0,.82) 58%)}
+    .badge-unlock-card{border-color:color-mix(in srgb,var(--badge-metal-edge) 50%,rgba(255,255,255,.14));box-shadow:0 30px 90px rgba(0,0,0,.58),0 0 110px var(--badge-metal-glow)}
+    .badge-unlock-card .badge-medal-wrap{width:132px;margin:20px auto 18px;animation:badge-pulse 1.1s ease-in-out infinite}
+    .badge-unlock-card .badge-medal-lg{width:124px;height:124px}
+    .badge-unlock-card .badge-medal-ribbons span{width:30px;height:44px}
     @keyframes badge-pop{0%{opacity:0;transform:translateY(26px) scale(.76) rotateX(22deg)}55%{opacity:1;transform:translateY(-8px) scale(1.05) rotateX(0)}100%{opacity:1;transform:translateY(0) scale(1) rotateX(0)}}
     @keyframes badge-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 color-mix(in srgb,var(--badge-accent,#5b9bd5) 36%,transparent)}50%{transform:scale(1.08);box-shadow:0 0 0 16px transparent}}
     @keyframes badge-confetti{0%{transform:rotate(var(--spin)) translateY(0) scale(.7);opacity:1}100%{transform:rotate(var(--spin)) translateY(-52vh) translateX(var(--drift)) scale(1);opacity:0}}
+    @keyframes badge-card-shine{0%,42%{transform:translateX(0) rotate(18deg)}62%,100%{transform:translateX(360%) rotate(18deg)}}
   `;
   document.head.appendChild(style);
 
@@ -60,13 +88,41 @@
     return data;
   }
 
+  function rarityClass(badge) {
+    return `badge-rarity-${String(badge?.rarity || 'Common').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  }
+
+  function rarityPips(badge) {
+    const rarity = String(badge?.rarity || 'Common').toLowerCase();
+    const count = rarity === 'epic' ? 3 : rarity === 'rare' ? 2 : 1;
+    return Array.from({ length:count }, () => '<span></span>').join('');
+  }
+
+  function badgeMedalMarkup(badge, compact = false) {
+    const iconName = badge.earned ? (badge.icon || 'award') : 'lock';
+    return `<div class="badge-medal-wrap">
+      <div class="badge-medal ${compact ? 'badge-medal-sm' : 'badge-medal-lg'}">
+        <div class="badge-medal-star"></div>
+        <div class="badge-medal-icon"><iconify-icon icon="lucide:${esc(iconName)}" class="${compact ? 'text-xl' : 'text-3xl'}"></iconify-icon></div>
+        <div class="badge-medal-pips">${rarityPips(badge)}</div>
+      </div>
+      <div class="badge-medal-ribbons"><span></span><span></span></div>
+    </div>`;
+  }
+
+  function badgeConfettiColors(badge) {
+    const rarity = String(badge?.rarity || 'Common').toLowerCase();
+    if (rarity === 'epic') return ['#fff7bc', '#f5c542', '#ffffff', '#8b5cf6', badge.accent || '#facc15'];
+    if (rarity === 'rare') return ['#fff4a8', '#facc15', '#b97818', '#ffffff', badge.accent || '#facc15'];
+    return ['#f8fafc', '#cbd5e1', '#94a3b8', '#ffffff', badge.accent || '#cbd5e1'];
+  }
+
   function badgeMarkup(badge, compact = false) {
-    return `<div class="badge-card ${badge.earned ? '' : 'locked'} ${compact ? 'p-3' : 'p-5'}" style="--badge-accent:${badge.accent}">
-      <div class="badge-ribbon absolute left-0 top-0 right-0"></div>
+    return `<div class="badge-card ${rarityClass(badge)} ${badge.earned ? '' : 'locked'} ${compact ? 'badge-card-compact p-3' : 'p-5'}" style="--badge-accent:${badge.accent}">
       <div class="relative z-10 ${compact ? 'flex items-center gap-3' : ''}">
-        <div class="badge-icon ${compact ? 'w-10 h-10' : 'w-14 h-14'} rounded-full grid place-items-center shrink-0"><iconify-icon icon="lucide:${badge.earned ? badge.icon : 'lock'}" class="${compact ? 'text-lg' : 'text-2xl'}"></iconify-icon></div>
+        ${badgeMedalMarkup(badge, compact)}
         <div class="${compact ? 'min-w-0' : 'mt-4'}">
-          <div class="text-[9px] uppercase tracking-widest ${badge.earned ? 'text-white/35' : 'text-white/25'}">${esc(badge.rarity)} / ${esc(badge.category)}</div>
+          <div class="badge-rarity-label text-[9px] uppercase tracking-widest">${esc(badge.rarity)} / ${esc(badge.category)}</div>
           <h3 class="${compact ? 'text-xs truncate' : 'text-sm'} font-black mt-1">${esc(badge.title)}</h3>
           ${compact ? '' : `<p class="text-xs leading-5 text-white/45 mt-2">${esc(badge.description)}</p>`}
           ${badge.earned ? `<div class="text-[10px] text-green-300 mt-3">Earned ${new Date(badge.earnedAt).toLocaleDateString()}</div>` : '<div class="text-[10px] text-white/25 mt-3">Locked</div>'}
@@ -86,7 +142,7 @@
   }
 
   function trophyBadgeMarkup(badge) {
-    return `<div class="trophy-badge" style="--badge-accent:${badge.accent}"><div class="badge-icon w-14 h-14 mx-auto rounded-full grid place-items-center"><iconify-icon icon="lucide:${badge.icon}" class="text-2xl"></iconify-icon></div><div class="text-xs font-black mt-2 truncate">${esc(badge.title)}</div><div class="text-[9px] uppercase tracking-widest text-white/30 mt-1">${esc(badge.rarity)}</div></div>`;
+    return `<div class="trophy-badge ${rarityClass(badge)}" style="--badge-accent:${badge.accent}">${badgeMedalMarkup(badge, true)}<div class="text-xs font-black mt-2 truncate">${esc(badge.title)}</div><div class="badge-rarity-label text-[9px] uppercase tracking-widest mt-1">${esc(badge.rarity)}</div></div>`;
   }
 
   function renderProfilePage(profile) {
@@ -209,22 +265,23 @@
     animating = true;
     const badge = queue.shift();
     const overlay = document.createElement('div');
-    overlay.className = 'badge-unlock-overlay';
+    overlay.className = `badge-unlock-overlay ${rarityClass(badge)}`;
     overlay.style.setProperty('--badge-accent', badge.accent || '#5b9bd5');
-    overlay.innerHTML = `<div class="badge-unlock-card" style="--badge-accent:${badge.accent || '#5b9bd5'}">
+    overlay.innerHTML = `<div class="badge-unlock-card ${rarityClass(badge)}" style="--badge-accent:${badge.accent || '#5b9bd5'}">
       <div class="text-[10px] uppercase tracking-[.28em] text-white/40 font-bold">Badge Earned</div>
-      <div class="badge-unlock-icon"><iconify-icon icon="lucide:${badge.icon}" class="text-5xl"></iconify-icon></div>
+      ${badgeMedalMarkup(badge)}
       <h2 class="text-3xl font-black">${esc(badge.title)}</h2>
       <p class="text-sm text-white/55 leading-6 mt-3">${esc(badge.description)}</p>
-      <div class="mt-5 inline-flex items-center gap-2 px-4 py-2 border border-white/10 bg-white/5 text-[10px] uppercase tracking-widest text-white/55">${esc(badge.rarity)} / ${esc(badge.category)}</div>
+      <div class="badge-rarity-label mt-5 inline-flex items-center gap-2 px-4 py-2 border border-white/10 bg-white/5 text-[10px] uppercase tracking-widest">${esc(badge.rarity)} / ${esc(badge.category)}</div>
     </div>`;
+    const colors = badgeConfettiColors(badge);
     for (let i = 0; i < 30; i += 1) {
       const piece = document.createElement('span');
       piece.className = 'badge-confetti';
       piece.style.setProperty('--spin', `${i * 12}deg`);
       piece.style.setProperty('--drift', `${(i % 2 ? 1 : -1) * (30 + (i % 7) * 18)}px`);
       piece.style.animationDelay = `${(i % 8) * 0.035}s`;
-      piece.style.background = i % 3 === 0 ? '#fff' : (i % 3 === 1 ? badge.accent : '#D50A0A');
+      piece.style.background = colors[i % colors.length];
       overlay.appendChild(piece);
     }
     document.body.appendChild(overlay);
