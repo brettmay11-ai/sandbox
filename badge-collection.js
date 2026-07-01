@@ -24,12 +24,9 @@
     .player-card{position:relative;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb,var(--student-team-primary,#013369) 72%,#080808),#0d0f13 58%,color-mix(in srgb,var(--student-team-secondary,#D50A0A) 44%,#090909));border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 80px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
     .player-card:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.09),transparent 25%,transparent 75%,rgba(255,255,255,.07)),repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px);opacity:.5}
     .player-card-logo{background:rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.18)}
-    .field-progress{position:relative;overflow:hidden;background:repeating-linear-gradient(90deg,#143f25 0,#143f25 calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px),rgba(255,255,255,.22) 10%);border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 0 40px rgba(0,0,0,.35)}
-    .field-progress:before,.field-progress:after{content:'END ZONE';position:absolute;top:0;bottom:0;width:42px;display:grid;place-items:center;background:color-mix(in srgb,var(--student-team-primary,#013369) 74%,#07110b);color:rgba(255,255,255,.68);font-size:7px;font-weight:900;writing-mode:vertical-rl;letter-spacing:1px;z-index:2}
-    .field-progress:before{left:0}.field-progress:after{right:0}
-    .field-fill{position:absolute;left:42px;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,214,10,.12),rgba(255,214,10,.32));border-right:3px solid #ffd60a;transition:width .55s ease}
-    .field-ball{position:absolute;top:50%;transform:translate(-50%,-50%);z-index:3;width:34px;height:22px;border-radius:50%;background:#7b3f18;border:2px solid rgba(255,255,255,.75);box-shadow:0 8px 18px rgba(0,0,0,.35)}
-    .field-ball:before{content:'';position:absolute;left:8px;right:8px;top:50%;height:2px;background:#fff;transform:translateY(-50%)}.field-ball:after{content:'';position:absolute;left:50%;top:4px;bottom:4px;width:2px;background:#fff;transform:translateX(-50%)}
+    .badge-progress-track{position:relative;overflow:hidden;height:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 8px rgba(0,0,0,.28)}
+    .badge-progress-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--student-team-primary,#013369),var(--student-team-secondary,#D50A0A),#facc15);box-shadow:0 0 26px color-mix(in srgb,var(--student-team-secondary,#D50A0A) 35%,transparent);transition:width .55s ease}
+    .badge-progress-fill:after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent,rgba(255,255,255,.38),transparent);animation:badge-progress-shine 2.8s ease-in-out infinite}
     .trophy-case{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 80px rgba(0,0,0,.28)}
     .trophy-case:before{content:'';position:absolute;inset:0;background:linear-gradient(110deg,rgba(255,255,255,.18),transparent 16%,transparent 48%,rgba(255,255,255,.08) 52%,transparent 70%);pointer-events:none}
     .trophy-shelf{position:relative;padding-bottom:18px}.trophy-shelf:after{content:'';position:absolute;left:0;right:0;bottom:0;height:10px;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,0,0,.35));border-top:1px solid rgba(255,255,255,.18)}
@@ -78,6 +75,7 @@
     @keyframes badge-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 color-mix(in srgb,var(--badge-accent,#5b9bd5) 36%,transparent)}50%{transform:scale(1.08);box-shadow:0 0 0 16px transparent}}
     @keyframes badge-confetti{0%{transform:rotate(var(--spin)) translateY(0) scale(.7);opacity:1}100%{transform:rotate(var(--spin)) translateY(-52vh) translateX(var(--drift)) scale(1);opacity:0}}
     @keyframes badge-card-shine{0%,42%{transform:translateX(0) rotate(18deg)}62%,100%{transform:translateX(360%) rotate(18deg)}}
+    @keyframes badge-progress-shine{0%,45%{transform:translateX(-100%)}75%,100%{transform:translateX(100%)}}
   `;
   document.head.appendChild(style);
 
@@ -136,9 +134,15 @@
     return (parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : parts[0]?.slice(0, 2) || 'ST').toUpperCase();
   }
 
-  function fieldProgress(label, value, helper = '') {
-    const yards = Math.max(0, Math.min(100, Number(value) || 0));
-    return `<div><div class="flex items-center justify-between gap-3 mb-2"><div class="text-[10px] uppercase tracking-widest text-white/35 font-black">${esc(label)}</div><div class="text-xs text-white/45">${esc(helper || `${yards} yards`)}</div></div><div class="field-progress h-24"><div class="field-fill" style="width:${yards}%"></div><div class="field-ball" style="left:${yards}%"></div></div></div>`;
+  function badgeProgressBar(percent, earnedCount, total) {
+    const value = Math.max(0, Math.min(100, Number(percent) || 0));
+    return `<div class="mb-5">
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <div class="text-[10px] uppercase tracking-widest text-white/35 font-black">Badge Completion</div>
+        <div class="text-xs text-white/45">${value}% complete · ${Number(earnedCount || 0)} of ${Number(total || 0)}</div>
+      </div>
+      <div class="badge-progress-track"><div class="badge-progress-fill" style="width:${value}%"></div></div>
+    </div>`;
   }
 
   function trophyBadgeMarkup(badge) {
@@ -154,8 +158,6 @@
     const math = cachedMath?.profile || {};
     const percent = profile.total ? Math.round(profile.earnedCount / profile.total * 100) : 0;
     const accuracy = math.questions_answered ? Math.round(Number(math.correct_answers || 0) / Number(math.questions_answered || 1) * 100) : 0;
-    const levelTotal = Number(math.total_xp || 0) + Number(math.xpToNext || 0);
-    const levelProgress = math.nextLevel && levelTotal ? Math.round(Number(math.total_xp || 0) / levelTotal * 100) : 100;
     const favoriteBadge = recent[0];
     const earnedByCategory = profile.categories.map(category => ({ ...category, badges:profile.earned.filter(badge => badge.category === category.category).slice(0, 5) })).filter(category => category.badges.length);
     section.innerHTML = `<div class="locker-room max-w-6xl mx-auto px-4 md:px-6">
@@ -185,7 +187,7 @@
           </div>
         </div>
       </div>
-      <div class="grid lg:grid-cols-[360px_1fr] gap-6 mb-6">
+      <div class="mb-6">
         <div class="player-card p-5">
           <div class="relative z-10">
             <div class="flex items-start justify-between gap-4">
@@ -203,14 +205,6 @@
             <div class="grid grid-cols-3 gap-2 mt-2 text-center"><div class="bg-black/25 border border-white/10 p-2"><div class="text-lg font-black">${math.touchdowns || 0}</div><div class="text-[8px] text-white/35">TD</div></div><div class="bg-black/25 border border-white/10 p-2"><div class="text-lg font-black">${math.current_streak || 0}</div><div class="text-[8px] text-white/35">Streak</div></div><div class="bg-black/25 border border-white/10 p-2"><div class="text-lg font-black">${math.questions_answered || 0}</div><div class="text-[8px] text-white/35">Answers</div></div></div>
           </div>
         </div>
-        <div class="locker-section p-5 md:p-6">
-          <div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Animated Field Progress</div>
-          <h2 class="text-2xl font-black mt-2">Season drive board</h2>
-          <div class="grid gap-5 mt-5">
-            ${fieldProgress('Current Drive', math.drive_yards || 0, `${math.drive_yards || 0} of 100 yards`)}
-            ${fieldProgress('Level Progress', levelProgress, math.nextLevel ? `${math.xpToNext} XP to ${math.nextLevel}` : 'Highest level reached')}
-          </div>
-        </div>
       </div>
       <div class="trophy-case mb-6 p-5 md:p-6">
         <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
@@ -220,9 +214,9 @@
         <div class="relative z-10 grid gap-6">${earnedByCategory.length ? earnedByCategory.map(category => `<div class="trophy-shelf"><div class="flex items-center justify-between gap-3 mb-4"><h3 class="text-sm font-black">${esc(category.category)}</h3><span class="text-[10px] text-white/35">${category.earned} / ${category.total}</span></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">${category.badges.map(trophyBadgeMarkup).join('')}</div></div>`).join('') : '<div class="p-8 text-center text-sm text-white/35 border border-white/10 bg-black/20">Earn your first badge to light up the trophy case.</div>'}</div>
       </div>
       <div class="locker-section mb-6 p-5 md:p-6">
+        ${badgeProgressBar(percent, profile.earnedCount, profile.total)}
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5">
           <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Locker Cubbies</div><h2 class="text-2xl md:text-3xl font-black mt-2">Badge collection</h2><p class="text-sm text-white/45 mt-2">Earn patches from math plays, writing assignments, city scouting, and coach challenges.</p></div>
-          <div class="w-full md:w-64">${fieldProgress('Badge Completion', percent, `${percent}% complete`)}</div>
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">${profile.categories.map(item => `<div class="locker-cubby p-4 pt-6"><div class="text-[9px] uppercase text-white/35 font-black">${esc(item.category)}</div><div class="flex items-end justify-between gap-3 mt-2"><div class="text-3xl font-black">${item.earned}</div><div class="text-xs text-white/35">of ${item.total}</div></div></div>`).join('')}</div>
       </div>
