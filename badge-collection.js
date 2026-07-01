@@ -29,8 +29,6 @@
     .badge-progress-fill:after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent,rgba(255,255,255,.38),transparent);animation:badge-progress-shine 2.8s ease-in-out infinite}
     .trophy-case{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 24px 80px rgba(0,0,0,.28)}
     .trophy-case:before{content:'';position:absolute;inset:0;background:linear-gradient(110deg,rgba(255,255,255,.18),transparent 16%,transparent 48%,rgba(255,255,255,.08) 52%,transparent 70%);pointer-events:none}
-    .trophy-shelf{position:relative;padding-bottom:18px}.trophy-shelf:after{content:'';position:absolute;left:0;right:0;bottom:0;height:10px;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,0,0,.35));border-top:1px solid rgba(255,255,255,.18)}
-    .trophy-badge{position:relative;text-align:center}.trophy-badge:before{content:'';position:absolute;left:50%;top:-10px;width:72px;height:72px;transform:translateX(-50%);background:radial-gradient(circle,var(--badge-accent,#5b9bd5),transparent 62%);opacity:.18;filter:blur(4px)}
     .locker-badge-grid{perspective:1200px}
     .badge-card{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(24,26,30,.98),rgba(10,11,13,.98));border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 48px rgba(0,0,0,.28);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
     .badge-card:hover{transform:translateY(-3px) rotateX(2deg);border-color:color-mix(in srgb,var(--badge-accent,#5b9bd5) 55%,rgba(255,255,255,.12));box-shadow:0 24px 60px rgba(0,0,0,.38),0 0 38px color-mix(in srgb,var(--badge-accent,#5b9bd5) 16%,transparent)}
@@ -53,7 +51,6 @@
     .badge-rarity-label{color:color-mix(in srgb,var(--badge-metal-edge) 70%,rgba(255,255,255,.38))}
     .badge-medal-wrap{position:relative;display:grid;place-items:center;width:92px;margin:0 auto 16px;filter:drop-shadow(0 16px 24px rgba(0,0,0,.4))}
     .badge-card-compact .badge-medal-wrap{width:62px;margin:0;filter:drop-shadow(0 10px 16px rgba(0,0,0,.36))}
-    .trophy-badge .badge-medal-wrap{margin:0 auto 12px}
     .badge-medal{position:relative;display:grid;place-items:center;border-radius:999px;background:var(--badge-metal);color:var(--badge-ink);box-shadow:inset 0 2px 3px rgba(255,255,255,.75),inset 0 -8px 15px rgba(0,0,0,.35),0 0 36px var(--badge-metal-glow)}
     .badge-medal-lg{width:86px;height:86px}.badge-medal-sm{width:56px;height:56px}
     .badge-medal:before{content:'';position:absolute;inset:8px;border-radius:inherit;background:var(--badge-metal-inner);box-shadow:inset 0 2px 6px rgba(255,255,255,.52),inset 0 -9px 12px rgba(0,0,0,.34);z-index:0}
@@ -64,8 +61,6 @@
     .badge-medal-sm .badge-medal-pips{bottom:6px;gap:2px}.badge-medal-pips span{width:5px;height:5px;border-radius:999px;background:var(--badge-ink);opacity:.72}.badge-medal-sm .badge-medal-pips span{width:3px;height:3px}
     .badge-medal-ribbons{position:absolute;top:72%;display:flex;gap:5px;z-index:-2}.badge-medal-ribbons span{width:22px;height:34px;background:linear-gradient(180deg,var(--badge-accent,#5b9bd5),rgba(0,0,0,.28));clip-path:polygon(0 0,100% 0,86% 100%,50% 76%,14% 100%);border:1px solid rgba(255,255,255,.16)}
     .badge-card-compact .badge-medal-ribbons span{width:15px;height:24px}.badge-card-compact .badge-medal-ribbons{gap:3px}
-    .trophy-badge:before{background:radial-gradient(circle,var(--badge-metal-glow),transparent 68%);opacity:1;width:94px;height:94px;top:-16px}
-    .trophy-badge{filter:drop-shadow(0 20px 22px rgba(0,0,0,.28))}
     .badge-unlock-overlay{background:radial-gradient(circle at center,var(--badge-metal-glow),rgba(0,0,0,.82) 58%)}
     .badge-unlock-card{border-color:color-mix(in srgb,var(--badge-metal-edge) 50%,rgba(255,255,255,.14));box-shadow:0 30px 90px rgba(0,0,0,.58),0 0 110px var(--badge-metal-glow)}
     .badge-unlock-card .badge-medal-wrap{width:132px;margin:20px auto 18px;animation:badge-pulse 1.1s ease-in-out infinite}
@@ -145,10 +140,6 @@
     </div>`;
   }
 
-  function trophyBadgeMarkup(badge) {
-    return `<div class="trophy-badge ${rarityClass(badge)}" style="--badge-accent:${badge.accent}">${badgeMedalMarkup(badge, true)}<div class="text-xs font-black mt-2 truncate">${esc(badge.title)}</div><div class="badge-rarity-label text-[9px] uppercase tracking-widest mt-1">${esc(badge.rarity)}</div></div>`;
-  }
-
   function renderProfilePage(profile) {
     const section = document.getElementById('profile');
     if (!section) return;
@@ -159,7 +150,6 @@
     const percent = profile.total ? Math.round(profile.earnedCount / profile.total * 100) : 0;
     const accuracy = math.questions_answered ? Math.round(Number(math.correct_answers || 0) / Number(math.questions_answered || 1) * 100) : 0;
     const favoriteBadge = recent[0];
-    const earnedByCategory = profile.categories.map(category => ({ ...category, badges:profile.earned.filter(badge => badge.category === category.category).slice(0, 5) })).filter(category => category.badges.length);
     section.innerHTML = `<div class="locker-room max-w-6xl mx-auto px-4 md:px-6">
       <div class="locker-hero mb-6 p-5 md:p-7">
         <div class="relative z-10 grid lg:grid-cols-[1fr_300px] gap-6 items-stretch">
@@ -206,24 +196,13 @@
           </div>
         </div>
       </div>
-      <div class="trophy-case mb-6 p-5 md:p-6">
-        <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
-          <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Badge Trophy Case</div><h2 class="text-2xl md:text-3xl font-black mt-2">Earned badge shelves</h2><p class="text-sm text-white/45 mt-2">Your unlocked patches are spotlighted by category.</p></div>
-          <div class="text-sm text-white/45">${profile.earnedCount} displayed</div>
-        </div>
-        <div class="relative z-10 grid gap-6">${earnedByCategory.length ? earnedByCategory.map(category => `<div class="trophy-shelf"><div class="flex items-center justify-between gap-3 mb-4"><h3 class="text-sm font-black">${esc(category.category)}</h3><span class="text-[10px] text-white/35">${category.earned} / ${category.total}</span></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">${category.badges.map(trophyBadgeMarkup).join('')}</div></div>`).join('') : '<div class="p-8 text-center text-sm text-white/35 border border-white/10 bg-black/20">Earn your first badge to light up the trophy case.</div>'}</div>
-      </div>
-      <div class="locker-section mb-6 p-5 md:p-6">
+      <div class="trophy-case p-5 md:p-6">
         ${badgeProgressBar(percent, profile.earnedCount, profile.total)}
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5">
-          <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Locker Cubbies</div><h2 class="text-2xl md:text-3xl font-black mt-2">Badge collection</h2><p class="text-sm text-white/45 mt-2">Earn patches from math plays, writing assignments, city scouting, and coach challenges.</p></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
+          <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Badge Trophy Case</div><h2 class="text-2xl md:text-3xl font-black mt-2">Badge collection</h2><p class="text-sm text-white/45 mt-2">Earn patches from math plays, writing assignments, city scouting, and coach challenges.</p></div>
+          <div class="text-sm text-white/45">${profile.earnedCount} of ${profile.total} earned</div>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">${profile.categories.map(item => `<div class="locker-cubby p-4 pt-6"><div class="text-[9px] uppercase text-white/35 font-black">${esc(item.category)}</div><div class="flex items-end justify-between gap-3 mt-2"><div class="text-3xl font-black">${item.earned}</div><div class="text-xs text-white/35">of ${item.total}</div></div></div>`).join('')}</div>
-      </div>
-      ${recent.length ? `<div class="locker-section mb-6 p-5 md:p-6"><div class="flex items-center gap-2 mb-4"><iconify-icon icon="lucide:sparkles" class="text-brand-400"></iconify-icon><h2 class="font-black">Fresh from the equipment room</h2></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">${recent.map(badge => badgeMarkup(badge, true)).join('')}</div></div>` : ''}
-      <div class="locker-section p-5 md:p-6">
-        <div class="flex items-center justify-between gap-3 mb-5"><div><div class="text-[10px] uppercase tracking-[.24em] text-white/35 font-black">Patch Wall</div><h2 class="text-2xl font-black mt-1">All badges</h2></div><iconify-icon icon="lucide:shield-check" class="text-3xl text-white/25"></iconify-icon></div>
-        <div class="locker-badge-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-3">${profile.badges.map(badge => badgeMarkup(badge)).join('')}</div>
+        <div class="relative z-10 locker-badge-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-3">${profile.badges.map(badge => badgeMarkup(badge)).join('')}</div>
       </div>
     </div>`;
   }
