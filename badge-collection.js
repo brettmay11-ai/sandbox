@@ -163,7 +163,6 @@
         <div class="relative z-10">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <div class="text-[9px] uppercase tracking-[.22em] font-black opacity-70">Student Trading Card</div>
               <h2 class="text-3xl font-black mt-1 leading-none truncate">${esc(user.displayName || 'Student')}</h2>
               <p class="text-[11px] uppercase tracking-widest font-black mt-2 opacity-70">${esc(team?.name || 'Free Agent')}</p>
             </div>
@@ -193,11 +192,6 @@
       <div class="locker-hero mb-6 p-5 md:p-7">
         <div class="relative z-10 grid lg:grid-cols-[1fr_320px] gap-6 items-center">
           <div class="flex flex-col justify-between gap-8">
-            <div class="grid sm:grid-cols-3 gap-3">
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Badge Wall</div><div class="text-2xl font-black mt-1">${profile.earnedCount} / ${profile.total}</div></div>
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Completion</div><div class="text-2xl font-black mt-1">${percent}%</div></div>
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Latest Patch</div><div class="text-lg font-black mt-1 truncate">${recent[0] ? esc(recent[0].title) : 'None yet'}</div></div>
-            </div>
             <div class="locker-nameplate p-5 md:p-6">
               <div class="text-[10px] uppercase tracking-[.26em] text-white/50 font-black">Student Locker</div>
               <h1 class="text-4xl md:text-6xl font-black mt-3 leading-none">${esc(user.displayName || 'Student')}</h1>
@@ -206,6 +200,11 @@
                 <span class="px-3 py-1 border border-white/10 bg-black/20">Locker ${esc(user.username || initialsFor(user.displayName))}</span>
                 <span class="px-3 py-1 border border-white/10 bg-black/20">${profile.earnedCount} badges earned</span>
               </div>
+            </div>
+            <div class="grid sm:grid-cols-3 gap-3">
+              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Badge Wall</div><div class="text-2xl font-black mt-1">${profile.earnedCount} / ${profile.total}</div></div>
+              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Completion</div><div class="text-2xl font-black mt-1">${percent}%</div></div>
+              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Latest Patch</div><div class="text-lg font-black mt-1 truncate">${recent[0] ? esc(recent[0].title) : 'None yet'}</div></div>
             </div>
           </div>
           ${playerCardMarkup}
