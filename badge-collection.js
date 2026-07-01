@@ -22,12 +22,12 @@
     .locker-cubby{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.12)}
     .locker-cubby:before{content:'';position:absolute;left:12px;right:12px;top:10px;height:4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 9px,transparent 9px 15px);opacity:.45}
     .player-card-wrap{display:flex;justify-content:center}
-    .player-card{position:relative;overflow:hidden;width:min(100%,360px);min-height:520px;padding:18px;background:linear-gradient(145deg,#f7edd4,#d8bd83 48%,#b88943);border:7px solid #f7e7bc;box-shadow:0 30px 90px rgba(0,0,0,.42),inset 0 0 0 2px rgba(75,45,12,.34),inset 0 0 42px rgba(90,54,16,.24);color:#261707}
+    .player-card{position:relative;overflow:hidden;width:min(100%,306px);min-height:442px;padding:15px;background:linear-gradient(145deg,#f7edd4,#d8bd83 48%,#b88943);border:6px solid #f7e7bc;box-shadow:0 30px 90px rgba(0,0,0,.42),inset 0 0 0 2px rgba(75,45,12,.34),inset 0 0 42px rgba(90,54,16,.24);color:#261707}
     .player-card:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 22% 16%,rgba(255,255,255,.34),transparent 22%),repeating-linear-gradient(0deg,rgba(78,48,16,.055) 0 1px,transparent 1px 5px),repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 1px,transparent 1px 7px);opacity:.78;pointer-events:none}
     .player-card:after{content:'';position:absolute;inset:12px;border:2px solid rgba(84,51,18,.58);box-shadow:inset 0 0 0 2px rgba(255,255,255,.24);pointer-events:none}
     .player-card-logo{background:rgba(255,248,226,.72);border:1px solid rgba(81,51,20,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.58)}
     .player-card-title{background:linear-gradient(90deg,var(--student-team-primary,#013369),var(--student-team-secondary,#D50A0A));color:#fff;border:2px solid rgba(255,255,255,.65);box-shadow:0 8px 18px rgba(0,0,0,.24);text-shadow:0 2px 0 rgba(0,0,0,.35)}
-    .player-card-photo{position:relative;overflow:hidden;height:196px;display:grid;place-items:center;background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.34),transparent 22%),linear-gradient(180deg,color-mix(in srgb,var(--student-team-primary,#013369) 68%,#f8f0d4),color-mix(in srgb,var(--student-team-secondary,#D50A0A) 56%,#261707));border:3px solid rgba(83,50,16,.62);box-shadow:inset 0 0 0 4px rgba(255,255,255,.18),0 10px 22px rgba(68,42,12,.26)}
+    .player-card-photo{position:relative;overflow:hidden;height:167px;display:grid;place-items:center;background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.34),transparent 22%),linear-gradient(180deg,color-mix(in srgb,var(--student-team-primary,#013369) 68%,#f8f0d4),color-mix(in srgb,var(--student-team-secondary,#D50A0A) 56%,#261707));border:3px solid rgba(83,50,16,.62);box-shadow:inset 0 0 0 4px rgba(255,255,255,.18),0 10px 22px rgba(68,42,12,.26)}
     .player-card-photo:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.12) 0 2px,transparent 2px 28px),linear-gradient(180deg,transparent 62%,rgba(22,77,45,.75));opacity:.62}
     .player-card-stats{background:rgba(255,248,226,.62);border:2px solid rgba(83,50,16,.44);box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
     .player-card-stat{background:rgba(92,54,15,.08);border:1px solid rgba(83,50,16,.22);color:#2d1b08}
@@ -191,8 +191,13 @@
     </div>`;
     section.innerHTML = `<div class="locker-room max-w-6xl mx-auto px-4 md:px-6">
       <div class="locker-hero mb-6 p-5 md:p-7">
-        <div class="relative z-10 grid lg:grid-cols-[1fr_360px] gap-6 items-center">
+        <div class="relative z-10 grid lg:grid-cols-[1fr_320px] gap-6 items-center">
           <div class="flex flex-col justify-between gap-8">
+            <div class="grid sm:grid-cols-3 gap-3">
+              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Badge Wall</div><div class="text-2xl font-black mt-1">${profile.earnedCount} / ${profile.total}</div></div>
+              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Completion</div><div class="text-2xl font-black mt-1">${percent}%</div></div>
+              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Latest Patch</div><div class="text-lg font-black mt-1 truncate">${recent[0] ? esc(recent[0].title) : 'None yet'}</div></div>
+            </div>
             <div class="locker-nameplate p-5 md:p-6">
               <div class="text-[10px] uppercase tracking-[.26em] text-white/50 font-black">Student Locker</div>
               <h1 class="text-4xl md:text-6xl font-black mt-3 leading-none">${esc(user.displayName || 'Student')}</h1>
@@ -201,11 +206,6 @@
                 <span class="px-3 py-1 border border-white/10 bg-black/20">Locker ${esc(user.username || initialsFor(user.displayName))}</span>
                 <span class="px-3 py-1 border border-white/10 bg-black/20">${profile.earnedCount} badges earned</span>
               </div>
-            </div>
-            <div class="grid sm:grid-cols-3 gap-3">
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Badge Wall</div><div class="text-2xl font-black mt-1">${profile.earnedCount} / ${profile.total}</div></div>
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Completion</div><div class="text-2xl font-black mt-1">${percent}%</div></div>
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Latest Patch</div><div class="text-lg font-black mt-1 truncate">${recent[0] ? esc(recent[0].title) : 'None yet'}</div></div>
             </div>
           </div>
           ${playerCardMarkup}
