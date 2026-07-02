@@ -4,16 +4,24 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    .math-game-field{position:relative;height:92px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:repeating-linear-gradient(90deg,#174d2a 0,#174d2a calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px),rgba(255,255,255,.22) 10%)}
-    .math-game-field:before,.math-game-field:after{content:'END ZONE';position:absolute;top:0;bottom:0;width:48px;display:grid;place-items:center;background:#15365c;color:rgba(255,255,255,.65);font-size:8px;font-weight:800;writing-mode:vertical-rl;letter-spacing:1px}
-    .math-game-field:before{left:0}.math-game-field:after{right:0}
-    .math-game-progress{position:absolute;left:48px;top:0;bottom:0;background:rgba(255,214,10,.18);border-right:3px solid #ffd60a;transition:width .55s ease}
-    .math-game-ball{position:absolute;top:34px;transform:translateX(-50%);font-size:24px;transition:left .55s ease;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7))}
+    .math-game-field{position:relative;height:112px;isolation:isolate;overflow:hidden;border:1px solid rgba(255,255,255,.14);background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.08) 0 1px,transparent 1px 7px),radial-gradient(circle at 64% 72%,rgba(255,255,255,.055) 0 1px,transparent 1px 8px),repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 2px,transparent 2px 7px),linear-gradient(90deg,#0b351f 0,#176334 48%,#0d4326 100%);box-shadow:inset 0 18px 50px rgba(255,255,255,.04),inset 0 -22px 60px rgba(0,0,0,.42),0 18px 46px rgba(0,0,0,.22)}
+    .math-game-field:before{content:'';position:absolute;left:48px;right:48px;top:0;bottom:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.78) 0 2px,transparent 2px 10%),linear-gradient(180deg,rgba(255,255,255,.72) 0 2px,transparent 2px calc(100% - 2px),rgba(255,255,255,.72) calc(100% - 2px));opacity:.72;z-index:1;pointer-events:none}
+    .math-game-field:after{content:'';position:absolute;left:48px;right:48px;top:23%;bottom:23%;background:repeating-linear-gradient(90deg,transparent 0 calc(5% - 1px),rgba(255,255,255,.58) calc(5% - 1px) 5%);opacity:.62;z-index:1;pointer-events:none}
+    .math-game-endzone{position:absolute;top:0;bottom:0;width:48px;z-index:2;display:grid;place-items:center;background:linear-gradient(180deg,color-mix(in srgb,var(--student-team-primary,#013369) 78%,#000),color-mix(in srgb,var(--student-team-secondary,#D50A0A) 36%,#000));box-shadow:inset 0 0 28px rgba(0,0,0,.45)}
+    .math-game-endzone.left{left:0}.math-game-endzone.right{right:0}.math-game-endzone span{font-size:8px;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.78);writing-mode:vertical-rl;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+    .math-game-yard-number{position:absolute;top:12px;z-index:2;transform:translateX(-50%);font-size:10px;font-weight:900;color:rgba(255,255,255,.48);text-shadow:0 1px 3px rgba(0,0,0,.65)}.math-game-yard-number.bottom{top:auto;bottom:12px;transform:translateX(-50%) rotate(180deg)}
+    .math-game-progress{position:absolute;left:48px;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,218,77,.1),rgba(255,218,77,.24));border-right:3px solid #f7d154;box-shadow:0 0 24px rgba(247,209,84,.24);transition:width .55s ease;z-index:3}
+    .math-game-ball{position:absolute;top:50%;z-index:4;width:34px;height:21px;border-radius:50%;background:radial-gradient(circle at 30% 28%,#d89455,#8a411f 58%,#4b1f0e);border:1px solid rgba(255,255,255,.5);box-shadow:0 10px 18px rgba(0,0,0,.42),inset 0 2px 4px rgba(255,255,255,.22);transform:translate(-50%,-50%) rotate(-18deg);transition:left .55s ease}
+    .math-game-ball:before{content:'';position:absolute;left:7px;right:7px;top:9px;height:2px;background:rgba(255,255,255,.86);box-shadow:0 0 4px rgba(255,255,255,.45)}.math-game-ball:after{content:'';position:absolute;left:13px;top:5px;width:8px;height:11px;border-left:2px solid rgba(255,255,255,.85);border-right:2px solid rgba(255,255,255,.85)}
     .math-game-button:disabled{opacity:.45;cursor:not-allowed}
     .math-game-rank:first-child{background:rgba(255,214,10,.08)}
   `;
   document.head.appendChild(style);
 
+  const yardNumbers = [10,20,30,40,50,40,30,20,10].map((number, index) => {
+    const position = `calc(48px + (100% - 96px) * ${(index + 1) / 10})`;
+    return `<span class="math-game-yard-number" style="left:${position}">${number}</span><span class="math-game-yard-number bottom" style="left:${position}">${number}</span>`;
+  }).join('');
   const game = document.createElement('div');
   game.className = 'max-w-6xl mx-auto px-6 pb-14';
   game.innerHTML = `
@@ -30,7 +38,7 @@
       </div>
       <div class="p-5 md:p-7">
         <div class="flex justify-between text-[10px] uppercase font-bold text-white/40 mb-2"><span>Current Drive</span><span id="mg-yards">0 / 100 yards</span></div>
-        <div class="math-game-field"><div id="mg-progress" class="math-game-progress"></div><div id="mg-ball" class="math-game-ball" aria-hidden="true">🏈</div></div>
+        <div class="math-game-field"><div class="math-game-endzone left"><span>End Zone</span></div><div class="math-game-endzone right"><span>End Zone</span></div>${yardNumbers}<div id="mg-progress" class="math-game-progress"></div><div id="mg-ball" class="math-game-ball" aria-hidden="true"></div></div>
       </div>
       <div class="grid lg:grid-cols-[1.5fr_1fr] border-t border-white/10">
         <div class="p-5 md:p-7 lg:border-r border-white/10">

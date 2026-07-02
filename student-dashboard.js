@@ -12,13 +12,36 @@
   };
   const rankText = rank => rank?.position ? `#${rank.position} of ${rank.total}` : 'Not ranked yet';
   const leaderRows = (rows, field) => rows.length ? rows.slice(0, 5).map((row, index) => `<div class="grid grid-cols-[28px_1fr_auto] items-center gap-3 py-3 border-b border-white/5"><span class="text-xs font-black text-white/30">${index + 1}</span><span class="min-w-0"><span class="block text-xs font-semibold truncate">${esc(row.display_name || row.username)}</span><span class="block text-[10px] text-white/35">${esc(row.selected_team || 'Unassigned')}</span></span><span class="text-xs font-black">${Number(row[field] || 0).toLocaleString()} XP</span></div>`).join('') : '<div class="py-8 text-center text-xs text-white/35">No scores yet.</div>';
+  const style = document.createElement('style');
+  style.textContent = `
+    .real-field{position:relative;isolation:isolate;overflow:hidden;border:1px solid rgba(255,255,255,.14);background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.08) 0 1px,transparent 1px 7px),radial-gradient(circle at 64% 72%,rgba(255,255,255,.055) 0 1px,transparent 1px 8px),repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 2px,transparent 2px 7px),linear-gradient(90deg,#0b351f 0,#176334 48%,#0d4326 100%);box-shadow:inset 0 18px 50px rgba(255,255,255,.04),inset 0 -22px 60px rgba(0,0,0,.42),0 18px 46px rgba(0,0,0,.25)}
+    .real-field:before{content:'';position:absolute;left:48px;right:48px;top:0;bottom:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.78) 0 2px,transparent 2px 10%),linear-gradient(180deg,rgba(255,255,255,.72) 0 2px,transparent 2px calc(100% - 2px),rgba(255,255,255,.72) calc(100% - 2px));opacity:.72;z-index:1;pointer-events:none}
+    .real-field:after{content:'';position:absolute;left:48px;right:48px;top:23%;bottom:23%;background:repeating-linear-gradient(90deg,transparent 0 calc(5% - 1px),rgba(255,255,255,.58) calc(5% - 1px) 5%);opacity:.62;z-index:1;pointer-events:none}
+    .real-endzone{position:absolute;top:0;bottom:0;width:48px;z-index:2;display:grid;place-items:center;background:linear-gradient(180deg,color-mix(in srgb,var(--student-team-primary,#013369) 78%,#000),color-mix(in srgb,var(--student-team-secondary,#D50A0A) 36%,#000));box-shadow:inset 0 0 28px rgba(0,0,0,.45)}
+    .real-endzone.left{left:0}.real-endzone.right{right:0}
+    .real-endzone span{font-size:8px;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.78);writing-mode:vertical-rl;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+    .real-progress{position:absolute;left:48px;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,218,77,.1),rgba(255,218,77,.24));border-right:3px solid #f7d154;box-shadow:0 0 24px rgba(247,209,84,.24);z-index:3}
+    .real-yard-number{position:absolute;top:12px;z-index:2;transform:translateX(-50%);font-size:10px;font-weight:900;color:rgba(255,255,255,.48);text-shadow:0 1px 3px rgba(0,0,0,.65)}
+    .real-yard-number.bottom{top:auto;bottom:12px;transform:translateX(-50%) rotate(180deg)}
+    .real-football{position:absolute;top:50%;z-index:4;width:34px;height:21px;border-radius:50%;background:radial-gradient(circle at 30% 28%,#d89455,#8a411f 58%,#4b1f0e);border:1px solid rgba(255,255,255,.5);box-shadow:0 10px 18px rgba(0,0,0,.42),inset 0 2px 4px rgba(255,255,255,.22);transform:translate(-50%,-50%) rotate(-18deg)}
+    .real-football:before{content:'';position:absolute;left:7px;right:7px;top:9px;height:2px;background:rgba(255,255,255,.86);box-shadow:0 0 4px rgba(255,255,255,.45)}
+    .real-football:after{content:'';position:absolute;left:13px;top:5px;width:8px;height:11px;border-left:2px solid rgba(255,255,255,.85);border-right:2px solid rgba(255,255,255,.85)}
+  `;
+  document.head.appendChild(style);
   const fieldProgress = (yards, height = 'h-24') => {
     const value = Math.max(0, Math.min(100, Number(yards) || 0));
-    return `<div class="${height} relative overflow-hidden border border-white/10" style="background:repeating-linear-gradient(90deg,#174d2a 0,#174d2a calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px),rgba(255,255,255,.22) 10%)">
-      <div class="absolute left-0 top-0 bottom-0 w-10 grid place-items-center text-[7px] font-black text-white/65" style="background:var(--student-team-primary,#013369);writing-mode:vertical-rl">END ZONE</div>
-      <div class="absolute right-0 top-0 bottom-0 w-10 grid place-items-center text-[7px] font-black text-white/65" style="background:var(--student-team-primary,#013369);writing-mode:vertical-rl">END ZONE</div>
-      <div class="absolute left-0 top-0 bottom-0 bg-yellow-400/20 border-r-2 border-yellow-300" style="width:${value}%"></div>
-      <div class="absolute top-1/2 w-8 h-5 rounded-full border-2 border-white/75 shadow-lg" style="left:${value}%;background:#7b3f18;transform:translate(-50%,-50%)"><span class="absolute left-2 right-2 top-1/2 h-0.5 bg-white -translate-y-1/2"></span><span class="absolute left-1/2 top-1 bottom-1 w-0.5 bg-white -translate-x-1/2"></span></div>
+    const left = `calc(48px + (100% - 96px) * ${value / 100})`;
+    const width = `calc((100% - 96px) * ${value / 100})`;
+    const numbers = [10,20,30,40,50,40,30,20,10].map((number, index) => {
+      const position = `calc(48px + (100% - 96px) * ${(index + 1) / 10})`;
+      return `<span class="real-yard-number" style="left:${position}">${number}</span><span class="real-yard-number bottom" style="left:${position}">${number}</span>`;
+    }).join('');
+    return `<div class="${height} real-field">
+      <div class="real-endzone left"><span>End Zone</span></div>
+      <div class="real-endzone right"><span>End Zone</span></div>
+      ${numbers}
+      <div class="real-progress" style="width:${width}"></div>
+      <div class="real-football" style="left:${left}"></div>
     </div>`;
   };
 
