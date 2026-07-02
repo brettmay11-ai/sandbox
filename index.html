@@ -725,6 +725,11 @@ function getTeam(abbr){const t=NFL_TEAMS.find(t=>t.abbr===abbr);if(!t)console.wa
 function haversine(lat1,lng1,lat2,lng2){const R=3959;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
 function showToast(msg){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
 function fullName(team){return team.location+' '+team.name}
+function featuredScheduleInfo(fg){
+  const week=WEEKS.find(item=>Number(item.week)===Number(fg.week));
+  const game=week?.games?.find(item=>item.away===fg.away&&item.home===fg.home);
+  return game||null;
+}
 
 /* ===== Featured Game Renderer ===== */
 function renderFeaturedGame(){
@@ -732,6 +737,7 @@ function renderFeaturedGame(){
   const away=getTeam(fg.away);
   const home=getTeam(fg.home);
   if(!away||!home)return;
+  const scheduled=featuredScheduleInfo(fg);
   const dist=haversine(away.lat,away.lng,home.lat,home.lng);
 
   const bgSrc=fg.bgImage || STADIUM_IMAGES[fg.home] || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop";
@@ -751,8 +757,8 @@ function renderFeaturedGame(){
   const homeDefRank=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===fg.home)+1;
   document.getElementById('featured-home-record').innerHTML=`${home.div} • Off #${homeOffRank} • Def #${homeDefRank}`;
 
-  document.getElementById('featured-day').textContent=fg.day;
-  document.getElementById('featured-time').textContent=fg.time;
+  document.getElementById('featured-day').textContent=fg.day||scheduled?.day;
+  document.getElementById('featured-time').textContent=fg.time||(scheduled?.time?`${scheduled.time} ET`:'Time TBD');
   document.getElementById('featured-venue').textContent=home.stadium;
   document.getElementById('featured-location').textContent=`${home.city}, ${home.state}`;
   document.getElementById('featured-distance').textContent=`${dist.toFixed(0)} mi apart`;
