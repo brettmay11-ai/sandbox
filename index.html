@@ -79,7 +79,8 @@ select option{background:#111827;color:#fff}
 .featured-bg{position:relative;overflow:hidden}
 .featured-bg::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,0.3) 0%,rgba(10,10,10,0.7) 40%,rgba(10,10,10,0.95) 75%,#0a0a0a 100%);z-index:1}
 .featured-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,10,10,0.8) 0%,transparent 30%,transparent 70%,rgba(10,10,10,0.8) 100%);z-index:2}
-.featured-bg .featured-content{position:relative;z-index:3}
+.featured-bg .featured-content{position:relative;z-index:3;transition:opacity .22s ease}
+.featured-bg:not(.featured-ready) .featured-content{opacity:0;visibility:hidden}
 @keyframes vs-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}.vs-glow{animation:vs-pulse 2.5s ease-in-out infinite}
 @keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up 0.8s cubic-bezier(0.4,0,0.2,1) forwards}.slide-up-d1{animation-delay:0.1s;opacity:0}.slide-up-d2{animation-delay:0.2s;opacity:0}.slide-up-d3{animation-delay:0.3s;opacity:0}.slide-up-d4{animation-delay:0.4s;opacity:0}
 .featured-stat-pill{transition:all 0.3s ease}.featured-stat-pill:hover{background:rgba(255,255,255,0.08);transform:translateY(-1px)}
@@ -130,7 +131,7 @@ select option{background:#111827;color:#fff}
 </nav>
   
 <section id="featured" class="featured-bg section-reveal" style="min-height:100vh">
-  <img id="featured-bg-img" src="" alt="" class="absolute inset-0 w-full h-full object-cover" style="z-index:0">
+  <img id="featured-bg-img" src="https://i.postimg.cc/pLmRD0Dh/ns4swz69l4fa2ab4bb7l.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="z-index:0">
   <div class="featured-content min-h-screen flex flex-col justify-center px-6 md:px-12 lg:px-20 pt-28 pb-12 md:pb-16">
     <div class="max-w-6xl mx-auto w-full">
       <div class="slide-up flex items-center gap-3 mb-6">
@@ -757,6 +758,7 @@ function renderFeaturedGame(){
   document.getElementById('featured-distance').textContent=`${dist.toFixed(0)} mi apart`;
 
   document.getElementById('featured-discussion').textContent=fg.discussion;
+  document.getElementById('featured')?.classList.add('featured-ready');
 }
 
   /* ===== WEATHER ENGINE ===== */
