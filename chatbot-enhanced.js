@@ -97,6 +97,40 @@
     return typeof NFL_TEAMS !== 'undefined' ? NFL_TEAMS.find(team => team.abbr === user?.selectedTeam) : null;
   }
 
+  function mentionedTeam(question) {
+    const lower = question.toLowerCase();
+    if (typeof NFL_TEAMS === 'undefined') return teamData();
+    return NFL_TEAMS.find(team => [team.abbr, team.name, team.location, team.city, fullName(team)].some(value => lower.includes(String(value).toLowerCase()))) || teamData();
+  }
+
+  function stateFactsFor(team) {
+    return typeof STATE_FACTS !== 'undefined' && team ? STATE_FACTS[team.state] : null;
+  }
+
+  function definitionFor(question) {
+    const definitions = [
+      ['capacity', 'Capacity means how many people a stadium can hold. In this project, you can compare stadium capacities using subtraction or greater-than/less-than statements.'],
+      ['conference', 'A conference is a large group of NFL teams. The NFL has two conferences: the AFC and the NFC.'],
+      ['division', 'A division is a smaller group inside a conference. Teams play division opponents often, so those games can matter a lot.'],
+      ['offense', 'The offense is the team group trying to move the ball and score points.'],
+      ['defense', 'The defense is the team group trying to stop the other team from scoring.'],
+      ['touchdown', 'A touchdown is worth 6 points. Teams can add an extra point or try for 2 more points after it.'],
+      ['time zone', 'A time zone is an area that uses the same clock time. NFL travel can make kickoff feel earlier or later for a visiting team.'],
+      ['population', 'Population means how many people live in a place. You can compare city or state populations in the Cities and States activity.'],
+      ['landmark', 'A landmark is an important or famous place, like a stadium, monument, museum, or natural feature.']
+    ];
+    return definitions.find(([term]) => question.includes(term))?.[1] || null;
+  }
+
+  function playerMatch(question) {
+    if (typeof PLAYER_STATS === 'undefined') return null;
+    for (const [category, group] of Object.entries(PLAYER_STATS)) {
+      const player = group.players.find(row => question.includes(String(row[1]).toLowerCase()));
+      if (player) return { category, headers:group.headers, player };
+    }
+    return null;
+  }
+
   function updateTeamDetails() {
     const team = assigned();
     const chip = document.getElementById('coach-team-chip');
@@ -129,20 +163,31 @@
 
   async function coachAnswer(question) {
     const lower = question.toLowerCase();
-    const team = teamData();
+    const team = mentionedTeam(question);
     const brand = assigned();
+    const facts = typeof STADIUM_FACTS !== 'undefined' && team ? STADIUM_FACTS[team.abbr] : null;
+    const stateFacts = stateFactsFor(team);
+    const definition = definitionFor(lower);
     if (lower.includes('challenge') || lower.includes('quiz')) {
       const data = await api('/api/coach/challenge', { method:'POST', body:'{}' });
       activeChallenge = data.challenge;
       return `${data.challenge.question}\nAnswer correctly to earn ${data.challenge.xp} XP.`;
     }
+    if (definition) return definition;
     if (lower.includes('focus') && focus?.prompt) return `Your teacher's focus this week is: ${focus.prompt}`;
     if (lower.includes('featured game') && typeof FEATURED_GAME !== 'undefined') {
       const away = getTeam(FEATURED_GAME.away);
       const home = getTeam(FEATURED_GAME.home);
       return `The featured game is ${fullName(away)} at ${fullName(home)} in Week ${FEATURED_GAME.week}. Kickoff is ${FEATURED_GAME.day} at ${FEATURED_GAME.time}.`;
     }
-    if (team && (lower.includes('my team') || lower.includes(team.name.toLowerCase()) || lower.includes(team.abbr.toLowerCase()))) {
+    const matchedPlayer = playerMatch(lower);
+    if (matchedPlayer) {
+      const playerTeam = typeof getTeam === 'function' ? getTeam(matchedPlayer.player[2]) : null;
+      const stats = matchedPlayer.headers.slice(3).map((header, index) => `${header}: ${matchedPlayer.player[index + 3]}`).join(' | ');
+      return `${matchedPlayer.player[1]} is listed as a ${matchedPlayer.category} leader for ${playerTeam ? fullName(playerTeam) : matchedPlayer.player[2]}.\n${stats}`;
+    }
+    if (lower.includes('tcu')) return 'TCU stands for Texas Christian University. On the TCU page, focus on the school colors, logo, Fort Worth location, traditions, and how a college team identity compares with an NFL team identity.';
+    if (team && (lower.includes('my team') || lower.includes(team.name.toLowerCase()) || lower.includes(team.abbr.toLowerCase()) || lower.includes(team.location.toLowerCase()) || lower.includes(team.city.toLowerCase()) || lower.includes('stadium') || lower.includes('city') || lower.includes('state'))) {
       if (lower.includes('leader') && typeof fetchTeamLiveStats === 'function') {
         try {
           const data = await fetchTeamLiveStats(team.abbr);
@@ -156,14 +201,21 @@
           return 'Updated team leaders are temporarily unavailable. Try the Player Stats page.';
         }
       }
-      if (lower.includes('travel') || lower.includes('far')) return `Open the Travel page to see every ${brand.name} road trip, distance, and time-zone change.`;
-      return `${brand.name} play in ${team.city}, ${team.state}, at ${team.stadium}. They compete in the ${team.div}. Ask me about their leaders, stadium, travel, or city.`;
+      if (lower.includes('stadium') || lower.includes('capacity') || lower.includes('roof') || lower.includes('surface')) {
+        return `${fullName(team)} play at ${team.stadium} in ${team.city}, ${team.state}.\nCapacity: ${team.stadiumCap.toLocaleString()}\nRoof: ${facts?.roof || 'Not listed'}\nSurface: ${facts?.surface || 'Not listed'}${facts?.trivia ? `\nFun fact: ${facts.trivia}` : ''}`;
+      }
+      if (lower.includes('city') || lower.includes('state') || lower.includes('capital') || lower.includes('population') || lower.includes('region') || lower.includes('landmark')) {
+        return `${fullName(team)} are connected to ${team.city}, ${team.state}.\nState capital: ${stateFacts?.capital || 'Not listed'}\nPopulation: ${stateFacts?.pop || 'Not listed'}\nRegion: ${stateFacts?.region || 'Not listed'}\nLandmark: ${stateFacts?.landmark || 'Not listed'}`;
+      }
+      if (lower.includes('travel') || lower.includes('far')) return `Open the Travel page to see every ${brand?.name || fullName(team)} road trip, distance, and time-zone change.`;
+      return `${fullName(team)} play in ${team.city}, ${team.state}, at ${team.stadium}. They compete in the ${team.div}. Ask me about their leaders, stadium, travel, city, state, or a math comparison.`;
     }
-    if (page === 'math' && (lower.includes('hint') || lower.includes('help'))) return 'Try writing down what the question gives you, circle what it asks for, and choose the operation before calculating. I will help with the steps without giving away the answer.';
-    if (page === 'writing' && (lower.includes('brainstorm') || lower.includes('opening'))) return `Start with one strong detail about ${brand?.name || 'your team'}: the city, stadium, fans, or an important game. Then explain why that detail matters.`;
+    if (page === 'math' || lower.includes('math') || lower.includes('compare') || lower.includes('difference') || lower.includes('average') || lower.includes('percent')) return 'For a football math problem, try this play call:\n1. Find the numbers in the question.\n2. Decide if you are comparing, combining, or finding part of a whole.\n3. Write one equation.\n4. Explain the answer using football words.';
+    if (page === 'writing' || lower.includes('brainstorm') || lower.includes('opening') || lower.includes('paragraph') || lower.includes('sentence')) return `Start with one strong detail about ${brand?.name || 'your team'}: the city, stadium, fans, a player stat, or an important game. Then add evidence and explain why that detail matters.`;
+    if (page === 'cities' || lower.includes('geography') || lower.includes('social studies')) return 'For the Cities and States page, look for four clues: city, state, region, and landmark. A strong answer compares places instead of only listing facts.';
     if (lower.includes('time zone')) return 'Time zones help people use local clock times as Earth rotates. NFL travel can make a game feel earlier or later to visiting players.';
     if (lower.includes('percentage')) return 'Football uses percentages for pass completion, win rate, stadium attendance, and field-goal accuracy.';
-    return `I can help with ${brand?.name || 'your assigned team'}, the page you are studying, updated leaders, the featured game, or a short XP challenge.`;
+    return `I can help connect that to class. Try asking it with your team, a city/state, a stat, or the page you are working on. For example: "How can I compare stadium capacity?" or "Help me write about ${brand?.name || 'my team'}."`;
   }
 
   async function ask(text) {

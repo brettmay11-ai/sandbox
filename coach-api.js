@@ -15,11 +15,17 @@ const SAFETY_RULES = [
 ];
 
 const ALLOWED_TOPICS = [
-  /\b(nfl|football|team|coach|player|stadium|touchdown|field|quarterback|running back|defense|offense|yards?|score|game|season|division|conference)\b/i,
-  /\b(math|percent|percentage|multiply|divide|add|subtract|fraction|decimal|yards?|miles?|capacity|distance|time zone|travel)\b/i,
-  /\b(write|writing|sentence|paragraph|essay|revise|brainstorm|opening|evidence|capital|punctuation)\b/i,
-  /\b(city|state|map|geography|capital|landmark|population|region|research|social studies)\b/i,
-  /\b(help|hint|explain|quiz|challenge|focus|page|dashboard|profile|badge|xp|teacher|class)\b/i
+  /\b(nfl|football|team|coach|player|stadium|touchdown|field|quarterback|running back|defense|defensive|offense|offensive|yards?|score|game|season|schedule|opponent|division|conference|afc|nfc|super bowl|playoff|roster|stats?|leader|passing|rushing|receiving|sacks?|interceptions?)\b/i,
+  /\b(math|percent|percentage|multiply|divide|add|subtract|fraction|decimal|average|compare|difference|greater|less|round|estimate|graph|table|data|word problem|yards?|miles?|capacity|distance|time zone|travel)\b/i,
+  /\b(write|writing|sentence|paragraph|essay|revise|revision|brainstorm|opening|topic sentence|conclusion|evidence|detail|claim|reason|capital|punctuation|grammar|spelling)\b/i,
+  /\b(city|state|map|geography|capital|landmark|population|region|research|social studies|culture|climate|weather|economy|government|history|location|place)\b/i,
+  /\b(help|hint|explain|quiz|challenge|focus|page|dashboard|profile|badge|badges|xp|level|teacher|class|assignment|activity|question|answer|study|learn|what does|how do|why does)\b/i,
+  /\b(tcu|horned frogs|college|university|school colors|mascot)\b/i
+];
+
+const OFF_TOPIC_PATTERNS = [
+  /\b(roblox|minecraft|fortnite|youtube|tiktok|snapchat|instagram|netflix|movie|movies|song|lyrics|celebrity|dating|girlfriend|boyfriend|crush|shopping|amazon|video game|video games)\b/i,
+  /\b(tell me a joke|make me laugh|random question|not school|not about school)\b/i
 ];
 
 function classifySafety(message) {
@@ -28,7 +34,13 @@ function classifySafety(message) {
   for (const rule of SAFETY_RULES) {
     if (rule.patterns.some(pattern => pattern.test(text))) return { blocked:true, category:rule.category, severity:rule.severity, message:rule.message };
   }
-  if (text.length > 8 && !ALLOWED_TOPICS.some(pattern => pattern.test(text))) {
+  const mentionsTeam = Object.entries(TEAM_NAMES).some(([abbr, name]) => {
+    const terms = [abbr, ...name.split(/\s+/)].filter(term => term.length >= 3 && !['the', 'new', 'san', 'los'].includes(term.toLowerCase()));
+    return terms.some(term => new RegExp('\\b' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(text));
+  });
+  const classroomRelated = mentionsTeam || ALLOWED_TOPICS.some(pattern => pattern.test(text));
+  const clearlyOffTopic = OFF_TOPIC_PATTERNS.some(pattern => pattern.test(text));
+  if (text.length > 8 && clearlyOffTopic && !classroomRelated) {
     return { blocked:true, category:'off_topic', severity:'low', message:'I can help with your NFL project, your team, or today’s class activity. Try asking about football, math, writing, geography, or your teacher’s focus.' };
   }
   return { blocked:false };
