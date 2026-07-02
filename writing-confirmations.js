@@ -7,7 +7,7 @@
     button.dataset.confirming='true';button.disabled=true;
     button.className='px-5 py-3 bg-green-600 text-white text-xs font-bold';
     button.innerHTML=`<span class="inline-flex items-center gap-2"><iconify-icon icon="lucide:check"></iconify-icon>${label}</span>`;
-    setTimeout(()=>{const original=defaults.get(button);button.disabled=false;button.className=original.classes;button.innerHTML=original.html;delete button.dataset.confirming},1800);
+    setTimeout(()=>{const original=defaults.get(button),stayHidden=button.classList.contains('hidden');button.disabled=false;button.className=original.classes;if(stayHidden)button.classList.add('hidden');button.innerHTML=original.html;delete button.dataset.confirming},1800);
   }
   const observer=new MutationObserver(()=>{
     if(message.classList.contains('hidden'))return;
