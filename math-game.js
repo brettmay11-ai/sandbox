@@ -15,9 +15,21 @@
     .math-game-ball:before{content:'';position:absolute;left:7px;right:7px;top:9px;height:2px;background:rgba(255,255,255,.86);box-shadow:0 0 4px rgba(255,255,255,.45)}.math-game-ball:after{content:'';position:absolute;left:13px;top:5px;width:8px;height:11px;border-left:2px solid rgba(255,255,255,.85);border-right:2px solid rgba(255,255,255,.85)}
     .math-game-button:disabled{opacity:.45;cursor:not-allowed}
     .math-game-rank:first-child{background:rgba(255,214,10,.08)}
+    .math-playbook-card{position:relative;isolation:isolate;overflow:hidden;min-height:138px;text-align:left;border:1px solid rgba(255,255,255,.13);background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 44px rgba(0,0,0,.24);transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease}
+    .math-playbook-card:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0 48%,color-mix(in srgb,var(--play-accent,#5b9bd5) 34%,transparent) 49% 51%,transparent 52%),repeating-linear-gradient(90deg,rgba(255,255,255,.055) 0 1px,transparent 1px 22px);opacity:.68;z-index:-1}
+    .math-playbook-card:hover:not(:disabled){transform:translateY(-3px);border-color:color-mix(in srgb,var(--play-accent,#5b9bd5) 64%,rgba(255,255,255,.18));background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.038));box-shadow:0 22px 58px rgba(0,0,0,.32),0 0 36px color-mix(in srgb,var(--play-accent,#5b9bd5) 20%,transparent)}
+    .math-playbook-card:disabled{opacity:.48;cursor:not-allowed}
+    .math-route-dot{width:8px;height:8px;border-radius:999px;background:var(--play-accent,#5b9bd5);box-shadow:0 0 16px var(--play-accent,#5b9bd5)}
+    .math-route-line{height:2px;min-width:54px;background:linear-gradient(90deg,var(--play-accent,#5b9bd5),rgba(255,255,255,.18))}
   `;
   document.head.appendChild(style);
 
+  const playCalls = [
+    { yards:5, name:'Quick Slant', label:'Short gain', difficulty:'Rookie', accent:'#22c55e', icon:'zap', note:'Fast facts' },
+    { yards:10, name:'Curl Route', label:'Move chains', difficulty:'Starter', accent:'#5b9bd5', icon:'corner-down-right', note:'One clean step' },
+    { yards:15, name:'Deep Cross', label:'Big chunk', difficulty:'Captain', accent:'#f59e0b', icon:'route', note:'Two-step thinking' },
+    { yards:20, name:'End Zone Shot', label:'High risk', difficulty:'All-Pro', accent:'#ef4444', icon:'crosshair', note:'Fractions, percent, or travel' }
+  ];
   const yardNumbers = [10,20,30,40,50,40,30,20,10].map((number, index) => {
     const position = `calc(48px + (100% - 96px) * ${(index + 1) / 10})`;
     return `<span class="math-game-yard-number" style="left:${position}">${number}</span><span class="math-game-yard-number bottom" style="left:${position}">${number}</span>`;
@@ -42,12 +54,22 @@
       </div>
       <div class="grid lg:grid-cols-[1.5fr_1fr] border-t border-white/10">
         <div class="p-5 md:p-7 lg:border-r border-white/10">
+          <div id="mg-playbook-wrap" class="mb-6">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <div class="text-[10px] uppercase tracking-[.22em] text-brand-400 font-black">Choose Your Play</div>
+                <h3 class="text-xl font-black mt-1">Offensive Playbook</h3>
+              </div>
+              <div class="hidden sm:flex items-center gap-2 text-[10px] uppercase text-white/35 font-bold"><iconify-icon icon="lucide:gamepad-2" class="text-brand-400"></iconify-icon>Pick yards, set difficulty</div>
+            </div>
+            <div id="mg-playbook" class="grid sm:grid-cols-2 gap-3"></div>
+          </div>
           <div id="mg-question-meta" class="flex gap-2 mb-4"></div>
-          <div id="mg-question" class="min-h-[82px] text-lg md:text-xl font-semibold leading-relaxed text-white/85">Loading your first play...</div>
-          <form id="mg-form" class="mt-5 flex flex-col sm:flex-row gap-2">
+          <div id="mg-question" class="min-h-[82px] text-lg md:text-xl font-semibold leading-relaxed text-white/85">Choose a play from the playbook to start your drive.</div>
+          <form id="mg-form" class="hidden mt-5 flex flex-col sm:flex-row gap-2">
             <label class="sr-only" for="mg-answer">Your answer</label><input id="mg-answer" type="number" step="any" required autocomplete="off" placeholder="Enter your answer" class="min-w-0 flex-1 px-4 py-3 bg-black/30 border border-white/15 text-white outline-none focus:border-brand-400">
             <button id="mg-submit" class="math-game-button px-5 py-3 bg-brand-500 hover:bg-brand-400 text-white text-xs font-bold uppercase tracking-wider transition">Run the Play</button>
-            <button id="mg-next-play" type="button" class="math-game-button hidden px-5 py-3 border border-white/15 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-wider transition">Next Play</button>
+            <button id="mg-next-play" type="button" class="math-game-button hidden px-5 py-3 border border-white/15 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-wider transition">Choose Next Play</button>
           </form>
           <div id="mg-feedback" class="hidden mt-4 p-4 border text-sm leading-relaxed"></div>
         </div>
@@ -66,6 +88,25 @@
   const state = { challenge:null, weekly:[], allTime:[], board:'weekly', busy:false };
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
   async function api(path, options={}) { const response=await fetch(path,{headers:{'Content-Type':'application/json'},...options}); const data=await response.json().catch(()=>({})); if(!response.ok) throw new Error(data.error||'The game could not load.'); return data; }
+
+  function renderPlaybook(disabled=false) {
+    $('mg-playbook').innerHTML = playCalls.map(play => `<button type="button" class="math-playbook-card p-4" data-yards="${play.yards}" style="--play-accent:${play.accent}" ${disabled?'disabled':''}>
+      <div class="relative z-10 flex items-start justify-between gap-3">
+        <div>
+          <div class="text-[10px] uppercase tracking-[.2em] text-white/40 font-black">${escapeHtml(play.label)}</div>
+          <div class="text-lg font-black mt-1">${escapeHtml(play.name)}</div>
+        </div>
+        <div class="w-11 h-11 border border-white/15 bg-black/25 grid place-items-center text-white"><iconify-icon icon="lucide:${escapeHtml(play.icon)}" class="text-xl"></iconify-icon></div>
+      </div>
+      <div class="relative z-10 flex items-center gap-2 mt-4" aria-hidden="true"><span class="math-route-dot"></span><span class="math-route-line"></span><span class="math-route-dot"></span></div>
+      <div class="relative z-10 grid grid-cols-3 gap-px mt-4 bg-white/10 border border-white/10">
+        <div class="bg-black/28 p-2"><div class="text-[8px] uppercase text-white/35 font-black">Yards</div><div class="text-lg font-black">${play.yards}</div></div>
+        <div class="bg-black/28 p-2"><div class="text-[8px] uppercase text-white/35 font-black">XP</div><div class="text-lg font-black">${play.yards}</div></div>
+        <div class="bg-black/28 p-2"><div class="text-[8px] uppercase text-white/35 font-black">Level</div><div class="text-[11px] font-black mt-1">${escapeHtml(play.difficulty)}</div></div>
+      </div>
+      <div class="relative z-10 text-[10px] text-white/42 font-semibold mt-3">${escapeHtml(play.note)}</div>
+    </button>`).join('');
+  }
 
   function renderProfile(profile) {
     $('mg-xp').textContent=Number(profile.total_xp||0).toLocaleString();
@@ -89,13 +130,29 @@
 
   function setQuestion(challenge) {
     state.challenge=challenge;
+    $('mg-playbook-wrap').classList.add('hidden');
+    $('mg-form').classList.remove('hidden');
     $('mg-question').textContent=challenge.question;
-    $('mg-question-meta').innerHTML=`<span class="px-2 py-1 border border-brand-400/30 text-brand-400 text-[10px] font-bold uppercase">${escapeHtml(challenge.difficulty)}</span><span class="px-2 py-1 border border-white/10 text-white/50 text-[10px] font-bold">+${challenge.xp} XP</span><span class="px-2 py-1 border border-white/10 text-white/50 text-[10px] font-bold">+${challenge.yards} yards</span>`;
+    $('mg-question-meta').innerHTML=`<span class="px-2 py-1 border border-brand-400/30 text-brand-400 text-[10px] font-bold uppercase">${escapeHtml(challenge.playName||'Play Call')}</span><span class="px-2 py-1 border border-brand-400/30 text-brand-400 text-[10px] font-bold uppercase">${escapeHtml(challenge.difficulty)}</span><span class="px-2 py-1 border border-white/10 text-white/50 text-[10px] font-bold">+${challenge.xp} XP</span><span class="px-2 py-1 border border-white/10 text-white/50 text-[10px] font-bold">+${challenge.yards} yards</span>`;
     $('mg-feedback').classList.add('hidden'); $('mg-next-play').classList.add('hidden'); $('mg-submit').classList.remove('hidden'); $('mg-answer').disabled=false; $('mg-answer').value=''; $('mg-answer').focus();
   }
 
+  function showPlaybook(message='Choose a play from the playbook to start your drive.') {
+    state.challenge = null;
+    renderPlaybook(false);
+    $('mg-playbook-wrap').classList.remove('hidden');
+    $('mg-form').classList.add('hidden');
+    $('mg-submit').disabled = false;
+    $('mg-answer').disabled = false;
+    $('mg-submit').classList.remove('hidden');
+    $('mg-next-play').classList.add('hidden');
+    $('mg-question-meta').innerHTML = '';
+    $('mg-question').textContent = message;
+    $('mg-feedback').classList.add('hidden');
+  }
+
   async function loadProfile() { const data=await api('/api/math-game/profile'); renderProfile(data.profile); state.weekly=data.weekly; state.allTime=data.allTime; renderLeaderboard(); }
-  async function nextChallenge() { if(state.busy)return; state.busy=true; $('mg-question').textContent='Calling the next play...'; $('mg-submit').disabled=true; try{const data=await api('/api/math-game/challenge',{method:'POST',body:'{}'});setQuestion(data.challenge)}catch(error){$('mg-question').textContent=error.message}finally{state.busy=false;$('mg-submit').disabled=false} }
+  async function nextChallenge(yards) { if(state.busy)return; state.busy=true; renderPlaybook(true); $('mg-question').textContent='Calling the play...'; try{const data=await api('/api/math-game/challenge',{method:'POST',body:JSON.stringify({yards})});setQuestion(data.challenge)}catch(error){$('mg-question').textContent=error.message;renderPlaybook(false)}finally{state.busy=false;$('mg-submit').disabled=false} }
 
   $('mg-form').addEventListener('submit', async event => {
     event.preventDefault();
@@ -118,7 +175,8 @@
       }
       const feedback = $('mg-feedback');
       feedback.className = `mt-4 p-4 border text-sm leading-relaxed ${data.correct ? 'border-green-500/30 bg-green-500/10 text-green-200' : 'border-red-500/30 bg-red-500/10 text-red-200'}`;
-      feedback.innerHTML = data.correct ? `<strong>${data.touchdown ? 'Touchdown!' : 'First down!'}</strong> ${escapeHtml(data.explanation)} You earned ${data.xpEarned} XP and ${data.yardsEarned} yards.` : `<strong>Incomplete play.</strong> The answer was ${data.correctAnswer}. ${escapeHtml(data.explanation)}`;
+      const successLabel = data.touchdown ? 'Touchdown!' : data.yardsEarned >= 10 ? 'First down!' : 'Positive gain!';
+      feedback.innerHTML = data.correct ? `<strong>${successLabel}</strong> ${escapeHtml(data.explanation)} You earned ${data.xpEarned} XP and ${data.yardsEarned} yards.` : `<strong>Incomplete play.</strong> The answer was ${data.correctAnswer}. ${escapeHtml(data.explanation)}`;
       $('mg-submit').classList.add('hidden');
       $('mg-next-play').classList.remove('hidden');
       state.challenge = null;
@@ -131,9 +189,14 @@
       state.busy = false;
     }
   });
-  $('mg-next-play').addEventListener('click',nextChallenge);
+  $('mg-playbook').addEventListener('click', event => {
+    const button = event.target.closest('[data-yards]');
+    if (!button || state.busy) return;
+    nextChallenge(Number(button.dataset.yards));
+  });
+  $('mg-next-play').addEventListener('click',()=>showPlaybook('Choose the next play call.'));
   $('mg-weekly-tab').addEventListener('click',()=>{state.board='weekly';renderLeaderboard()});
   $('mg-season-tab').addEventListener('click',()=>{state.board='allTime';renderLeaderboard()});
 
-  loadProfile().then(nextChallenge).catch(error=>{$('mg-question').textContent=error.message;$('mg-submit').disabled=true});
+  loadProfile().then(()=>showPlaybook()).catch(error=>{$('mg-question').textContent=error.message;$('mg-submit').disabled=true});
 })();

@@ -3,18 +3,39 @@ const { awardMathBadges } = require('./badges-api');
 
 const TEAMS = ['Bills','Dolphins','Patriots','Jets','Ravens','Bengals','Browns','Steelers','Texans','Colts','Jaguars','Titans','Broncos','Chiefs','Raiders','Chargers','Cowboys','Eagles','Giants','Commanders','Bears','Lions','Packers','Vikings','Falcons','Panthers','Saints','Buccaneers','49ers','Cardinals','Rams','Seahawks'];
 const LEVELS = [{name:'Rookie',xp:0},{name:'Starter',xp:250},{name:'Captain',xp:750},{name:'All-Pro',xp:1500},{name:'Hall of Famer',xp:3000}];
+const PLAY_CALLS = {
+  5:{name:'Quick Slant',difficulty:'Rookie',xp:5,yards:5},
+  10:{name:'Curl Route',difficulty:'Starter',xp:10,yards:10},
+  15:{name:'Deep Cross',difficulty:'Captain',xp:15,yards:15},
+  20:{name:'End Zone Shot',difficulty:'All-Pro',xp:20,yards:20}
+};
 const pick = values => values[Math.floor(Math.random() * values.length)];
 const integer = (min,max) => Math.floor(Math.random() * (max-min+1))+min;
 const teamPair = () => { const first=pick(TEAMS); let second=pick(TEAMS); while(second===first)second=pick(TEAMS); return [first,second]; };
 
-function createQuestion() {
-  const type = integer(1,6), [a,b] = teamPair();
-  if(type===1){const x=integer(14,45),y=integer(3,x-1);return {question:`The ${a} scored ${x} points and the ${b} scored ${y}. What was the winning margin?`,answer:x-y,explanation:`${x} - ${y} = ${x-y} points`,difficulty:'Rookie',xp:10,yards:10};}
-  if(type===2){const x=integer(14,42),y=integer(10,38);return {question:`The ${a} scored ${x} points and the ${b} scored ${y}. How many total points were scored?`,answer:x+y,explanation:`${x} + ${y} = ${x+y} total points`,difficulty:'Rookie',xp:10,yards:10};}
-  if(type===3){const games=pick([4,5,6,8]),average=integer(17,34),total=games*average;return {question:`The ${a} scored ${total} points across ${games} games. What was their average points per game?`,answer:average,explanation:`${total} / ${games} = ${average} points per game`,difficulty:'Starter',xp:15,yards:15};}
-  if(type===4){const distance=pick([500,750,1000,1250,1500,1750,2000,2250,2500]);const minutes=Math.round(distance/500*60);return {question:`The ${a} travel ${distance.toLocaleString()} miles at 500 miles per hour. About how many minutes is the flight?`,answer:minutes,explanation:`${distance.toLocaleString()} / 500 = ${distance/500} hours. ${distance/500} x 60 = ${minutes} minutes.`,difficulty:'Captain',xp:20,yards:20};}
-  if(type===5){const attempts=pick([20,25,40,50]),percent=pick([50,60,70,80]),complete=attempts*percent/100;return {question:`The ${a} quarterback completed ${complete} of ${attempts} passes. What was the completion percentage? Enter the number without the percent sign.`,answer:percent,explanation:`${complete} / ${attempts} x 100 = ${percent}%`,difficulty:'Captain',xp:20,yards:20};}
-  const capacity=pick([60000,65000,70000,75000,80000]),percent=pick([50,60,75,80,90]),attendance=capacity*percent/100;return {question:`A stadium holds ${capacity.toLocaleString()} fans. If ${attendance.toLocaleString()} attend, what percent of the stadium is full? Enter the number without the percent sign.`,answer:percent,explanation:`${attendance.toLocaleString()} / ${capacity.toLocaleString()} x 100 = ${percent}%`,difficulty:'All-Pro',xp:30,yards:30};
+function playFor(yards){return PLAY_CALLS[Number(yards)]||PLAY_CALLS[10]}
+function playQuestion(play, details){return {...details,playName:play.name,difficulty:play.difficulty,xp:play.xp,yards:play.yards}}
+
+function createQuestion(yards=10) {
+  const play=playFor(yards), type=integer(1,4), [a,b] = teamPair();
+  if(play.yards===5){
+    if(type===1){const x=integer(7,28),y=integer(3,21);return playQuestion(play,{question:`The ${a} scored ${x} points and the ${b} scored ${y}. How many total points were scored?`,answer:x+y,explanation:`${x} + ${y} = ${x+y} total points`});}
+    if(type===2){const x=integer(14,35),y=integer(3,x-7);return playQuestion(play,{question:`The ${a} beat the ${b} ${x} to ${y}. What was the winning margin?`,answer:x-y,explanation:`${x} - ${y} = ${x-y} points`});}
+    const first=integer(2,9),second=integer(2,9);return playQuestion(play,{question:`A ${a} runner gained ${first} yards, then gained ${second} more. How many yards did the runner gain in all?`,answer:first+second,explanation:`${first} + ${second} = ${first+second} yards`});
+  }
+  if(play.yards===10){
+    if(type===1){const touchdowns=integer(2,5),fieldGoals=integer(1,4),points=touchdowns*7+fieldGoals*3;return playQuestion(play,{question:`The ${a} scored ${touchdowns} touchdowns worth 7 points each and ${fieldGoals} field goals worth 3 points each. How many points did they score?`,answer:points,explanation:`${touchdowns} x 7 = ${touchdowns*7}. ${fieldGoals} x 3 = ${fieldGoals*3}. ${touchdowns*7} + ${fieldGoals*3} = ${points}`});}
+    if(type===2){const catches=integer(3,8),yardsPer=pick([4,5,6,7,8,9]);return playQuestion(play,{question:`A ${b} receiver caught ${catches} passes for ${yardsPer} yards each. How many receiving yards is that?`,answer:catches*yardsPer,explanation:`${catches} x ${yardsPer} = ${catches*yardsPer} yards`});}
+    const attempts=pick([20,24,28,32]),incomplete=integer(5,12),complete=attempts-incomplete;return playQuestion(play,{question:`A quarterback threw ${attempts} passes and completed ${complete}. How many passes were incomplete?`,answer:incomplete,explanation:`${attempts} - ${complete} = ${incomplete} incomplete passes`});
+  }
+  if(play.yards===15){
+    if(type===1){const games=pick([4,5,6]),average=integer(17,34),total=games*average;return playQuestion(play,{question:`The ${a} scored ${total} points across ${games} games. What was their average points per game?`,answer:average,explanation:`${total} / ${games} = ${average} points per game`});}
+    if(type===2){const total=pick([120,135,150,165,180,195]),drives=pick([3,5]);return playQuestion(play,{question:`The ${b} gained ${total} yards on ${drives} equal scoring drives. How many yards did they gain on each drive?`,answer:total/drives,explanation:`${total} / ${drives} = ${total/drives} yards per drive`});}
+    const firstHalf=integer(45,95),total=firstHalf+integer(35,90);return playQuestion(play,{question:`A ${a} running back had ${firstHalf} rushing yards at halftime and finished with ${total}. How many yards did the player gain after halftime?`,answer:total-firstHalf,explanation:`${total} - ${firstHalf} = ${total-firstHalf} yards after halftime`});
+  }
+  if(type===1){const capacity=pick([48000,60000,72000,80000]),percent=pick([25,50,75]),attendance=capacity*percent/100;return playQuestion(play,{question:`A stadium holds ${capacity.toLocaleString()} fans. If it is ${percent}% full, how many fans are there?`,answer:attendance,explanation:`${percent}% of ${capacity.toLocaleString()} = ${attendance.toLocaleString()} fans`});}
+  if(type===2){const passing=pick([{attempts:24,top:3,bottom:4},{attempts:28,top:2,bottom:4},{attempts:32,top:5,bottom:8},{attempts:36,top:3,bottom:4},{attempts:40,top:5,bottom:8}]),complete=passing.attempts/passing.bottom*passing.top;return playQuestion(play,{question:`A ${a} quarterback completed ${passing.top}/${passing.bottom} of ${passing.attempts} passes. How many passes were completed?`,answer:complete,explanation:`${passing.attempts} / ${passing.bottom} = ${passing.attempts/passing.bottom}. ${passing.attempts/passing.bottom} x ${passing.top} = ${complete}`});}
+  const distance=pick([750,1000,1250,1500,1750,2000]),speed=250,hours=distance/speed,minutes=hours*60;return playQuestion(play,{question:`The ${b} fly ${distance.toLocaleString()} miles at about ${speed} miles per hour. How many minutes is the flight?`,answer:minutes,explanation:`${distance.toLocaleString()} / ${speed} = ${hours} hours. ${hours} x 60 = ${minutes} minutes`});
 }
 
 function levelFor(xp){return [...LEVELS].reverse().find(level=>xp>=level.xp)||LEVELS[0]}
@@ -44,10 +65,11 @@ async function handleMathGame({pool,req,res,path,user,sendJson,readJson}){
   if(!user){sendJson(res,401,{error:'Please sign in.'});return true;}
   if(path==='/api/math-game/profile'&&req.method==='GET'){sendJson(res,200,await profileData(pool,user.id));return true;}
   if(path==='/api/math-game/challenge'&&req.method==='POST'){
+    const body=await readJson(req);
     await pool.query('DELETE FROM math_challenges WHERE user_id=$1 AND answered_at IS NULL',[user.id]);
-    const challenge=createQuestion(),id=crypto.randomBytes(24).toString('hex');
+    const challenge=createQuestion(body.yards),id=crypto.randomBytes(24).toString('hex');
     await pool.query('INSERT INTO math_challenges(id,user_id,question,answer,explanation,difficulty,xp,yards) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id,user.id,challenge.question,challenge.answer,challenge.explanation,challenge.difficulty,challenge.xp,challenge.yards]);
-    sendJson(res,201,{challenge:{id,question:challenge.question,difficulty:challenge.difficulty,xp:challenge.xp,yards:challenge.yards}});return true;
+    sendJson(res,201,{challenge:{id,question:challenge.question,playName:challenge.playName,difficulty:challenge.difficulty,xp:challenge.xp,yards:challenge.yards}});return true;
   }
   if(path==='/api/math-game/answer'&&req.method==='POST'){
     const body=await readJson(req),result=await pool.query('UPDATE math_challenges SET answered_at=NOW() WHERE id=$1 AND user_id=$2 AND answered_at IS NULL RETURNING *',[String(body.challengeId||''),user.id]);
