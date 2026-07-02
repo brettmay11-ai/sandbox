@@ -235,7 +235,13 @@
           return;
         }
         activeChallenge = null;
-        window.showEarnedBadges?.(result.awardedBadges);
+        const showBadges = () => window.showEarnedBadges?.(result.awardedBadges);
+        if (result.levelUp && window.showLevelUpCelebration) {
+          window.showLevelUpCelebration(result.levelUp);
+          setTimeout(showBadges, 4600);
+        } else {
+          showBadges();
+        }
         safeMessage(result.correct ? `Correct! ${result.explanation} You earned ${result.xpEarned} XP.` : `Good try. ${result.explanation} The answer was ${result.correctAnswer}.`);
         return;
       }

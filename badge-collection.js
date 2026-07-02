@@ -73,11 +73,31 @@
     .badge-unlock-card .badge-medal-wrap{width:132px;margin:20px auto 18px;animation:badge-pulse 1.1s ease-in-out infinite}
     .badge-unlock-card .badge-medal-lg{width:124px;height:124px}
     .badge-unlock-card .badge-medal-ribbons span{width:30px;height:44px}
+    .level-up-overlay{position:fixed;inset:0;z-index:140;display:grid;place-items:center;overflow:hidden;pointer-events:none;background:radial-gradient(circle at 50% 34%,rgba(255,255,255,.18),transparent 18%),radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--student-team-secondary,#D50A0A) 32%,transparent),transparent 44%),linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.94));animation:level-up-fade 4.8s ease forwards}
+    .level-up-overlay:before{content:'';position:absolute;inset:-10%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.08) 0 4deg,transparent 4deg 10deg);animation:level-up-rays 4.8s linear forwards;opacity:.65}
+    .level-up-card{position:relative;width:min(840px,calc(100vw - 28px));padding:42px 24px 38px;text-align:center;background:linear-gradient(180deg,rgba(18,22,30,.94),rgba(3,5,10,.97));border:1px solid rgba(255,255,255,.24);box-shadow:0 38px 150px rgba(0,0,0,.78),0 0 140px color-mix(in srgb,var(--student-team-secondary,#D50A0A) 58%,transparent),inset 0 1px 0 rgba(255,255,255,.16);animation:level-up-card .9s cubic-bezier(.16,1.18,.24,1) both}
+    .level-up-card:before{content:'';position:absolute;inset:-2px;background:linear-gradient(135deg,var(--student-team-primary,#013369),#fff7bc,var(--student-team-secondary,#D50A0A));filter:blur(18px);opacity:.58;z-index:-1}
+    .level-up-trophy{position:relative;width:164px;height:164px;margin:0 auto 22px;border-radius:999px;display:grid;place-items:center;background:conic-gradient(from 12deg,#fff7bc,#facc15,#b97818,#fff7bc,#ffffff,#facc15);color:#3b2405;box-shadow:inset 0 5px 9px rgba(255,255,255,.68),inset 0 -14px 18px rgba(0,0,0,.32),0 0 86px rgba(250,204,21,.7);animation:level-up-trophy .86s ease-in-out infinite alternate}
+    .level-up-trophy:before{content:'';position:absolute;inset:-18px;border-radius:inherit;border:3px solid rgba(255,247,188,.42);box-shadow:0 0 44px rgba(250,204,21,.38)}
+    .level-up-trophy iconify-icon{font-size:86px}
+    .level-up-kicker{font-size:11px;font-weight:900;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.58)}
+    .level-up-title{margin-top:12px;font-size:clamp(4.5rem,15vw,10rem);line-height:.78;font-weight:900;letter-spacing:0;color:#fff;text-shadow:0 0 34px color-mix(in srgb,var(--student-team-secondary,#D50A0A) 70%,transparent),0 9px 0 rgba(0,0,0,.42)}
+    .level-up-subtitle{display:inline-flex;align-items:center;gap:12px;margin-top:26px;padding:12px 18px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);font-size:clamp(1rem,3vw,1.8rem);font-weight:900;text-transform:uppercase}
+    .level-up-xp{margin-top:16px;font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.58)}
+    .level-up-firework{position:absolute;left:var(--x);top:var(--y);width:8px;height:8px;border-radius:999px;background:var(--c);box-shadow:0 0 20px var(--c);animation:level-up-firework 1.5s ease-out infinite;animation-delay:var(--d)}
+    .level-up-spark{position:absolute;left:50%;top:50%;width:11px;height:30px;border-radius:999px;background:var(--c);box-shadow:0 0 16px var(--c);animation:level-up-spark 1.75s ease-out forwards;animation-delay:var(--d)}
+    @media(max-width:640px){.level-up-card{padding:34px 18px}.level-up-trophy{width:132px;height:132px}.level-up-trophy iconify-icon{font-size:70px}.level-up-subtitle{font-size:1rem;gap:8px;flex-wrap:wrap;justify-content:center}}
     @keyframes badge-pop{0%{opacity:0;transform:translateY(26px) scale(.76) rotateX(22deg)}55%{opacity:1;transform:translateY(-8px) scale(1.05) rotateX(0)}100%{opacity:1;transform:translateY(0) scale(1) rotateX(0)}}
     @keyframes badge-pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 color-mix(in srgb,var(--badge-accent,#5b9bd5) 36%,transparent)}50%{transform:scale(1.08);box-shadow:0 0 0 16px transparent}}
     @keyframes badge-confetti{0%{transform:rotate(var(--spin)) translateY(0) scale(.7);opacity:1}100%{transform:rotate(var(--spin)) translateY(-52vh) translateX(var(--drift)) scale(1);opacity:0}}
     @keyframes badge-card-shine{0%,42%{transform:translateX(0) rotate(18deg)}62%,100%{transform:translateX(360%) rotate(18deg)}}
     @keyframes badge-progress-shine{0%,45%{transform:translateX(-100%)}75%,100%{transform:translateX(100%)}}
+    @keyframes level-up-card{0%{opacity:0;transform:scale(.56) translateY(42px)}58%{opacity:1;transform:scale(1.09) translateY(-10px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+    @keyframes level-up-trophy{to{transform:scale(1.08) rotate(-2deg)}}
+    @keyframes level-up-firework{0%{transform:scale(.2);opacity:0}25%{opacity:1}100%{transform:scale(19);opacity:0}}
+    @keyframes level-up-spark{0%{opacity:1;transform:rotate(var(--r)) translateY(0) translateX(0) scale(.7)}100%{opacity:0;transform:rotate(var(--r)) translateY(-56vh) translateX(var(--dx)) scale(1.2)}}
+    @keyframes level-up-rays{to{transform:rotate(32deg) scale(1.08);opacity:.15}}
+    @keyframes level-up-fade{0%,84%{opacity:1}100%{opacity:0;visibility:hidden}}
   `;
   document.head.appendChild(style);
 
@@ -278,6 +298,27 @@
       showNextBadge();
     }, 3300);
   }
+
+  function showLevelUp(levelUp) {
+    if (!levelUp) return;
+    document.querySelectorAll('.level-up-overlay').forEach(overlay => overlay.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'level-up-overlay';
+    const colors = ['#facc15', '#fff7bc', '#ffffff', 'var(--student-team-secondary,#D50A0A)', 'var(--student-team-primary,#013369)'];
+    const fireworks = Array.from({ length:12 }, (_, index) => `<span class="level-up-firework" style="--x:${8 + (index * 17) % 84}%;--y:${10 + (index * 23) % 64}%;--c:${colors[index % colors.length]};--d:${(index % 6) * 0.17}s"></span>`).join('');
+    const sparks = Array.from({ length:68 }, (_, index) => `<span class="level-up-spark" style="--r:${index * 15}deg;--dx:${(index % 2 ? -1 : 1) * (70 + (index % 12) * 14)}px;--c:${colors[index % colors.length]};--d:${(index % 10) * 0.032}s"></span>`).join('');
+    overlay.innerHTML = `${fireworks}${sparks}<div class="level-up-card">
+      <div class="level-up-trophy"><iconify-icon icon="lucide:trophy"></iconify-icon></div>
+      <div class="level-up-kicker">Level Complete</div>
+      <h2 class="level-up-title">LEVEL UP!</h2>
+      <div class="level-up-subtitle"><span>${esc(levelUp.from || 'Previous')}</span><iconify-icon icon="lucide:arrow-right"></iconify-icon><span>${esc(levelUp.to || 'Next')}</span></div>
+      <div class="level-up-xp">${Number(levelUp.totalXp || 0).toLocaleString()} total XP</div>
+    </div>`;
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 5000);
+  }
+
+  window.showLevelUpCelebration = showLevelUp;
 
   window.showEarnedBadges = badges => {
     const fresh = Array.isArray(badges) ? badges.filter(badge => badge && badge.id) : [];

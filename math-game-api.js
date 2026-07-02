@@ -55,13 +55,15 @@ async function handleMathGame({pool,req,res,path,user,sendJson,readJson}){
     const correct=Math.abs(Number(body.answer)-Number(challenge.answer))<0.001;
     await pool.query('INSERT INTO math_profiles(user_id) VALUES($1) ON CONFLICT DO NOTHING',[user.id]);
     const previous=(await pool.query('SELECT * FROM math_profiles WHERE user_id=$1',[user.id])).rows[0];
+    const previousLevel=levelFor(Number(previous.total_xp||0));
     const combined=previous.drive_yards+(correct?challenge.yards:0),newTouchdowns=Math.floor(combined/100),driveYards=combined%100,currentStreak=correct?previous.current_streak+1:0;
     await pool.query(`UPDATE math_profiles SET total_xp=total_xp+$2,touchdowns=touchdowns+$3,drive_yards=$4,correct_answers=correct_answers+$5,questions_answered=questions_answered+1,current_streak=$6,best_streak=GREATEST(best_streak,$6),updated_at=NOW() WHERE user_id=$1`,[user.id,correct?challenge.xp:0,newTouchdowns,driveYards,correct?1:0,currentStreak]);
     await pool.query(`INSERT INTO math_weekly_stats(user_id,week_start,xp,correct_answers,questions_answered,touchdowns) VALUES($1,date_trunc('week',CURRENT_DATE)::date,$2,$3,1,$4) ON CONFLICT(user_id,week_start) DO UPDATE SET xp=math_weekly_stats.xp+EXCLUDED.xp,correct_answers=math_weekly_stats.correct_answers+EXCLUDED.correct_answers,questions_answered=math_weekly_stats.questions_answered+1,touchdowns=math_weekly_stats.touchdowns+EXCLUDED.touchdowns`,[user.id,correct?challenge.xp:0,correct?1:0,newTouchdowns]);
     const data=await profileData(pool,user.id),awardedBadges=await awardMathBadges(pool,user.id,data.profile,{challengeId:challenge.id,correct});
-    sendJson(res,200,{correct,correctAnswer:Number(challenge.answer),explanation:challenge.explanation,xpEarned:correct?challenge.xp:0,yardsEarned:correct?challenge.yards:0,touchdown:newTouchdowns>0,...data,awardedBadges});return true;
+    const levelUp=correct&&data.profile.level!==previousLevel.name?{from:previousLevel.name,to:data.profile.level,totalXp:Number(data.profile.total_xp||0)}:null;
+    sendJson(res,200,{correct,correctAnswer:Number(challenge.answer),explanation:challenge.explanation,xpEarned:correct?challenge.xp:0,yardsEarned:correct?challenge.yards:0,touchdown:newTouchdowns>0,levelUp,...data,awardedBadges});return true;
   }
   sendJson(res,404,{error:'Math game endpoint not found.'});return true;
 }
 
-module.exports={initMathGame,handleMathGame};
+module.exports={initMathGame,handleMathGame,levelFor,nextLevel};

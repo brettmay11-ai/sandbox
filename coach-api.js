@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { awardCoachBadges } = require('./badges-api');
+const { levelFor } = require('./math-game-api');
 
 const TEAM_NAMES = { ARI:'Arizona Cardinals', ATL:'Atlanta Falcons', BAL:'Baltimore Ravens', BUF:'Buffalo Bills', CAR:'Carolina Panthers', CHI:'Chicago Bears', CIN:'Cincinnati Bengals', CLE:'Cleveland Browns', DAL:'Dallas Cowboys', DEN:'Denver Broncos', DET:'Detroit Lions', GB:'Green Bay Packers', HOU:'Houston Texans', IND:'Indianapolis Colts', JAX:'Jacksonville Jaguars', KC:'Kansas City Chiefs', LV:'Las Vegas Raiders', LAC:'Los Angeles Chargers', LAR:'Los Angeles Rams', MIA:'Miami Dolphins', MIN:'Minnesota Vikings', NE:'New England Patriots', NO:'New Orleans Saints', NYG:'New York Giants', NYJ:'New York Jets', PHI:'Philadelphia Eagles', PIT:'Pittsburgh Steelers', SF:'San Francisco 49ers', SEA:'Seattle Seahawks', TB:'Tampa Bay Buccaneers', TEN:'Tennessee Titans', WAS:'Washington Commanders' };
 const pick = values => values[Math.floor(Math.random() * values.length)];
@@ -197,12 +198,18 @@ async function handleCoach({ pool, req, res, path, user, sendJson, readJson }) {
     const correct = normalize(answer) === normalize(challenge.answer);
     const xp = correct ? challenge.xp : 0;
     await pool.query('INSERT INTO math_profiles(user_id) VALUES($1) ON CONFLICT DO NOTHING', [user.id]);
+    const previousProfile = (await pool.query('SELECT total_xp FROM math_profiles WHERE user_id=$1', [user.id])).rows[0];
+    const previousLevel = levelFor(Number(previousProfile.total_xp || 0));
+    let currentTotalXp = Number(previousProfile.total_xp || 0);
     if (correct) {
-      await pool.query('UPDATE math_profiles SET total_xp=total_xp+$2,updated_at=NOW() WHERE user_id=$1', [user.id, xp]);
+      const updated = await pool.query('UPDATE math_profiles SET total_xp=total_xp+$2,updated_at=NOW() WHERE user_id=$1 RETURNING total_xp', [user.id, xp]);
+      currentTotalXp = Number(updated.rows[0]?.total_xp || currentTotalXp);
       await pool.query(`INSERT INTO math_weekly_stats(user_id,week_start,xp) VALUES($1,date_trunc('week',CURRENT_DATE)::date,$2) ON CONFLICT(user_id,week_start) DO UPDATE SET xp=math_weekly_stats.xp+EXCLUDED.xp`, [user.id, xp]);
     }
+    const currentLevel = levelFor(currentTotalXp);
+    const levelUp = correct && currentLevel.name !== previousLevel.name ? { from:previousLevel.name, to:currentLevel.name, totalXp:currentTotalXp } : null;
     const awardedBadges = await awardCoachBadges(pool, user.id, { correct }, { challengeId:challenge.id });
-    sendJson(res, 200, { correct, xpEarned:xp, correctAnswer:challenge.answer, explanation:challenge.explanation, awardedBadges });
+    sendJson(res, 200, { correct, xpEarned:xp, correctAnswer:challenge.answer, explanation:challenge.explanation, awardedBadges, levelUp });
     return true;
   }
 
