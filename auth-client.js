@@ -31,10 +31,13 @@ function showTeamTunnelEntrance(){
     .team-tunnel-beam.left{left:18%;transform:skewX(18deg)}.team-tunnel-beam.right{right:18%;transform:skewX(-18deg)}
     .team-tunnel-smoke{position:absolute;left:-10%;right:-10%;bottom:10%;height:34%;background:radial-gradient(ellipse at 25% 50%,rgba(255,255,255,.2),transparent 36%),radial-gradient(ellipse at 68% 58%,rgba(255,255,255,.18),transparent 38%),linear-gradient(0deg,rgba(255,255,255,.12),transparent);filter:blur(22px);opacity:.78;z-index:6;animation:smoke-drift 2.7s ease-in-out infinite alternate}
     .team-tunnel-lockup{position:relative;z-index:8;text-align:center;width:min(88vw,720px);padding-top:6vh;transform:translateY(34px) scale(.82);opacity:0;animation:lockup-enter 2.25s cubic-bezier(.18,.9,.2,1) .18s forwards;text-shadow:0 10px 34px rgba(0,0,0,.92)}
+    .team-tunnel-project{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:7px 12px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.34);font-size:11px;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,.72);letter-spacing:.18em}
+    .team-tunnel-project:before{content:'';width:8px;height:8px;border-radius:999px;background:${secondary};box-shadow:0 0 18px ${secondary}}
     .team-tunnel-logo{width:132px;height:132px;margin:0 auto 18px;display:grid;place-items:center;background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.28);box-shadow:0 0 72px color-mix(in srgb,${secondary} 58%,transparent),inset 0 1px 0 rgba(255,255,255,.18)}
     .team-tunnel-logo img{width:102px;height:102px;object-fit:contain}.team-tunnel-logo strong{font-size:30px;font-weight:900}
     .team-tunnel-name{font-size:clamp(2.8rem,8vw,6.5rem);line-height:.9;font-weight:900;letter-spacing:0}
     .team-tunnel-team{margin-top:12px;font-size:clamp(1rem,2.5vw,1.35rem);font-weight:900;color:rgba(255,255,255,.78);letter-spacing:0}
+    .team-tunnel-copy{max-width:520px;margin:12px auto 0;color:rgba(255,255,255,.58);font-size:clamp(.9rem,2vw,1.05rem);line-height:1.5;font-weight:600}
     .team-tunnel-stripe{width:min(360px,68vw);height:5px;margin:20px auto 0;background:linear-gradient(90deg,transparent,${primary},${secondary},transparent);box-shadow:0 0 28px color-mix(in srgb,${secondary} 50%,transparent)}
     @keyframes field-zoom{0%{transform:translateX(-50%) scale(.58);filter:brightness(.72)}70%{transform:translateX(-50%) scale(.9);filter:brightness(1.18)}100%{transform:translateX(-50%) scale(1);filter:brightness(1)}}
     @keyframes floor-move{to{background-position:12vw 0,0 0}}
@@ -56,9 +59,11 @@ function showTeamTunnelEntrance(){
       <div class="team-tunnel-beam right"></div>
       <div class="team-tunnel-smoke"></div>
       <div class="team-tunnel-lockup">
+        <div class="team-tunnel-project">Welcome to the NFL Project</div>
         <div class="team-tunnel-logo">${logoMarkup}</div>
         <div class="team-tunnel-name">${safeName}</div>
         <div class="team-tunnel-team">${safeTeam}</div>
+        <div class="team-tunnel-copy">Pick your team. Track their journey across math, writing, geography, and more.</div>
         <div class="team-tunnel-stripe"></div>
       </div>
     </div>`;
