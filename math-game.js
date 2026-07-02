@@ -82,7 +82,10 @@
 
   const oldProblems = section.querySelector('#math-problems');
   if (oldProblems) oldProblems.parentNode.insertBefore(game, oldProblems);
-  else section.appendChild(game);
+  else {
+    section.innerHTML = '';
+    section.appendChild(game);
+  }
 
   const $ = id => document.getElementById(id);
   const state = { challenge:null, weekly:[], allTime:[], board:'weekly', busy:false };
