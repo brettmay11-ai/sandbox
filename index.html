@@ -428,7 +428,7 @@ select option{background:#111827;color:#fff}
 </div>
 
 <div id="compare-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
-  <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
+  <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto relative">
     <button onclick="closeCompareModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
     <div id="compare-modal-content"></div>
   </div>
@@ -2062,6 +2062,134 @@ function processChatMessage(text) {
 }
 
 function openCompareModal(){
+  if(compareTeams.length!==2)return;
+  const t1=getTeam(compareTeams[0]);const t2=getTeam(compareTeams[1]);
+  const content=document.getElementById('compare-modal-content');
+
+  const f1=STADIUM_FACTS[t1.abbr]||{};const f2=STADIUM_FACTS[t2.abbr]||{};
+  const s1=STATE_FACTS[t1.state]||{};const s2=STATE_FACTS[t2.state]||{};
+  const distance=Math.round(haversine(t1.lat,t1.lng,t2.lat,t2.lng));
+  const statRank=(cat,abbr)=>cat.data.findIndex(d=>d.team===abbr)+1;
+  const findPlayer=(category,abbr)=>PLAYER_STATS[category].players.find(p=>p[2]===abbr);
+  const recordMeeting=WEEKS.flatMap(w=>w.games.map(g=>({...g,week:w.week}))).find(g=>(g.away===t1.abbr&&g.home===t2.abbr)||(g.away===t2.abbr&&g.home===t1.abbr));
+  const capWinner=t1.stadiumCap===t2.stadiumCap?'Tie':(t1.stadiumCap>t2.stadiumCap?t1:t2).abbr;
+  const olderTeam=t1.founded===t2.founded?'Tie':(t1.founded<t2.founded?t1:t2).abbr;
+  let t1StatWins=0;let t2StatWins=0;
+  [...TEAM_STATS.offensive,...TEAM_STATS.defensive].forEach(cat=>{const r1=statRank(cat,t1.abbr);const r2=statRank(cat,t2.abbr);if(r1&&r2){if(r1<r2)t1StatWins++;else if(r2<r1)t2StatWins++}});
+
+  const buildHeroSide=(team,align='left')=>`
+    <div class="rounded-2xl p-4 border border-white/10 relative overflow-hidden" style="background:linear-gradient(135deg,${team.color}44,rgba(255,255,255,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.08)">
+      <div class="absolute inset-x-0 bottom-0 h-1" style="background:linear-gradient(90deg,${team.color},${team.secColor||team.color})"></div>
+      <div class="flex items-center ${align==='right'?'justify-end text-right':'justify-start'} gap-3">
+        ${align==='right'?`<div><div class="text-[10px] font-mono text-white/50 uppercase tracking-wider">${team.conf} ${team.div}</div><div class="font-black text-lg">${fullName(team)}</div><div class="text-[11px] text-white/50">${team.city}, ${team.state}</div></div>${logo(team.abbr,66)}`:`${logo(team.abbr,66)}<div><div class="text-[10px] font-mono text-white/50 uppercase tracking-wider">${team.conf} ${team.div}</div><div class="font-black text-lg">${fullName(team)}</div><div class="text-[11px] text-white/50">${team.city}, ${team.state}</div></div>`}
+      </div>
+    </div>`;
+
+  const buildStatRows=(cats)=>cats.map(cat=>{
+    const v1=cat.data.find(d=>d.team===t1.abbr);const v2=cat.data.find(d=>d.team===t2.abbr);
+    const r1=statRank(cat,t1.abbr);const r2=statRank(cat,t2.abbr);
+    const w1=r1<r2;const w2=r2<r1;
+    return`<div class="grid grid-cols-[1fr_1.1fr_1fr] gap-3 items-center text-center py-3 border-b border-white/5 last:border-0">
+      <div class="${w1?'text-emerald-300 font-bold':'text-white/55'}">${v1?v1.val:'&mdash;'} <span class="text-[9px] ${w1?'text-emerald-300':'text-white/30'}">#${r1||'--'}</span></div>
+      <div class="text-[10px] text-white/35 uppercase tracking-wider">${cat.stat}</div>
+      <div class="${w2?'text-emerald-300 font-bold':'text-white/55'}">${v2?v2.val:'&mdash;'} <span class="text-[9px] ${w2?'text-emerald-300':'text-white/30'}">#${r2||'--'}</span></div>
+    </div>`
+  }).join('');
+
+  const buildCompareRow=(label,left,right,winner=null)=>`
+    <div class="grid grid-cols-[1fr_.8fr_1fr] gap-3 items-center py-3 border-b border-white/5 last:border-0">
+      <div class="text-right text-[12px] ${winner===t1.abbr?'text-amber-200 font-bold':'text-white/65'}">${left}</div>
+      <div class="text-center text-[10px] text-white/35 uppercase tracking-wider">${label}</div>
+      <div class="text-[12px] ${winner===t2.abbr?'text-amber-200 font-bold':'text-white/65'}">${right}</div>
+    </div>`;
+
+  const playerCard=(label,category,metricIndex,metricLabel)=>{
+    const p1=findPlayer(category,t1.abbr);const p2=findPlayer(category,t2.abbr);
+    const metric=p=>p?`${typeof p[metricIndex]==='number'?p[metricIndex].toLocaleString():p[metricIndex]} ${metricLabel}`:'Not in top 10';
+    return`<div class="rounded-xl border border-white/8 bg-white/[.035] p-4">
+      <div class="flex items-center justify-between mb-3"><span class="text-[10px] font-mono text-white/35 uppercase tracking-wider">${label}</span><iconify-icon icon="lucide:user-round-star" class="text-brand-400"></iconify-icon></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><div class="text-xs font-bold">${p1?p1[1]:'No top-10 player'}</div><div class="text-[11px] text-white/45">${metric(p1)}</div></div>
+        <div class="text-right"><div class="text-xs font-bold">${p2?p2[1]:'No top-10 player'}</div><div class="text-[11px] text-white/45">${metric(p2)}</div></div>
+      </div>
+    </div>`;
+  };
+
+  const matchupText=recordMeeting?`Week ${recordMeeting.week}: ${fullName(getTeam(recordMeeting.away))} at ${fullName(getTeam(recordMeeting.home))} (${recordMeeting.day}, ${recordMeeting.time})`:'No 2026 regular-season meeting listed';
+  const meetingTravel=recordMeeting?`${Math.round(haversine(getTeam(recordMeeting.away).lat,getTeam(recordMeeting.away).lng,getTeam(recordMeeting.home).lat,getTeam(recordMeeting.home).lng)).toLocaleString()} miles for the road team`:`${distance.toLocaleString()} miles between home cities`;
+
+  content.innerHTML=`
+    <div class="text-center mb-5">
+      <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Team Comparison</span>
+      <h2 class="text-2xl md:text-3xl font-black mt-1">Tale of the Tape</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-center mb-6">
+      ${buildHeroSide(t1)}
+      <div class="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center font-black text-brand-400 mx-auto">VS</div>
+      ${buildHeroSide(t2,'right')}
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Stat Wins</div><div class="text-xl font-black mt-1">${t1StatWins}-${t2StatWins}</div><div class="text-[11px] text-white/45">Across offense + defense</div></div>
+      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Travel Gap</div><div class="text-xl font-black mt-1">${distance.toLocaleString()} mi</div><div class="text-[11px] text-white/45">City to city</div></div>
+      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Older Team</div><div class="text-xl font-black mt-1">${olderTeam}</div><div class="text-[11px] text-white/45">${t1.founded} vs ${t2.founded}</div></div>
+      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Bigger Stadium</div><div class="text-xl font-black mt-1">${capWinner}</div><div class="text-[11px] text-white/45">${t1.stadiumCap.toLocaleString()} vs ${t2.stadiumCap.toLocaleString()}</div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
+        <h3 class="text-sm font-semibold mb-3 text-brand-400 flex items-center gap-2"><iconify-icon icon="lucide:map"></iconify-icon> City + Stadium</h3>
+        ${buildCompareRow('Home City',`${t1.city}, ${t1.state}`,`${t2.city}, ${t2.state}`)}
+        ${buildCompareRow('Division',t1.div,t2.div,t1.div===t2.div?'Tie':null)}
+        ${buildCompareRow('State Nickname',s1.nickname||'Not listed',s2.nickname||'Not listed')}
+        ${buildCompareRow('Capital',s1.capital||'Not listed',s2.capital||'Not listed')}
+        ${buildCompareRow('Region',s1.region||'Not listed',s2.region||'Not listed',s1.region===s2.region?'Tie':null)}
+        ${buildCompareRow('Stadium',t1.stadium,t2.stadium)}
+        ${buildCompareRow('Roof',f1.roof||'Not listed',f2.roof||'Not listed')}
+        ${buildCompareRow('Surface',f1.surface||'Not listed',f2.surface||'Not listed')}
+      </div>
+
+      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
+        <h3 class="text-sm font-semibold mb-3 text-amber-300 flex items-center gap-2"><iconify-icon icon="lucide:calendar-days"></iconify-icon> Schedule + Classroom Angles</h3>
+        <div class="rounded-xl bg-white/[.035] border border-white/8 p-4 mb-4">
+          <div class="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">2026 Meeting</div>
+          <div class="text-sm font-bold">${matchupText}</div>
+          <div class="text-[11px] text-white/50 mt-1">${meetingTravel}</div>
+        </div>
+        <div class="space-y-3 text-[12px] text-white/65 leading-relaxed">
+          <div class="flex gap-2"><iconify-icon icon="lucide:calculator" class="text-brand-400 mt-0.5"></iconify-icon><span>Which team has the better points-per-game rank, and by how many ranking spots?</span></div>
+          <div class="flex gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400 mt-0.5"></iconify-icon><span>If a flight averages 500 mph, about how long would this trip take?</span></div>
+          <div class="flex gap-2"><iconify-icon icon="lucide:landmark" class="text-brand-400 mt-0.5"></iconify-icon><span>Compare the two home states: population, region, capital, and landmark research.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
+        <h3 class="text-sm font-semibold mb-3 text-brand-400 flex items-center gap-2"><iconify-icon icon="lucide:swords"></iconify-icon> Offense</h3>
+        ${buildStatRows(TEAM_STATS.offensive)}
+      </div>
+      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
+        <h3 class="text-sm font-semibold mb-3 text-nfl-red flex items-center gap-2"><iconify-icon icon="lucide:shield"></iconify-icon> Defense</h3>
+        ${buildStatRows(TEAM_STATS.defensive)}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
+      <h3 class="text-sm font-semibold mb-4 text-emerald-300 flex items-center gap-2"><iconify-icon icon="lucide:star"></iconify-icon> Impact Players</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        ${playerCard('Top QB','passing',5,'pass yds')}
+        ${playerCard('Top RB','rushing',4,'rush yds')}
+        ${playerCard('Top WR','receiving',5,'rec yds')}
+        ${playerCard('Top Defender','defense',4,'sacks')}
+      </div>
+    </div>
+  `;
+  document.getElementById('compare-modal').classList.remove('hidden');
+  document.getElementById('compare-modal').classList.add('flex');
+}
+
+function openCompareModalLegacy(){
   if(compareTeams.length!==2)return;
   const t1=getTeam(compareTeams[0]);const t2=getTeam(compareTeams[1]);
   const content=document.getElementById('compare-modal-content');
