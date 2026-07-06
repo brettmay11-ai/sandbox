@@ -3,6 +3,7 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let cachedUser = null;
   let cachedMath = null;
+  let cachedIdentity = {};
   const queue = [];
   let animating = false;
 
@@ -31,6 +32,9 @@
     .player-card-photo:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.12) 0 2px,transparent 2px 28px),linear-gradient(180deg,transparent 62%,rgba(22,77,45,.75));opacity:.62}
     .player-card-stats{background:rgba(255,248,226,.62);border:2px solid rgba(83,50,16,.44);box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
     .player-card-stat{background:rgba(92,54,15,.08);border:1px solid rgba(83,50,16,.22);color:#2d1b08}
+    .identity-panel{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .identity-input{width:100%;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);padding:10px 12px;font-size:12px;color:#fff;outline:none}
+    .identity-input:focus{border-color:var(--student-team-secondary,#D50A0A);box-shadow:0 0 0 3px color-mix(in srgb,var(--student-team-primary,#013369) 28%,transparent)}
     .badge-progress-track{position:relative;overflow:hidden;height:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 8px rgba(0,0,0,.28)}
     .badge-progress-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--student-team-primary,#013369),var(--student-team-secondary,#D50A0A),#facc15);box-shadow:0 0 26px color-mix(in srgb,var(--student-team-secondary,#D50A0A) 35%,transparent);transition:width .55s ease}
     .badge-progress-fill:after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent,rgba(255,255,255,.38),transparent);animation:badge-progress-shine 2.8s ease-in-out infinite}
@@ -101,8 +105,8 @@
   `;
   document.head.appendChild(style);
 
-  async function api(url) {
-    const response = await fetch(url);
+  async function api(url, options = {}) {
+    const response = await fetch(url, { ...options, headers:{ 'Content-Type':'application/json', ...(options.headers || {}) } });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Badges could not load.');
     return data;
@@ -167,6 +171,52 @@
     </div>`;
   }
 
+  const positionOptions = ['Quarterback','Running Back','Wide Receiver','Tight End','Linebacker','Cornerback','Safety','Kicker'];
+  const roleOptions = ['Captain','Play Caller','Scout','Reporter','Coach','Defender','Spark Plug','Film Analyst'];
+  const optionMarkup = (items, selected) => items.map(item => `<option value="${esc(item)}"${item === selected ? ' selected' : ''}>${esc(item)}</option>`).join('');
+  const identityLabel = identity => identity.nickname || cachedUser?.displayName || 'Student';
+  const jerseyText = identity => identity.jerseyNumber || initialsFor(cachedUser?.displayName).slice(0, 2);
+
+  function identityFormMarkup(identity) {
+    return `<form id="student-identity-form" class="identity-panel p-4 md:p-5">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div><div class="text-[10px] uppercase tracking-[.22em] text-white/35 font-black">Player Identity</div><h2 class="text-xl font-black mt-1">Customize your card</h2></div>
+        <button class="student-team-mark px-4 py-2 text-xs font-black" type="submit">Save</button>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <label class="text-[10px] uppercase text-white/35 font-black">Nickname<input name="nickname" maxlength="40" class="identity-input mt-2" value="${esc(identity.nickname || '')}" placeholder="Example: Rocket"></label>
+        <label class="text-[10px] uppercase text-white/35 font-black">Jersey #<input name="jerseyNumber" maxlength="2" inputmode="numeric" class="identity-input mt-2" value="${esc(identity.jerseyNumber || '')}" placeholder="12"></label>
+        <label class="text-[10px] uppercase text-white/35 font-black">Favorite Position<select name="favoritePosition" class="identity-input mt-2"><option value="">Choose position</option>${optionMarkup(positionOptions, identity.favoritePosition)}</select></label>
+        <label class="text-[10px] uppercase text-white/35 font-black">Team Role<select name="teamRole" class="identity-input mt-2"><option value="">Choose role</option>${optionMarkup(roleOptions, identity.teamRole)}</select></label>
+      </div>
+      <div id="student-identity-status" class="mt-3 text-[11px] text-white/35 min-h-4"></div>
+    </form>`;
+  }
+
+  function bindIdentityForm(profile) {
+    const form = document.getElementById('student-identity-form');
+    if (!form) return;
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const status = document.getElementById('student-identity-status');
+      const button = form.querySelector('button');
+      const formData = new FormData(form);
+      button.disabled = true;
+      if (status) status.textContent = 'Saving...';
+      try {
+        const payload = Object.fromEntries(formData.entries());
+        const data = await api('/api/student-identity', { method:'PATCH', body:JSON.stringify(payload) });
+        cachedIdentity = data.identity || {};
+        if (status) status.textContent = 'Saved. Your trading card has been updated.';
+        renderProfilePage(profile);
+      } catch (error) {
+        if (status) status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
   function renderProfilePage(profile) {
     const section = document.getElementById('profile');
     if (!section) return;
@@ -174,6 +224,7 @@
     const user = cachedUser || {};
     const team = typeof getNFLTeamBrand === 'function' ? getNFLTeamBrand(user.selectedTeam) : null;
     const math = cachedMath?.profile || {};
+    const identity = cachedIdentity || {};
     const percent = profile.total ? Math.round(profile.earnedCount / profile.total * 100) : 0;
     const accuracy = math.questions_answered ? Math.round(Number(math.correct_answers || 0) / Number(math.questions_answered || 1) * 100) : 0;
     const favoriteBadge = recent[0];
@@ -183,13 +234,13 @@
         <div class="relative z-10">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <h2 class="text-3xl font-black mt-1 leading-none truncate">${esc(user.displayName || 'Student')}</h2>
-              <p class="text-[11px] uppercase tracking-widest font-black mt-2 opacity-70">${esc(team?.name || 'Free Agent')}</p>
+              <h2 class="text-3xl font-black mt-1 leading-none truncate">${esc(identityLabel(identity))}</h2>
+              <p class="text-[11px] uppercase tracking-widest font-black mt-2 opacity-70">${esc(identity.favoritePosition || 'Football Student')}</p>
             </div>
             <div class="player-card-logo w-16 h-16 grid place-items-center shrink-0">${teamLogoMarkup}</div>
           </div>
           <div class="player-card-photo mt-4">
-            <div class="locker-jersey scale-90" style="background:linear-gradient(180deg,${team?.primary || 'var(--student-team-primary,#013369)'},${team?.secondary || 'var(--student-team-secondary,#D50A0A)'})"><div class="relative z-10 text-center"><div class="text-[10px] uppercase tracking-widest text-white/70 font-black">${esc(team?.abbr || 'NFL')}</div><div class="text-5xl font-black leading-none">${esc(initialsFor(user.displayName))}</div></div></div>
+            <div class="locker-jersey scale-90" style="background:linear-gradient(180deg,${team?.primary || 'var(--student-team-primary,#013369)'},${team?.secondary || 'var(--student-team-secondary,#D50A0A)'})"><div class="relative z-10 text-center"><div class="text-[10px] uppercase tracking-widest text-white/70 font-black">${esc(team?.abbr || 'NFL')}</div><div class="text-5xl font-black leading-none">${esc(jerseyText(identity))}</div></div></div>
           </div>
           <div class="player-card-title text-center mt-4 px-3 py-2">
             <div class="text-2xl font-black leading-none">${esc(math.level || 'Rookie')}</div>
@@ -197,13 +248,13 @@
           </div>
           <div class="player-card-stats grid grid-cols-2 gap-2 mt-4 p-2">
             <div class="player-card-stat p-2"><div class="text-[8px] uppercase font-black opacity-60">Favorite Badge</div><div class="text-xs font-black truncate">${favoriteBadge ? esc(favoriteBadge.title) : 'None yet'}</div></div>
-            <div class="player-card-stat p-2"><div class="text-[8px] uppercase font-black opacity-60">Accuracy</div><div class="text-xl font-black">${accuracy}%</div></div>
+            <div class="player-card-stat p-2"><div class="text-[8px] uppercase font-black opacity-60">Team Role</div><div class="text-xs font-black truncate">${esc(identity.teamRole || 'Rookie')}</div></div>
           </div>
           <div class="mt-4 text-[9px] uppercase tracking-[.24em] font-black opacity-60">Season Stats</div>
           <div class="grid grid-cols-3 gap-2 mt-2 text-center">
             <div class="player-card-stat p-2"><div class="text-lg font-black">${math.touchdowns || 0}</div><div class="text-[8px] uppercase opacity-60">TD</div></div>
             <div class="player-card-stat p-2"><div class="text-lg font-black">${math.current_streak || 0}</div><div class="text-[8px] uppercase opacity-60">Streak</div></div>
-            <div class="player-card-stat p-2"><div class="text-lg font-black">${math.questions_answered || 0}</div><div class="text-[8px] uppercase opacity-60">Answers</div></div>
+            <div class="player-card-stat p-2"><div class="text-lg font-black">${accuracy}%</div><div class="text-[8px] uppercase opacity-60">Accuracy</div></div>
           </div>
         </div>
       </div>
@@ -215,9 +266,12 @@
             <div class="locker-nameplate p-5 md:p-6">
               <div class="text-[10px] uppercase tracking-[.26em] text-white/50 font-black">Student Locker</div>
               <h1 class="text-4xl md:text-6xl font-black mt-3 leading-none">${esc(user.displayName || 'Student')}</h1>
+              ${identity.nickname ? `<div class="text-xl md:text-2xl font-black text-brand-400 mt-2">"${esc(identity.nickname)}"</div>` : ''}
               <div class="flex flex-wrap items-center gap-2 mt-4 text-xs text-white/55">
                 <span class="px-3 py-1 border border-white/10 bg-black/20">${esc(team?.name || 'Team assignment pending')}</span>
                 <span class="px-3 py-1 border border-white/10 bg-black/20">Locker ${esc(user.username || initialsFor(user.displayName))}</span>
+                <span class="px-3 py-1 border border-white/10 bg-black/20">#${esc(jerseyText(identity))}</span>
+                <span class="px-3 py-1 border border-white/10 bg-black/20">${esc(identity.teamRole || 'Rookie')}</span>
                 <span class="px-3 py-1 border border-white/10 bg-black/20">${profile.earnedCount} badges earned</span>
               </div>
             </div>
@@ -230,6 +284,7 @@
           ${playerCardMarkup}
         </div>
       </div>
+      <div class="mb-6">${identityFormMarkup(identity)}</div>
       <div class="trophy-case p-5 md:p-6">
         ${badgeProgressBar(percent, profile.earnedCount, profile.total)}
         <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
@@ -239,6 +294,7 @@
         <div class="relative z-10 locker-badge-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-3">${profile.badges.map(badge => badgeMarkup(badge)).join('')}</div>
       </div>
     </div>`;
+    bindIdentityForm(profile);
   }
 
   function attachDashboardPreview(profile) {
@@ -328,9 +384,9 @@
     api('/api/badges/profile').then(refreshBadgeSurfaces).catch(() => {});
   };
 
-  window.refreshBadgeCollection = () => Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile')]).then(([me, profile, math]) => { cachedUser = me.user; cachedMath = math; refreshBadgeSurfaces(profile); });
+  window.refreshBadgeCollection = () => Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile'), api('/api/student-identity')]).then(([me, profile, math, identity]) => { cachedUser = me.user; cachedMath = math; cachedIdentity = identity.identity || {}; refreshBadgeSurfaces(profile); });
 
-  Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile')]).then(([me, profile, math]) => { cachedUser = me.user; cachedMath = math; refreshBadgeSurfaces(profile); }).catch(error => {
+  Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile'), api('/api/student-identity')]).then(([me, profile, math, identity]) => { cachedUser = me.user; cachedMath = math; cachedIdentity = identity.identity || {}; refreshBadgeSurfaces(profile); }).catch(error => {
     const section = document.getElementById('profile');
     if (section && page === 'profile') section.innerHTML = `<div class="p-10 text-red-300">${esc(error.message)}</div>`;
   });
