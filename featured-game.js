@@ -13,14 +13,30 @@
     SEA:{stadium:'Lumen Field',city:'Seattle'},TB:{stadium:'Raymond James Stadium',city:'Tampa, Florida'},TEN:{stadium:'Nissan Stadium',city:'Nashville, Tennessee'},WAS:{stadium:'Northwest Stadium',city:'Landover, Maryland'}
   };
   async function api(url){const response=await fetch(url);const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Could not load featured game.');return data}
-  function displayTime(game){if(!game?.Date)return null;return new Date(`${game.Date}Z`).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET'}
+  function easternKickoff(game){
+    const source=game?.DateTimeUTC||game?.Date;
+    if(!source)return null;
+    if(game.DateTimeUTC){
+      const date=new Date(`${source}Z`);
+      return {
+        day:date.toLocaleDateString('en-US',{weekday:'long',timeZone:'America/New_York'}),
+        time:date.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET'
+      };
+    }
+    const [,hour='13',minute='00']=source.match(/T(\d{2}):(\d{2})/)||[];
+    const date=new Date(`${source.slice(0,10)}T12:00:00Z`);
+    const hourNumber=Number(hour),displayHour=hourNumber%12||12,period=hourNumber>=12?'PM':'AM';
+    return {
+      day:date.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'}),
+      time:`${displayHour}:${minute} ${period} ET`
+    };
+  }
   async function scheduledKickoff(featuredGame){
     if(!featuredGame?.away||!featuredGame?.home||!featuredGame?.week)return null;
     try{
       const games=await api(`https://api.sportsdata.io/v3/nfl/scores/json/Schedules/2026?key=${SPORTS_KEY}`);
       const game=Array.isArray(games)?games.find(item=>Number(item.Week)===Number(featuredGame.week)&&item.AwayTeam===featuredGame.away&&item.HomeTeam===featuredGame.home):null;
-      const date=game?.Date?new Date(`${game.Date}Z`):null,time=displayTime(game);
-      return time?{day:date.toLocaleDateString('en-US',{weekday:'long',timeZone:'America/New_York'}),time}:null;
+      return easternKickoff(game);
     }catch(error){
       console.warn('Could not verify featured game kickoff.',error);
       return null;
