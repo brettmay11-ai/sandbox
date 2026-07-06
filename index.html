@@ -110,13 +110,13 @@ select option{background:#111827;color:#fff}
 .ticker-track{display:flex;align-items:center;width:max-content;animation:ticker-scroll 90s linear infinite}
 #ticker:hover .ticker-track,#ticker:focus-within .ticker-track{animation-play-state:paused}
 @keyframes ticker-scroll{to{transform:translateX(-50%)}}
-.ticker-item{display:inline-flex;align-items:center;gap:9px;max-width:220px;padding:0 18px;height:28px;border:0;background:transparent;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;letter-spacing:.01em;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;transition:max-width .25s ease,background .2s ease,color .2s ease;cursor:pointer}
-.ticker-item:hover,.ticker-item:focus-visible{max-width:560px;background:rgba(255,255,255,.06);color:#fff;outline:none}
+.ticker-item{display:inline-flex;align-items:center;gap:9px;max-width:360px;padding:0 22px;height:28px;border:0;background:transparent;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;letter-spacing:.01em;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;transition:max-width .25s ease,background .2s ease,color .2s ease;cursor:pointer}
+.ticker-item:hover,.ticker-item:focus-visible{max-width:620px;background:rgba(255,255,255,.06);color:#fff;outline:none}
 .ticker-item::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--student-team-accent,#5b9bd5);flex-shrink:0}
-.ticker-short{display:inline-block;overflow:hidden;text-overflow:ellipsis;max-width:170px;transition:max-width .2s ease,opacity .2s ease}
+.ticker-short{display:inline-block;overflow:hidden;text-overflow:ellipsis;max-width:310px;transition:max-width .2s ease,opacity .2s ease}
 .ticker-full{display:inline-block;max-width:0;overflow:hidden;opacity:0;color:rgba(255,255,255,.9);transition:max-width .25s ease,opacity .2s ease}
 .ticker-item:hover .ticker-short,.ticker-item:focus-visible .ticker-short{max-width:0;opacity:0}
-.ticker-item:hover .ticker-full,.ticker-item:focus-visible .ticker-full{max-width:520px;opacity:1}
+.ticker-item:hover .ticker-full,.ticker-item:focus-visible .ticker-full{max-width:580px;opacity:1}
 @keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up 0.8s cubic-bezier(0.4,0,0.2,1) forwards}.slide-up-d1{animation-delay:0.1s;opacity:0}.slide-up-d2{animation-delay:0.2s;opacity:0}.slide-up-d3{animation-delay:0.3s;opacity:0}.slide-up-d4{animation-delay:0.4s;opacity:0}
 .featured-stat-pill{transition:all 0.3s ease}.featured-stat-pill:hover{background:rgba(255,255,255,0.08);transform:translateY(-1px)}
 .map-wrap{position:relative;width:100%;aspect-ratio:16/10;min-height:400px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);background:#0a0a0a}
@@ -839,12 +839,12 @@ function buildTicker(){
   const escTicker=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fg=FEATURED_GAME,away=getTeam(fg.away),home=getTeam(fg.home);
   const items=[];
-  if(away&&home){const when=[fg.day,fg.time].filter(Boolean).join(' ');items.push({short:`W${fg.week}: ${away.abbr} @ ${home.abbr}`,full:`Featured Game - Week ${fg.week}: ${fullName(away)} at ${fullName(home)}${when?` - ${when}`:''}`})}
+  if(away&&home){const when=[fg.day,fg.time].filter(Boolean).join(' ');items.push({short:`Featured Game: Week ${fg.week} - ${away.abbr} at ${home.abbr}${when?` - ${when}`:''}`,full:`Featured Game - Week ${fg.week}: ${fullName(away)} at ${fullName(home)}${when?` - ${when}`:''}`})}
   const pass=PLAYER_STATS.passing.players[0],rush=PLAYER_STATS.rushing.players[0],rec=PLAYER_STATS.receiving.players[0],def=PLAYER_STATS.defense.players[0];
-  items.push({short:`Pass: ${pass[1]}`,full:`Passing leader: ${pass[1]} (${pass[2]}) - ${pass[5].toLocaleString()} yards, ${pass[6]} TD`});
-  items.push({short:`Rush: ${rush[1]}`,full:`Rushing leader: ${rush[1]} (${rush[2]}) - ${rush[4].toLocaleString()} yards, ${rush[6]} TD`});
-  items.push({short:`Rec: ${rec[1]}`,full:`Receiving leader: ${rec[1]} (${rec[2]}) - ${rec[5].toLocaleString()} yards, ${rec[7]} TD`});
-  items.push({short:`Sacks: ${def[1]}`,full:`Sack leader: ${def[1]} (${def[2]}) - ${def[4]} sacks`});
+  items.push({short:`Passing leader: ${pass[1]} - ${pass[5].toLocaleString()} yards`,full:`Passing leader: ${pass[1]} (${pass[2]}) - ${pass[5].toLocaleString()} yards, ${pass[6]} TD`});
+  items.push({short:`Rushing leader: ${rush[1]} - ${rush[4].toLocaleString()} yards`,full:`Rushing leader: ${rush[1]} (${rush[2]}) - ${rush[4].toLocaleString()} yards, ${rush[6]} TD`});
+  items.push({short:`Receiving leader: ${rec[1]} - ${rec[5].toLocaleString()} yards`,full:`Receiving leader: ${rec[1]} (${rec[2]}) - ${rec[5].toLocaleString()} yards, ${rec[7]} TD`});
+  items.push({short:`Sack leader: ${def[1]} - ${def[4]} sacks`,full:`Sack leader: ${def[1]} (${def[2]}) - ${def[4]} sacks`});
   NFL_FUN_FACTS.slice(0,6).forEach(f=>items.push({short:f.title,full:f.fact}));
   const html=items.map(item=>`<button type="button" class="ticker-item" title="${escTicker(item.full)}"><span class="ticker-short">${escTicker(item.short)}</span><span class="ticker-full">${escTicker(item.full)}</span></button>`).join('');
   track.innerHTML=html+html;
