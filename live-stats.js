@@ -1,8 +1,6 @@
-/* Live NFL team leaders powered by SportsData.io.
+/* Live NFL team leaders powered through the classroom sports-data cache.
    The existing static tables remain available whenever the API is unavailable. */
 
-const NFL_STATS_API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
-const NFL_STATS_API = 'https://api.sportsdata.io/v3/nfl';
 const liveStatsCache = new Map();
 let liveStatsSeasonPromise = null;
 
@@ -17,9 +15,8 @@ async function fetchStatsJson(path) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    const separator = path.includes('?') ? '&' : '?';
-    const response = await fetch(`${NFL_STATS_API}/${path}${separator}key=${NFL_STATS_API_KEY}`, { signal: controller.signal });
-    if (!response.ok) throw new Error(`SportsData.io returned ${response.status}`);
+    const response = await fetch(path, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Sports data returned ${response.status}`);
     return await response.json();
   } finally {
     clearTimeout(timeout);
@@ -30,13 +27,13 @@ async function resolveLiveStatsSeason() {
   if (liveStatsSeasonPromise) return liveStatsSeasonPromise;
 
   liveStatsSeasonPromise = (async () => {
-    const currentSeason = Number(await fetchStatsJson('scores/json/CurrentSeason'));
+    const currentSeason = Number(await fetchStatsJson('/api/sportsdata/nfl/current-season'));
     const testTeams = ['KC', 'BUF'];
 
     for (const season of [currentSeason, currentSeason - 1]) {
       for (const team of testTeams) {
         try {
-          const players = await fetchStatsJson(`stats/json/PlayerSeasonStatsByTeam/${season}/${team}`);
+          const players = await fetchStatsJson(`/api/sportsdata/nfl/player-season-stats-by-team/${season}/${team}`);
           if (Array.isArray(players) && players.some(player => Number(player.Played) > 0)) return season;
         } catch (error) {
           console.warn(`Stats season ${season} is unavailable.`, error);
@@ -54,7 +51,7 @@ async function fetchTeamLiveStats(teamAbbr) {
   const season = await resolveLiveStatsSeason();
   const cacheKey = `${season}-${teamAbbr}`;
   if (!liveStatsCache.has(cacheKey)) {
-    liveStatsCache.set(cacheKey, fetchStatsJson(`stats/json/PlayerSeasonStatsByTeam/${season}/${teamAbbr}`));
+    liveStatsCache.set(cacheKey, fetchStatsJson(`/api/sportsdata/nfl/player-season-stats-by-team/${season}/${teamAbbr}`));
   }
   const players = await liveStatsCache.get(cacheKey);
   return { season, players: Array.isArray(players) ? players : [] };
@@ -179,7 +176,7 @@ async function installPlayerPageTeamLeaders() {
 
 async function installLiveStatistics() {
   installTeamModalLiveLeaders();
-  await installPlayerPageTeamLeaders();
+  if (document.documentElement.dataset.portalPage === 'players') await installPlayerPageTeamLeaders();
 }
 
 installLiveStatistics();

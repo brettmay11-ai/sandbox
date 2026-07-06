@@ -22,9 +22,9 @@ function friendlyTCUTravelRegion(stadium) {
 }
 
 async function getCurrentTCUTravelGames() {
-  const current = Number(await fetchTCUTravelJson('scores/json/CurrentSeason'));
+  const current = Number(await fetchTCUTravelJson('/api/sportsdata/cfb/current-season'));
   for (const season of [current, current - 1]) {
-    const games = await fetchTCUTravelJson(`scores/json/Games/${season}`);
+    const games = await fetchTCUTravelJson(`/api/sportsdata/cfb/games/${season}`);
     const tcuGames = games.filter(game => game.HomeTeam === 'TCU' || game.AwayTeam === 'TCU');
     if (tcuGames.length) return tcuGames;
   }
@@ -106,6 +106,7 @@ function drawTCUInternationalRoute(games) {
 }
 
 async function applyTCUTravelFixes() {
+  if (document.documentElement.dataset.portalPage !== 'tcu') return;
   try {
     const games = await getCurrentTCUTravelGames();
     let attempts = 0;

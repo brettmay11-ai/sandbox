@@ -1,7 +1,6 @@
 /* Teacher-selected featured game and Wikimedia stadium/city photography. */
 (() => {
   const fallback='https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop';
-  const SPORTS_KEY='ec29dd369c2544a980efca06d3e5b4ad';
   const VENUES={
     ARI:{stadium:'State Farm Stadium',city:'Glendale, Arizona'},ATL:{stadium:'Mercedes-Benz Stadium',city:'Atlanta'},BAL:{stadium:'M&T Bank Stadium',city:'Baltimore'},BUF:{stadium:'Highmark Stadium',city:'Orchard Park, New York'},
     CAR:{stadium:'Bank of America Stadium',city:'Charlotte, North Carolina'},CHI:{stadium:'Soldier Field',city:'Chicago'},CIN:{stadium:'Paycor Stadium',city:'Cincinnati'},CLE:{stadium:'Huntington Bank Field',city:'Cleveland'},
@@ -34,7 +33,7 @@
   async function scheduledKickoff(featuredGame){
     if(!featuredGame?.away||!featuredGame?.home||!featuredGame?.week)return null;
     try{
-      const games=await api(`https://api.sportsdata.io/v3/nfl/scores/json/Schedules/2026?key=${SPORTS_KEY}`);
+      const games=await api('/api/sportsdata/nfl/schedule/2026');
       const game=Array.isArray(games)?games.find(item=>Number(item.Week)===Number(featuredGame.week)&&item.AwayTeam===featuredGame.away&&item.HomeTeam===featuredGame.home):null;
       return easternKickoff(game);
     }catch(error){
@@ -54,6 +53,7 @@
     return {url:fallback,title:'Football field',kind:'fallback',venue};
   }
   async function installFeaturedGame(){
+    if(document.documentElement.dataset.portalPage!=='home')return;
     if(typeof renderFeaturedGame!=='function'||typeof FEATURED_GAME==='undefined')return;
     const image=document.getElementById('featured-bg-img');if(image){image.style.opacity='0';image.style.background='#111'}
     try{

@@ -1,19 +1,18 @@
-/* Dedicated TCU travel tracker using live SportsData.io schedule data. */
+/* Dedicated TCU travel tracker using cached classroom schedule data. */
 
-const TCU_TRAVEL_API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
 const TCU_TRAVEL_HOME = { name:'Amon G. Carter Stadium', city:'Fort Worth', state:'TX', lat:32.709722, lng:-97.368056 };
 const TCU_OPPONENT_ABBR = { BAYL:'BAY', TXTECH:'TTU', NCAR:'UNC', KANST:'KSU', WVIR:'WVU', ARZ:'ARIZ', ARZST:'ASU', GRMBST:'GRAM', ARKST:'ARST' };
 
 async function fetchTCUTravelJson(path) {
-  const response = await fetch(`https://api.sportsdata.io/v3/cfb/${path}?key=${TCU_TRAVEL_API_KEY}`);
+  const response = await fetch(path);
   if (!response.ok) throw new Error(`TCU travel API returned ${response.status}`);
   return response.json();
 }
 
 async function resolveTCUTravelSeason() {
-  const current = Number(await fetchTCUTravelJson('scores/json/CurrentSeason'));
+  const current = Number(await fetchTCUTravelJson('/api/sportsdata/cfb/current-season'));
   for (const season of [current, current - 1]) {
-    const games = await fetchTCUTravelJson(`scores/json/Games/${season}`);
+    const games = await fetchTCUTravelJson(`/api/sportsdata/cfb/games/${season}`);
     if (games.some(game => game.HomeTeam === 'TCU' || game.AwayTeam === 'TCU')) return { season, games };
   }
   return { season:current, games:[] };
@@ -112,6 +111,7 @@ function showTCUTravelTooltip(event, destination) {
 }
 
 async function initializeTCUTravel() {
+  if (document.documentElement.dataset.portalPage !== 'tcu') return;
   if (!document.getElementById('TCU')) return;
   try {
     const { season, games } = await resolveTCUTravelSeason();

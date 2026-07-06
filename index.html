@@ -1742,13 +1742,10 @@ function toggleCompareTeam(abbr){
   else{btn.classList.add('hidden');btn.classList.remove('inline-flex')}
 }
 
-/* ===== SPORTSDATA.IO NEWS API ===== */
+/* ===== CACHED NEWS API ===== */
 async function fetchTeamNews(teamAbbr) {
-  const API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
-  
   try {
-    // Attempt 1: SportsData.io Team News
-    const res = await fetch(`https://api.sportsdata.io/v3/nfl/news-rotoballer/json/RotoBallerPremiumNewsByTeam/${teamAbbr}?key=${API_KEY}`);
+    const res = await fetch(`/api/sportsdata/nfl/news/team/${teamAbbr}`);
     
     if (res.ok) {
       const data = await res.json();
@@ -1765,8 +1762,7 @@ async function fetchTeamNews(teamAbbr) {
       console.warn("SportsData API returned status:", res.status);
     }
 
-    // Attempt 2: General NFL News (if specific team news is empty)
-    const genRes = await fetch(`https://api.sportsdata.io/v3/nfl/news-rotoballer/json/RotoBallerPremiumNews?key=${API_KEY}`);
+    const genRes = await fetch('/api/sportsdata/nfl/news');
     if (genRes.ok) {
       const genData = await genRes.json();
       if (genData && genData.length > 0) {
@@ -1803,16 +1799,10 @@ async function fetchTeamNews(teamAbbr) {
   ];
 }
 
-/* ===== CFB SPORTSDATA API ===== */
-const CFB_API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
-
+/* ===== CACHED CFB API ===== */
 async function fetchTCUProfile() {
   try {
-    // Use the SINGULAR endpoint to only fetch TCU data
-    const apiUrl = `https://api.sportsdata.io/v3/cfb/scores/json/Team/TCU?key=${CFB_API_KEY}`;
-    const proxyUrl = 'https://corsproxy.io/?';
-    
-    const res = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+    const res = await fetch('/api/sportsdata/cfb/team/TCU');
     
     if (!res.ok) throw new Error(`API returned status: ${res.status}`);
     

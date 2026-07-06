@@ -1,7 +1,5 @@
-/* Live TCU section powered by the valid SportsData.io CFB endpoints. */
+/* Live TCU section powered through the classroom sports-data cache. */
 
-const TCU_CFB_API_KEY = 'ec29dd369c2544a980efca06d3e5b4ad';
-const TCU_CFB_API = 'https://api.sportsdata.io/v3/cfb';
 let liveTCUSeason = null;
 let liveTCUPlayers = [];
 
@@ -9,9 +7,8 @@ async function fetchTCUJson(path) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
   try {
-    const separator = path.includes('?') ? '&' : '?';
-    const response = await fetch(`${TCU_CFB_API}/${path}${separator}key=${TCU_CFB_API_KEY}`, { signal:controller.signal });
-    if (!response.ok) throw new Error(`SportsData.io CFB returned ${response.status}`);
+    const response = await fetch(path, { signal:controller.signal });
+    if (!response.ok) throw new Error(`TCU sports data returned ${response.status}`);
     return await response.json();
   } finally {
     clearTimeout(timeout);
@@ -25,10 +22,10 @@ function formatTCUValue(value) {
 }
 
 async function resolveTCUSeason() {
-  const current = Number(await fetchTCUJson('scores/json/CurrentSeason'));
+  const current = Number(await fetchTCUJson('/api/sportsdata/cfb/current-season'));
   for (const season of [current, current - 1]) {
     try {
-      const players = await fetchTCUJson(`stats/json/PlayerSeasonStatsByTeam/${season}/TCU`);
+      const players = await fetchTCUJson(`/api/sportsdata/cfb/player-season-stats-by-team/${season}/TCU`);
       if (Array.isArray(players) && players.some(player => Number(player.Games) > 0)) {
         liveTCUPlayers = players;
         return season;
@@ -122,13 +119,14 @@ function renderTCUSeasonSummary(team, teamStats) {
 
 async function initializeLiveTCU() {
   const section = document.getElementById('TCU');
+  if (document.documentElement.dataset.portalPage !== 'tcu') return;
   if (!section) return;
   try {
     liveTCUSeason = await resolveTCUSeason();
     const [teams, games, teamStats] = await Promise.all([
-      fetchTCUJson('scores/json/Teams'),
-      fetchTCUJson(`scores/json/Games/${liveTCUSeason}`),
-      fetchTCUJson(`stats/json/TeamSeasonStats/${liveTCUSeason}`)
+      fetchTCUJson('/api/sportsdata/cfb/teams'),
+      fetchTCUJson(`/api/sportsdata/cfb/games/${liveTCUSeason}`),
+      fetchTCUJson(`/api/sportsdata/cfb/team-season-stats/${liveTCUSeason}`)
     ]);
 
     const tcu = teams.find(team => team.Key === 'TCU');
