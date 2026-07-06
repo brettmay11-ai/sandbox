@@ -1,6 +1,7 @@
-/* Teacher-selected featured game and verified Wikimedia stadium/city photography. */
+/* Teacher-selected featured game and Wikimedia stadium/city photography. */
 (() => {
   const fallback='https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop';
+  const SPORTS_KEY='ec29dd369c2544a980efca06d3e5b4ad';
   const VENUES={
     ARI:{stadium:'State Farm Stadium',city:'Glendale, Arizona'},ATL:{stadium:'Mercedes-Benz Stadium',city:'Atlanta'},BAL:{stadium:'M&T Bank Stadium',city:'Baltimore'},BUF:{stadium:'Highmark Stadium',city:'Orchard Park, New York'},
     CAR:{stadium:'Bank of America Stadium',city:'Charlotte, North Carolina'},CHI:{stadium:'Soldier Field',city:'Chicago'},CIN:{stadium:'Paycor Stadium',city:'Cincinnati'},CLE:{stadium:'Huntington Bank Field',city:'Cleveland'},
@@ -12,6 +13,19 @@
     SEA:{stadium:'Lumen Field',city:'Seattle'},TB:{stadium:'Raymond James Stadium',city:'Tampa, Florida'},TEN:{stadium:'Nissan Stadium',city:'Nashville, Tennessee'},WAS:{stadium:'Northwest Stadium',city:'Landover, Maryland'}
   };
   async function api(url){const response=await fetch(url);const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Could not load featured game.');return data}
+  function displayTime(game){if(!game?.Date)return null;return new Date(`${game.Date}Z`).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})+' ET'}
+  async function scheduledKickoff(featuredGame){
+    if(!featuredGame?.away||!featuredGame?.home||!featuredGame?.week)return null;
+    try{
+      const games=await api(`https://api.sportsdata.io/v3/nfl/scores/json/Schedules/2026?key=${SPORTS_KEY}`);
+      const game=Array.isArray(games)?games.find(item=>Number(item.Week)===Number(featuredGame.week)&&item.AwayTeam===featuredGame.away&&item.HomeTeam===featuredGame.home):null;
+      const date=game?.Date?new Date(`${game.Date}Z`):null,time=displayTime(game);
+      return time?{day:date.toLocaleDateString('en-US',{weekday:'long',timeZone:'America/New_York'}),time}:null;
+    }catch(error){
+      console.warn('Could not verify featured game kickoff.',error);
+      return null;
+    }
+  }
   async function exactWikipediaPhoto(title){
     const url=`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&titles=${encodeURIComponent(title)}&prop=pageimages&piprop=original|thumbnail&pithumbsize=1800`;
     const data=await fetch(url).then(response=>response.json()),page=Object.values(data.query?.pages||{})[0],source=page?.original?.source||page?.thumbnail?.source;
@@ -28,11 +42,13 @@
     const image=document.getElementById('featured-bg-img');if(image){image.style.opacity='0';image.style.background='#111'}
     try{
       const {featuredGame}=await api('/api/featured-game');
-      if(featuredGame){Object.assign(FEATURED_GAME,featuredGame);FEATURED_GAME.bgImage=fallback;renderFeaturedGame()}
+      if(featuredGame)Object.assign(FEATURED_GAME,featuredGame);
+      const kickoff=await scheduledKickoff(FEATURED_GAME);if(kickoff)Object.assign(FEATURED_GAME,kickoff);
+      FEATURED_GAME.bgImage=fallback;renderFeaturedGame();
       const home=getTeam(FEATURED_GAME.home);if(!home)return;
       const photo=await verifiedLocationPhoto(home),venue=photo.venue||VENUES[home.abbr];if(image){image.onerror=()=>{image.onerror=null;image.src=fallback};image.src=photo.url;image.alt=photo.kind==='stadium'?`${venue?.label||venue?.stadium||home.stadium}, home of the ${fullName(home)}`:`${home.city}, ${home.state}`;image.style.background='';image.style.opacity='1'}
       const venueLabel=document.getElementById('featured-venue');if(venueLabel&&venue)venueLabel.textContent=venue.label||venue.stadium;
-      const location=document.getElementById('featured-location');if(location){location.title=`Photo: ${photo.title} via Wikimedia`;location.textContent=photo.kind==='stadium'?`${home.city}, ${home.state} · Verified stadium photo via Wikimedia`:photo.kind==='city'?`${home.city}, ${home.state} · Verified city photo via Wikimedia`:`${home.city}, ${home.state}`}
+      const location=document.getElementById('featured-location');if(location){location.title=`Photo: ${photo.title} via Wikimedia`;location.textContent=`${home.city}, ${home.state}`}
     }catch(error){if(image)image.style.opacity='1';console.warn('Teacher-selected featured game could not load.',error)}
   }
   installFeaturedGame();

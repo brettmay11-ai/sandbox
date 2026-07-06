@@ -199,9 +199,6 @@ select option{background:#111827;color:#fff}
         <div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:message-circle" class="text-brand-400 text-sm"></iconify-icon><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Class Discussion</span></div>
         <p id="featured-discussion" class="text-sm text-white/60 leading-relaxed"></p>
       </div>
-      <div class="slide-up slide-up-d4 flex flex-wrap gap-3 mt-5">
-        <a href="index.html?page=math" class="inline-flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-white px-5 py-3 rounded-xl text-xs font-bold hover:bg-white/10 transition"><iconify-icon icon="lucide:calculator"></iconify-icon>Math Lab</a>
-      </div>
     </div>
   </div>
 </section>
@@ -487,11 +484,11 @@ select option{background:#111827;color:#fff}
    FEATURED GAME OF THE WEEK
    ============================================================ */
 const FEATURED_GAME={
-  week:1,
+  week:12,
   away:"KC",
   home:"BUF",
-  day:"Sunday",
-  time:"4:25 PM ET",
+  day:"Thursday",
+  time:"3:20 PM ET",
   discussion:"The Chiefs travel to Buffalo — that's about 976 miles! If their plane flies at 500 mph, how long is the flight? Buffalo is in New York, but the Bills don't play in New York City. What city do they play in, and how is it different from NYC?"
 };
 
@@ -2110,7 +2107,7 @@ function closeCompareModal(){
   document.getElementById('compare-modal').classList.remove('flex');
 }
 
-async function init(){renderFeaturedGame();renderTeams();renderMatchups();populateSelects();await defaultAssignedTeamViews();renderTeamStats();renderPlayerStats();renderFunFacts();generateMathProblems();renderWritingPrompts();renderCityExplorer();renderInternationalGames();await initMap();renderTravel();initScrollReveal()}document.addEventListener('DOMContentLoaded',init);
+async function init(){if(document.documentElement.dataset.portalPage!=='home')renderFeaturedGame();renderTeams();renderMatchups();populateSelects();await defaultAssignedTeamViews();renderTeamStats();renderPlayerStats();renderFunFacts();generateMathProblems();renderWritingPrompts();renderCityExplorer();renderInternationalGames();await initMap();renderTravel();initScrollReveal()}document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
