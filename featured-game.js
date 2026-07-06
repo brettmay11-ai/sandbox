@@ -62,7 +62,7 @@
       const kickoff=await scheduledKickoff(FEATURED_GAME);if(kickoff)Object.assign(FEATURED_GAME,kickoff);
       FEATURED_GAME.bgImage=fallback;renderFeaturedGame();
       const home=getTeam(FEATURED_GAME.home);if(!home)return;
-      const photo=await verifiedLocationPhoto(home),venue=photo.venue||VENUES[home.abbr];if(image){image.onerror=()=>{image.onerror=null;image.src=fallback};image.src=photo.url;image.alt=photo.kind==='stadium'?`${venue?.label||venue?.stadium||home.stadium}, home of the ${fullName(home)}`:`${home.city}, ${home.state}`;image.style.background='';image.style.opacity='1'}
+      const photo=await verifiedLocationPhoto(home),venue=photo.venue||VENUES[home.abbr];if(image){image.onerror=()=>{image.onerror=null;image.src=fallback};image.src=photo.url;image.alt=photo.kind==='stadium'?`${venue?.label||venue?.stadium||home.stadium}, home of the ${fullName(home)}`:`${home.city}, ${home.state}`;try{await image.decode()}catch(decodeError){try{await image.decode()}catch(secondDecodeError){}}image.style.background='';image.style.opacity='1'}
       const venueLabel=document.getElementById('featured-venue');if(venueLabel&&venue)venueLabel.textContent=venue.label||venue.stadium;
       const location=document.getElementById('featured-location');if(location){location.title=`Photo: ${photo.title} via Wikimedia`;location.textContent=`${home.city}, ${home.state}`}
     }catch(error){if(image)image.style.opacity='1';console.warn('Teacher-selected featured game could not load.',error)}
