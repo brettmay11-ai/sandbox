@@ -140,7 +140,20 @@ function installTeamModalLiveLeaders() {
   };
 }
 
-function installPlayerPageTeamLeaders() {
+async function getAssignedTeamAbbr() {
+  try {
+    const response = await fetch('/api/me');
+    if (!response.ok) return null;
+    const data = await response.json();
+    const assigned = data.user?.selectedTeam;
+    return NFL_TEAMS.some(team => team.abbr === assigned) ? assigned : null;
+  } catch (error) {
+    console.warn('Could not load assigned team for stat leaders.', error);
+    return null;
+  }
+}
+
+async function installPlayerPageTeamLeaders() {
   const playerTable = document.getElementById('player-table');
   if (!playerTable || document.getElementById('live-team-leader-panel')) return;
 
@@ -158,13 +171,15 @@ function installPlayerPageTeamLeaders() {
   tableWrap.parentElement.insertBefore(panel, tableWrap);
   const select = panel.querySelector('#live-leader-team-select');
   const results = panel.querySelector('#live-team-leader-results');
+  const assignedTeam = await getAssignedTeamAbbr();
+  if (assignedTeam) select.value = assignedTeam;
   select.addEventListener('change', () => loadLiveLeadersInto(results, select.value));
   loadLiveLeadersInto(results, select.value);
 }
 
-function installLiveStatistics() {
+async function installLiveStatistics() {
   installTeamModalLiveLeaders();
-  installPlayerPageTeamLeaders();
+  await installPlayerPageTeamLeaders();
 }
 
 installLiveStatistics();
