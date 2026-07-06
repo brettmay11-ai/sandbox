@@ -250,7 +250,7 @@
             <div><div class="text-[10px] uppercase tracking-[.2em] text-white/35 font-black">${student.isMe ? 'Your Public Card' : 'Classmate Card'}</div><h3 class="text-xl font-black mt-1">${esc(student.displayName)}</h3></div>
             <div class="text-right text-xs text-white/45"><span class="font-black text-white">${student.earnedCount}</span> / ${student.totalBadges} badges</div>
           </div>
-          <div class="grid sm:grid-cols-2 gap-2">${earned.length ? earned.slice(0, 6).map(badge => badgeMarkup(badge, true)).join('') : '<div class="sm:col-span-2 p-5 border border-white/10 bg-black/20 text-xs text-white/35">No public badges earned yet.</div>'}</div>
+          <div class="grid gap-2">${earned.length ? earned.slice(0, 3).map(badge => badgeMarkup(badge, true)).join('') : '<div class="p-5 border border-white/10 bg-black/20 text-xs text-white/35">No public badges earned yet.</div>'}</div>
         </div>
       </div>
     </article>`;
