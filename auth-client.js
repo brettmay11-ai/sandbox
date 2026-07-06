@@ -14,63 +14,83 @@ function showTeamTunnelEntrance(){
   try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'shown')}catch(error){}
   const team=typeof getNFLTeamBrand==='function'?getNFLTeamBrand(portalUser.selectedTeam):null;
   const primary=team?.primary||'#013369',secondary=team?.secondary||'#D50A0A';
-  const safeName=escapeHtml(portalUser.displayName||'Student'),safeTeam=escapeHtml(team?.name||'Your Team');
-  const logoMarkup=team?.logo?`<img src="${escapeHtml(team.logo)}" alt="${safeTeam} logo">`:`<strong>${escapeHtml(team?.abbr||'NFL')}</strong>`;
+  const safeTeam=escapeHtml(team?.name||'Your Team'),safeAbbr=escapeHtml(team?.abbr||'NFL');
+  const logoMarkup=team?.logo
+    ?`<img src="${escapeHtml(team.logo)}" alt="${safeTeam} logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><strong style="display:none">${safeAbbr}</strong>`
+    :`<strong>${safeAbbr}</strong>`;
+  const rawName=String(portalUser.displayName||'Student');
+  const nameLetters=[...rawName].map((ch,i)=>ch===' '
+    ?'<span class="ti-gap"></span>'
+    :`<span class="ti-letter" style="animation-delay:${(0.66+i*0.045).toFixed(3)}s">${escapeHtml(ch)}</span>`).join('');
   const style=document.createElement('style');
   style.textContent=`
-    .team-tunnel{position:fixed;inset:0;z-index:120;overflow:hidden;color:#fff;background:#020306;animation:tunnel-fade 2.9s ease forwards}
-    .team-tunnel *{box-sizing:border-box}
-    .team-tunnel-stage{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 22%,rgba(255,255,255,.12),transparent 20%),linear-gradient(180deg,#05070b 0%,#030406 58%,#07130b 100%);perspective:900px}
-    .team-tunnel-stage:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.92),transparent 26%,transparent 74%,rgba(0,0,0,.92)),radial-gradient(ellipse at 50% 46%,transparent 0 25%,rgba(0,0,0,.86) 60%,#000 100%);z-index:3;pointer-events:none}
-    .team-tunnel-field{position:absolute;left:50%;top:8%;width:min(72vw,820px);height:72vh;transform:translateX(-50%) scale(.72);clip-path:polygon(28% 0,72% 0,100% 100%,0 100%);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.34) 22%,rgba(79,191,125,.82) 58%,#154d2d 100%);box-shadow:0 0 120px rgba(255,255,255,.36),0 0 160px color-mix(in srgb,${secondary} 42%,transparent);animation:field-zoom 2.35s cubic-bezier(.18,.9,.2,1) forwards}
-    .team-tunnel-field:after{content:'';position:absolute;left:16%;right:16%;bottom:14%;height:2px;background:rgba(255,255,255,.75);box-shadow:0 38px 0 rgba(255,255,255,.5),0 76px 0 rgba(255,255,255,.34)}
-    .team-tunnel-wall{position:absolute;top:-2%;bottom:-4%;width:50%;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.14),rgba(0,0,0,.82)),repeating-linear-gradient(0deg,rgba(255,255,255,.09) 0 1px,transparent 1px 58px),linear-gradient(150deg,color-mix(in srgb,${primary} 42%,#050505),#030303 72%);box-shadow:inset 0 0 120px rgba(0,0,0,.9);z-index:2}
-    .team-tunnel-wall.left{left:0;clip-path:polygon(0 0,100% 16%,68% 86%,0 100%)}
-    .team-tunnel-wall.right{right:0;clip-path:polygon(0 16%,100% 0,100% 100%,32% 86%);background:linear-gradient(270deg,rgba(255,255,255,.05),rgba(255,255,255,.14),rgba(0,0,0,.82)),repeating-linear-gradient(0deg,rgba(255,255,255,.09) 0 1px,transparent 1px 58px),linear-gradient(210deg,color-mix(in srgb,${secondary} 36%,#050505),#030303 72%)}
-    .team-tunnel-ceiling{position:absolute;left:12%;right:12%;top:-3%;height:28%;clip-path:polygon(0 0,100% 0,76% 100%,24% 100%);background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 2px,transparent 2px 74px),linear-gradient(180deg,#17191d,#030303);box-shadow:inset 0 -30px 76px #000;z-index:4}
-    .team-tunnel-floor{position:absolute;left:7%;right:7%;bottom:-10%;height:48%;clip-path:polygon(34% 0,66% 0,100% 100%,0 100%);background:repeating-linear-gradient(90deg,rgba(255,255,255,.16) 0 2px,transparent 2px 12vw),linear-gradient(180deg,rgba(255,255,255,.08),rgba(4,38,22,.88) 38%,#06150d);box-shadow:inset 0 46px 90px rgba(0,0,0,.7);z-index:4;animation:floor-move .7s linear infinite}
-    .team-tunnel-beam{position:absolute;top:7%;width:18vw;height:70vh;background:linear-gradient(180deg,rgba(255,255,255,.44),rgba(255,255,255,.08) 44%,transparent);filter:blur(18px);opacity:.58;mix-blend-mode:screen;z-index:5}
-    .team-tunnel-beam.left{left:18%;transform:skewX(18deg)}.team-tunnel-beam.right{right:18%;transform:skewX(-18deg)}
-    .team-tunnel-smoke{position:absolute;left:-10%;right:-10%;bottom:10%;height:34%;background:radial-gradient(ellipse at 25% 50%,rgba(255,255,255,.2),transparent 36%),radial-gradient(ellipse at 68% 58%,rgba(255,255,255,.18),transparent 38%),linear-gradient(0deg,rgba(255,255,255,.12),transparent);filter:blur(22px);opacity:.78;z-index:6;animation:smoke-drift 2.7s ease-in-out infinite alternate}
-    .team-tunnel-lockup{position:relative;z-index:8;text-align:center;width:min(88vw,720px);padding-top:6vh;transform:translateY(34px) scale(.82);opacity:0;animation:lockup-enter 2.25s cubic-bezier(.18,.9,.2,1) .18s forwards;text-shadow:0 10px 34px rgba(0,0,0,.92)}
-    .team-tunnel-project{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:7px 12px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.34);font-size:11px;font-weight:900;text-transform:uppercase;color:rgba(255,255,255,.72);letter-spacing:.18em}
-    .team-tunnel-project:before{content:'';width:8px;height:8px;border-radius:999px;background:${secondary};box-shadow:0 0 18px ${secondary}}
-    .team-tunnel-logo{width:132px;height:132px;margin:0 auto 18px;display:grid;place-items:center;background:rgba(0,0,0,.48);border:1px solid rgba(255,255,255,.28);box-shadow:0 0 72px color-mix(in srgb,${secondary} 58%,transparent),inset 0 1px 0 rgba(255,255,255,.18)}
-    .team-tunnel-logo img{width:102px;height:102px;object-fit:contain}.team-tunnel-logo strong{font-size:30px;font-weight:900}
-    .team-tunnel-name{font-size:clamp(2.8rem,8vw,6.5rem);line-height:.9;font-weight:900;letter-spacing:0}
-    .team-tunnel-team{margin-top:12px;font-size:clamp(1rem,2.5vw,1.35rem);font-weight:900;color:rgba(255,255,255,.78);letter-spacing:0}
-    .team-tunnel-copy{max-width:520px;margin:12px auto 0;color:rgba(255,255,255,.58);font-size:clamp(.9rem,2vw,1.05rem);line-height:1.5;font-weight:600}
-    .team-tunnel-stripe{width:min(360px,68vw);height:5px;margin:20px auto 0;background:linear-gradient(90deg,transparent,${primary},${secondary},transparent);box-shadow:0 0 28px color-mix(in srgb,${secondary} 50%,transparent)}
-    @keyframes field-zoom{0%{transform:translateX(-50%) scale(.58);filter:brightness(.72)}70%{transform:translateX(-50%) scale(.9);filter:brightness(1.18)}100%{transform:translateX(-50%) scale(1);filter:brightness(1)}}
-    @keyframes floor-move{to{background-position:12vw 0,0 0}}
-    @keyframes smoke-drift{to{transform:translateX(32px) translateY(-8px);opacity:.9}}
-    @keyframes lockup-enter{0%{transform:translateY(44px) scale(.72);opacity:0}52%{opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
-    @keyframes tunnel-fade{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+    .team-intro{position:fixed;inset:0;z-index:120;overflow:hidden;color:#fff;background:#04050a;animation:ti-exit .5s ease 2.25s forwards}
+    .team-intro.ti-skip{animation:ti-exit .22s ease 0s forwards}
+    .team-intro *{box-sizing:border-box}
+    .ti-panel{position:absolute;top:-12%;bottom:-12%;width:52%;z-index:1}
+    .ti-panel.left{left:-8%;background:repeating-linear-gradient(115deg,rgba(255,255,255,.05) 0 2px,transparent 2px 64px),linear-gradient(115deg,${primary},color-mix(in srgb,${primary} 45%,#000) 82%);transform:translateX(-115%) skewX(-14deg);animation:ti-panel-in .5s cubic-bezier(.16,1,.3,1) .04s forwards}
+    .ti-panel.right{right:-8%;background:repeating-linear-gradient(115deg,rgba(255,255,255,.05) 0 2px,transparent 2px 64px),linear-gradient(295deg,${secondary},color-mix(in srgb,${secondary} 40%,#000) 82%);transform:translateX(115%) skewX(-14deg);animation:ti-panel-in .5s cubic-bezier(.16,1,.3,1) .12s forwards}
+    .ti-slash{position:absolute;top:-20%;bottom:-20%;left:-12%;width:9%;background:linear-gradient(180deg,transparent,rgba(255,255,255,.9),transparent);transform:skewX(-14deg);filter:blur(6px);mix-blend-mode:screen;z-index:2;animation:ti-slash .55s cubic-bezier(.5,0,.2,1) .18s forwards;opacity:0}
+    .ti-vignette{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,transparent 30%,rgba(0,0,0,.55) 78%,rgba(0,0,0,.82) 100%)}
+    .ti-stage{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:24px;animation:ti-shake .28s linear .4s}
+    .ti-lockup{text-align:center;width:min(94vw,900px)}
+    .ti-logo-wrap{position:relative;width:150px;height:150px;margin:0 auto 10px;display:grid;place-items:center}
+    .ti-logo{width:100%;height:100%;display:grid;place-items:center;opacity:0;transform:scale(2.5);animation:ti-logo-slam .4s cubic-bezier(.2,1.1,.35,1) .3s forwards;filter:drop-shadow(0 0 34px color-mix(in srgb,${secondary} 65%,transparent))}
+    .ti-logo img{width:126px;height:126px;object-fit:contain}
+    .ti-logo strong{font-size:44px;font-weight:900;letter-spacing:.04em}
+    .ti-ring{position:absolute;inset:0;border:2px solid rgba(255,255,255,.85);border-radius:999px;opacity:0;animation:ti-ring .7s ease-out .44s forwards}
+    .ti-ring.d2{animation-delay:.56s;border-width:1px}
+    .ti-kicker{opacity:0;margin:6px 0 10px;font-size:clamp(11px,1.6vw,14px);font-weight:800;text-transform:uppercase;letter-spacing:.3em;color:rgba(255,255,255,.75);animation:ti-rise .45s cubic-bezier(.2,1,.4,1) .56s forwards;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+    .ti-name{font-family:'Anton','Inter',sans-serif;font-weight:400;font-size:clamp(3rem,11vw,7.5rem);line-height:.92;text-transform:uppercase;letter-spacing:.01em;transform:skewX(-3deg);display:flex;flex-wrap:wrap;justify-content:center;text-shadow:0 10px 44px rgba(0,0,0,.85)}
+    .ti-letter{display:inline-block;opacity:0;transform:translateY(.5em) rotate(5deg);animation:ti-letter .34s cubic-bezier(.2,1.15,.35,1) forwards}
+    .ti-gap{display:inline-block;width:.34em}
+    .ti-stripe{width:min(400px,72vw);height:5px;margin:22px auto 0;border-radius:99px;background:linear-gradient(90deg,${primary},${secondary});box-shadow:0 0 28px color-mix(in srgb,${secondary} 55%,transparent);transform:scaleX(0);animation:ti-stripe .5s cubic-bezier(.2,1,.35,1) 1.25s forwards}
+    .ti-sub{opacity:0;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.26em;color:rgba(255,255,255,.55);animation:ti-rise .4s ease 1.4s forwards}
+    .ti-flash{position:absolute;inset:0;z-index:9;background:#fff;opacity:0;pointer-events:none;animation:ti-flash .34s ease-out .38s}
+    @keyframes ti-panel-in{to{transform:translateX(0) skewX(-14deg)}}
+    @keyframes ti-slash{0%{opacity:0;left:-12%}20%{opacity:1}100%{opacity:0;left:108%}}
+    @keyframes ti-logo-slam{55%{opacity:1;transform:scale(.92)}100%{opacity:1;transform:scale(1)}}
+    @keyframes ti-ring{0%{opacity:.9;transform:scale(.35)}100%{opacity:0;transform:scale(2.7)}}
+    @keyframes ti-flash{0%{opacity:0}25%{opacity:.8}100%{opacity:0}}
+    @keyframes ti-shake{0%,100%{transform:translate(0,0)}25%{transform:translate(6px,-5px)}50%{transform:translate(-5px,4px)}75%{transform:translate(3px,2px)}}
+    @keyframes ti-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes ti-letter{to{opacity:1;transform:translateY(0) rotate(0)}}
+    @keyframes ti-stripe{to{transform:scaleX(1)}}
+    @keyframes ti-exit{to{opacity:0;transform:scale(1.06);visibility:hidden}}
+    @media (prefers-reduced-motion:reduce){
+      .team-intro{animation:ti-exit .4s ease 1.5s forwards}
+      .team-intro .ti-panel,.team-intro .ti-logo,.team-intro .ti-kicker,.team-intro .ti-letter,.team-intro .ti-stripe,.team-intro .ti-sub{animation:none!important;opacity:1!important;transform:none!important}
+      .team-intro .ti-panel.left,.team-intro .ti-panel.right{transform:skewX(-14deg)!important}
+      .team-intro .ti-slash,.team-intro .ti-flash,.team-intro .ti-ring{display:none}
+      .team-intro .ti-stage{animation:none}
+      .team-intro .ti-name{transform:none}
+    }
   `;
   document.head.appendChild(style);
   const overlay=document.createElement('div');
-  overlay.className='team-tunnel';
+  overlay.className='team-intro';
+  overlay.setAttribute('role','presentation');
   overlay.innerHTML=`
-    <div class="team-tunnel-stage">
-      <div class="team-tunnel-field"></div>
-      <div class="team-tunnel-wall left"></div>
-      <div class="team-tunnel-wall right"></div>
-      <div class="team-tunnel-ceiling"></div>
-      <div class="team-tunnel-floor"></div>
-      <div class="team-tunnel-beam left"></div>
-      <div class="team-tunnel-beam right"></div>
-      <div class="team-tunnel-smoke"></div>
-      <div class="team-tunnel-lockup">
-        <div class="team-tunnel-project">Welcome to the NFL Project</div>
-        <div class="team-tunnel-logo">${logoMarkup}</div>
-        <div class="team-tunnel-name">${safeName}</div>
-        <div class="team-tunnel-team">${safeTeam}</div>
-        <div class="team-tunnel-copy">Pick your team. Track their journey across math, writing, geography, and more.</div>
-        <div class="team-tunnel-stripe"></div>
+    <div class="ti-panel left"></div>
+    <div class="ti-panel right"></div>
+    <div class="ti-slash"></div>
+    <div class="ti-vignette"></div>
+    <div class="ti-flash"></div>
+    <div class="ti-stage">
+      <div class="ti-lockup">
+        <div class="ti-logo-wrap"><span class="ti-ring"></span><span class="ti-ring d2"></span><div class="ti-logo">${logoMarkup}</div></div>
+        <div class="ti-kicker">Starting for the ${safeTeam}</div>
+        <div class="ti-name">${nameLetters}</div>
+        <div class="ti-stripe"></div>
+        <div class="ti-sub">NFL Project &bull; 2026 Season</div>
       </div>
     </div>`;
   document.body.appendChild(overlay);
-  setTimeout(()=>{overlay.remove();style.remove()},3000);
+  const cleanup=()=>{overlay.remove();style.remove()};
+  const dismiss=()=>{if(!overlay.isConnected)return;overlay.classList.add('ti-skip');setTimeout(cleanup,240)};
+  overlay.addEventListener('pointerdown',dismiss);
+  window.addEventListener('keydown',dismiss,{once:true});
+  setTimeout(cleanup,2850);
 }
 function addAccountControls() {const nav = document.querySelector('nav');const right = nav?.lastElementChild;if (!right || document.getElementById('account-controls')) return;const controls = document.createElement('div');controls.id = 'account-controls';controls.className = 'shrink-0 flex items-center gap-2';const initials=escapeHtml(initialsFor(portalUser.displayName)),safeName=escapeHtml(portalUser.displayName||'Student');controls.innerHTML = `${portalUser.role === 'teacher' ? '<a href="/teacher" title="Teacher dashboard" class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon></a>' : ''}<a id="portal-profile" href="index.html?page=profile" title="Open profile" aria-label="Open profile for ${safeName}" class="student-team-mark w-9 h-9 rounded-full grid place-items-center text-[11px] font-black tracking-wide">${initials}</a><button id="portal-logout" title="Sign out" class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/15 hover:text-red-300"><iconify-icon icon="lucide:log-out"></iconify-icon></button>`;right.appendChild(controls);controls.querySelector('#portal-logout').addEventListener('click', async () => { await portalApi('/api/logout', { method:'POST' }); window.location.href='/login'; });}
 async function initializeAccountExperience() {try {const { user } = await portalApi('/api/me');portalUser = user;applyAssignedTeamBranding(); addAccountControls(); showTeamTunnelEntrance(); sendEngagement('page_view');} catch (error) { console.warn('Account experience could not initialize.', error); }}
