@@ -23,7 +23,7 @@ tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['J
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--student-team-accent:#5b9bd5}
-body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden;padding-bottom:1.75rem}
 html[data-portal-page] body>section{display:none}
 html[data-portal-page="home"] body>#featured,
 html[data-portal-page="dashboard"] body>#facts,
@@ -97,7 +97,7 @@ select option{background:#111827;color:#fff}
 @keyframes vs-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
 @keyframes vs-flash{0%,86%,100%{text-shadow:0 0 0 transparent}90%{text-shadow:0 0 22px rgba(255,255,255,.95),0 0 44px rgba(255,255,255,.5)}94%{text-shadow:0 0 6px rgba(255,255,255,.35)}}
 .vs-glow{animation:vs-pulse 2.5s ease-in-out infinite,vs-flash 4.5s linear infinite}
-#ticker{background:rgba(10,10,10,.78);backdrop-filter:blur(10px)}
+#ticker{background:rgba(10,10,10,.82);backdrop-filter:blur(10px);box-shadow:0 -6px 24px rgba(0,0,0,.4)}
 .ticker-track{display:flex;align-items:center;width:max-content;animation:ticker-scroll 90s linear infinite}
 #ticker:hover .ticker-track{animation-play-state:paused}
 @keyframes ticker-scroll{to{transform:translateX(-50%)}}
@@ -122,7 +122,7 @@ select option{background:#111827;color:#fff}
 </head>
 <body>
 <div class="noise"></div>
-<div id="toast" class="toast fixed bottom-6 right-6 z-50 glass-panel rounded-xl px-5 py-3 flex items-center gap-3">
+<div id="toast" class="toast fixed bottom-12 right-6 z-50 glass-panel rounded-xl px-5 py-3 flex items-center gap-3">
   <iconify-icon icon="lucide:check-circle" class="text-brand-400 text-lg"></iconify-icon>
   <span id="toast-msg" class="text-sm text-white/80"></span>
 </div>
@@ -150,7 +150,7 @@ select option{background:#111827;color:#fff}
     </button>
   </div>
 </nav>
-<div id="ticker" class="fixed top-16 left-0 right-0 z-30 h-7 overflow-hidden border-b border-white/6">
+<div id="ticker" class="fixed bottom-0 left-0 right-0 z-30 h-7 overflow-hidden border-t border-white/6">
   <div id="ticker-track" class="ticker-track"></div>
 </div>
 
@@ -448,11 +448,11 @@ select option{background:#111827;color:#fff}
 </footer>
   
 <!-- ===== CHATBOT UI ===== -->
-    <div id="chatbot-btn" onclick="toggleChatbot()" class="fixed bottom-6 right-6 w-14 h-14 bg-brand-500 rounded-full shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition z-50">
+    <div id="chatbot-btn" onclick="toggleChatbot()" class="fixed bottom-12 right-6 w-14 h-14 bg-brand-500 rounded-full shadow-lg flex items-center justify-center cursor-pointer hover:scale-105 transition z-50">
       <iconify-icon icon="lucide:message-circle" class="text-white text-2xl"></iconify-icon>
     </div>
 
-    <div id="chatbot-window" class="hidden fixed bottom-24 right-6 w-80 h-96 glass-panel rounded-xl border border-white/10 flex flex-col z-50 overflow-hidden">
+    <div id="chatbot-window" class="hidden fixed bottom-32 right-6 w-80 h-96 glass-panel rounded-xl border border-white/10 flex flex-col z-50 overflow-hidden">
       <div class="bg-brand-500 p-3 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <iconify-icon icon="lucide:bot" class="text-white text-lg"></iconify-icon>

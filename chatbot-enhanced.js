@@ -31,10 +31,10 @@
   document.head.appendChild(style);
 
   button.title = 'Open Team Research Coach';
-  button.className = 'fixed bottom-6 right-6 w-16 h-16 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition z-50';
+  button.className = 'fixed bottom-12 right-6 w-16 h-16 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition z-50';
   button.innerHTML = '<iconify-icon icon="lucide:message-circle-more" class="relative text-white text-2xl"></iconify-icon>';
 
-  win.className = 'hidden coach-console fixed bottom-24 right-3 sm:right-6 w-[calc(100vw-24px)] sm:w-[430px] h-[620px] max-h-[calc(100vh-120px)] border border-white/10 flex flex-col z-50 overflow-hidden';
+  win.className = 'hidden coach-console fixed bottom-32 right-3 sm:right-6 w-[calc(100vw-24px)] sm:w-[430px] h-[620px] max-h-[calc(100vh-140px)] border border-white/10 flex flex-col z-50 overflow-hidden';
   win.innerHTML = `
     <div class="coach-header p-4 flex items-center justify-between shrink-0">
       <div class="relative z-10 flex items-center gap-3 min-w-0">
