@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NFL Project Tracker — Student Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -22,6 +22,7 @@ tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['J
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+:root{--student-team-accent:#5b9bd5}
 body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden}
 html[data-portal-page] body>section{display:none}
 html[data-portal-page="home"] body>#featured,
@@ -44,18 +45,25 @@ html[data-portal-page="math"]:not(.portal-ready) body>#math,
 html[data-portal-page="writing"]:not(.portal-ready) body>#writing,
 html[data-portal-page="cities"]:not(.portal-ready) body>#cities{visibility:hidden}
 [data-legacy-nav]{display:none!important}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#555}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--student-team-primary,#013369) 45%,#333);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--student-team-primary,#013369) 70%,#555)}
+section h2,#featured-away-name,#featured-home-name{font-family:'Anton','Inter',sans-serif;font-weight:400!important;text-transform:uppercase;letter-spacing:.02em}
+#featured-away-name,#featured-home-name{transform:skewX(-3deg)}
+.vs-glow{font-family:'Anton',sans-serif}
 .noise{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .glass-panel{background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08)}
-.team-card{transition:all 0.4s cubic-bezier(0.4,0,0.2,1);cursor:pointer}
-.team-card:hover{transform:translateY(-4px);border-color:rgba(1,51,105,0.4);box-shadow:0 12px 40px -8px rgba(1,51,105,0.15)}
-.team-card.selected{border-color:rgba(1,51,105,0.6);background:rgba(1,51,105,0.08);box-shadow:0 0 30px -5px rgba(1,51,105,0.2)}
+.team-card{position:relative;overflow:hidden;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);cursor:pointer}
+.team-card::after{content:'';position:absolute;top:0;left:-80%;width:50%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.13),transparent);transform:skewX(-20deg);transition:left .6s ease;pointer-events:none}
+.team-card:hover::after{left:130%}
+.team-card img{transition:transform .4s cubic-bezier(0.4,0,0.2,1)}
+.team-card:hover img{transform:scale(1.14)}
+.team-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--tc-p,#013369) 55%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--tc-p,#013369) 24%,rgba(255,255,255,.03)),rgba(255,255,255,.02) 55%,color-mix(in srgb,var(--tc-s,#D50A0A) 16%,transparent));box-shadow:0 12px 40px -8px color-mix(in srgb,var(--tc-p,#013369) 40%,transparent)}
+.team-card.selected{border-color:color-mix(in srgb,var(--tc-s,#D50A0A) 70%,transparent);background:color-mix(in srgb,var(--tc-p,#013369) 14%,transparent);box-shadow:0 0 30px -5px color-mix(in srgb,var(--tc-p,#013369) 45%,transparent)}
 .stat-bar-fill{transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
-.tab-btn{transition:all 0.25s ease}.tab-btn.active{background:rgba(1,51,105,0.15);color:#013369;border-color:rgba(1,51,105,0.4)}
+.tab-btn{transition:all 0.25s ease}.tab-btn.active{background:color-mix(in srgb,var(--student-team-primary,#013369) 18%,transparent);color:var(--student-team-accent,#5b9bd5);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 48%,transparent)}
 .matchup-card{transition:all 0.3s ease}.matchup-card:hover{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.05)}
 .section-reveal{opacity:0;transform:translateY(30px);transition:all 0.8s cubic-bezier(0.4,0,0.2,1)}.section-reveal.visible{opacity:1;transform:translateY(0)}
-@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px rgba(1,51,105,0.3)}50%{box-shadow:0 0 20px rgba(1,51,105,0.6)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
-.fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:rgba(1,51,105,0.3)}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 8px color-mix(in srgb,var(--student-team-primary,#013369) 45%,transparent)}50%{box-shadow:0 0 20px color-mix(in srgb,var(--student-team-primary,#013369) 80%,transparent)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
+.fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 38%,transparent)}
 .tcu-page{position:relative;overflow:hidden;background:radial-gradient(circle at 18% 8%,rgba(77,25,121,.38),transparent 28%),radial-gradient(circle at 84% 20%,rgba(139,168,196,.18),transparent 26%),linear-gradient(180deg,#070509 0,#12091b 48%,#08070a 100%)}
 .tcu-page:before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 86px),linear-gradient(90deg,rgba(77,25,121,.22),transparent 22%,transparent 78%,rgba(255,255,255,.05));opacity:.7}
 .tcu-shell{position:relative;z-index:1}.tcu-hero{position:relative;overflow:hidden;min-height:420px;background:linear-gradient(135deg,#4D1979 0,#241033 48%,#050407 100%);border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 90px rgba(0,0,0,.45)}
@@ -68,7 +76,7 @@ html[data-portal-page="cities"]:not(.portal-ready) body>#cities{visibility:hidde
 .player-row:hover{background:rgba(255,255,255,0.04)}
 .toast{transform:translateY(100px);opacity:0;transition:all 0.4s cubic-bezier(0.4,0,0.2,1)}.toast.show{transform:translateY(0);opacity:1}
 .away-row:nth-child(even){background:rgba(255,255,255,0.015)}
-.sort-header{cursor:pointer;user-select:none;transition:color 0.2s}.sort-header:hover{color:#013369}
+.sort-header{cursor:pointer;user-select:none;transition:color 0.2s}.sort-header:hover{color:var(--student-team-accent,#5b9bd5)}
 select{color-scheme:dark}
 select:not([multiple]){appearance:none;-webkit-appearance:none;background-color:rgba(255,255,255,.055)!important;background-image:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.68)' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important;background-repeat:no-repeat,no-repeat!important;background-position:0 0,calc(100% - 12px) 50%!important;background-size:100% 100%,18px 18px!important;border:1px solid rgba(255,255,255,.14)!important;border-radius:12px!important;color:rgba(255,255,255,.88)!important;padding-right:42px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 28px rgba(0,0,0,.18);transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease,transform .18s ease}
 select:not([multiple]):hover{background-color:rgba(255,255,255,.085)!important;border-color:rgba(255,255,255,.24)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 14px 34px rgba(0,0,0,.24)}
@@ -81,7 +89,20 @@ select option{background:#111827;color:#fff}
 .featured-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,10,10,0.8) 0%,transparent 30%,transparent 70%,rgba(10,10,10,0.8) 100%);z-index:2}
 .featured-bg .featured-content{position:relative;z-index:3;transition:opacity .22s ease}
 .featured-bg:not(.featured-ready) .featured-content{opacity:0;visibility:hidden}
-@keyframes vs-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}.vs-glow{animation:vs-pulse 2.5s ease-in-out infinite}
+.fg-split{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(102deg,color-mix(in srgb,var(--fg-away,#013369) 60%,transparent) 0%,transparent 38%,transparent 62%,color-mix(in srgb,var(--fg-home,#D50A0A) 60%,transparent) 100%);opacity:.45}
+.fg-ghost{position:absolute;top:8%;z-index:2;pointer-events:none;font-family:'Anton',sans-serif;font-size:clamp(110px,22vw,320px);line-height:.82;letter-spacing:-.02em;opacity:.08;user-select:none}
+.fg-ghost-away{left:-1%;color:var(--fg-away,#013369)}
+.fg-ghost-home{right:-1%;color:var(--fg-home,#D50A0A)}
+.floodlights{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.5;filter:blur(10px);background:conic-gradient(from 142deg at 6% -6%,transparent 0deg,rgba(255,255,255,.16) 8deg,transparent 18deg),conic-gradient(from 202deg at 94% -6%,transparent 0deg,rgba(255,255,255,.16) 8deg,transparent 18deg)}
+@keyframes vs-pulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes vs-flash{0%,86%,100%{text-shadow:0 0 0 transparent}90%{text-shadow:0 0 22px rgba(255,255,255,.95),0 0 44px rgba(255,255,255,.5)}94%{text-shadow:0 0 6px rgba(255,255,255,.35)}}
+.vs-glow{animation:vs-pulse 2.5s ease-in-out infinite,vs-flash 4.5s linear infinite}
+#ticker{background:rgba(10,10,10,.78);backdrop-filter:blur(10px)}
+.ticker-track{display:flex;align-items:center;width:max-content;animation:ticker-scroll 90s linear infinite}
+#ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes ticker-scroll{to{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 22px;height:28px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);white-space:nowrap}
+.ticker-item::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--student-team-accent,#5b9bd5);flex-shrink:0}
 @keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.slide-up{animation:slide-up 0.8s cubic-bezier(0.4,0,0.2,1) forwards}.slide-up-d1{animation-delay:0.1s;opacity:0}.slide-up-d2{animation-delay:0.2s;opacity:0}.slide-up-d3{animation-delay:0.3s;opacity:0}.slide-up-d4{animation-delay:0.4s;opacity:0}
 .featured-stat-pill{transition:all 0.3s ease}.featured-stat-pill:hover{background:rgba(255,255,255,0.08);transform:translateY(-1px)}
 .map-wrap{position:relative;width:100%;aspect-ratio:16/10;min-height:400px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);background:#0a0a0a}
@@ -95,8 +116,8 @@ select option{background:#111827;color:#fff}
 @keyframes draw-line{to{stroke-dashoffset:0}}
 .map-tooltip{position:absolute;z-index:20;pointer-events:none;opacity:0;transform:translateY(4px);transition:all 0.2s ease;background:rgba(10,10,10,0.94);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:170px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
 .map-tooltip.visible{opacity:1;transform:translateY(0)}
-.away-item{transition:all 0.2s ease}.away-item:hover{background:rgba(1,51,105,0.06);border-color:rgba(1,51,105,0.2)}
-.away-item.highlighted{background:rgba(1,51,105,0.1);border-color:rgba(1,51,105,0.3)}
+.away-item{transition:all 0.2s ease}.away-item:hover{background:color-mix(in srgb,var(--student-team-primary,#013369) 8%,transparent);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 25%,transparent)}
+.away-item.highlighted{background:color-mix(in srgb,var(--student-team-primary,#013369) 13%,transparent);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 38%,transparent)}
 </style>
 </head>
 <body>
@@ -129,9 +150,16 @@ select option{background:#111827;color:#fff}
     </button>
   </div>
 </nav>
-  
+<div id="ticker" class="fixed top-16 left-0 right-0 z-30 h-7 overflow-hidden border-b border-white/6">
+  <div id="ticker-track" class="ticker-track"></div>
+</div>
+
 <section id="featured" class="featured-bg section-reveal" style="min-height:100vh">
   <img id="featured-bg-img" src="https://i.postimg.cc/pLmRD0Dh/ns4swz69l4fa2ab4bb7l.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="z-index:0">
+  <div class="fg-split" aria-hidden="true"></div>
+  <div class="fg-ghost fg-ghost-away" aria-hidden="true"></div>
+  <div class="fg-ghost fg-ghost-home" aria-hidden="true"></div>
+  <div class="floodlights" aria-hidden="true"></div>
   <div class="featured-content min-h-screen flex flex-col justify-center px-6 md:px-12 lg:px-20 pt-28 pb-12 md:pb-16">
     <div class="max-w-6xl mx-auto w-full">
       <div class="slide-up flex items-center gap-3 mb-6">
@@ -167,7 +195,7 @@ select option{background:#111827;color:#fff}
         <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm"><iconify-icon icon="lucide:map-pin" class="text-brand-400 text-sm"></iconify-icon><span id="featured-location" class="text-xs font-medium"></span></div>
         <div class="featured-stat-pill flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/8 backdrop-blur-sm"><iconify-icon icon="lucide:plane" class="text-brand-400 text-sm"></iconify-icon><span id="featured-distance" class="text-xs font-medium"></span></div>
       </div>
-      <div class="slide-up slide-up-d4 glass-panel rounded-2xl p-5 max-w-2xl" style="background:rgba(1,51,105,0.05);border-color:rgba(1,51,105,0.15)">
+      <div class="slide-up slide-up-d4 glass-panel rounded-2xl p-5 max-w-2xl" style="background:color-mix(in srgb,var(--student-team-primary,#013369) 6%,transparent);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 18%,transparent)">
         <div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:message-circle" class="text-brand-400 text-sm"></iconify-icon><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Class Discussion</span></div>
         <p id="featured-discussion" class="text-sm text-white/60 leading-relaxed"></p>
       </div>
@@ -539,6 +567,17 @@ const NFL_TEAMS=[
 
 function logo(abbr,size=40){const t=getTeam(abbr);if(!t)return`<div style="width:${size}px;height:${size}px;background:#333;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:${Math.max(8,size/4)}px;font-weight:700;color:#fff">${abbr}</div>`;return`<img src="https://a.espncdn.com/i/teamlogos/nfl/500/${t.espn}.png" alt="${fullName(t)}" class="logo-img rounded" style="width:${size}px;height:${size}px" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:${size}px;height:${size}px;background:${t.color};border-radius:8px;display:none;align-items:center;justify-content:center;font-size:${Math.max(8,size/4)}px;font-weight:700;color:#fff">${abbr}</div>`}
 
+/* Color helpers: pick a team color that stays visible on the dark background. */
+function hexA(hex,alpha){const n=parseInt(hex.slice(1),16);return`rgba(${n>>16&255},${n>>8&255},${n&255},${alpha})`}
+function relLum(hex){const n=parseInt(hex.slice(1),16);return(0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255))/255}
+function mapAccent(team){
+  if(!team)return'#5b9bd5';
+  const p=team.color,s=team.secColor;
+  if(p&&relLum(p)>=0.16&&relLum(p)<=0.9)return p;
+  if(s&&relLum(s)>=0.16&&relLum(s)<=0.9)return s;
+  return'#5b9bd5';
+}
+
 const PLAYER_STATS={
   passing:{headers:["Rank","Player","Team","Cmp","Att","Yds","TD","INT","QBR"],keyIndex:5,players:[[1,"Joe Burrow","CIN",363,528,4089,28,8,108.2],[2,"Patrick Mahomes","KC",345,510,3890,25,9,102.7],[3,"Jared Goff","DET",342,512,3775,22,10,95.3],[4,"Lamar Jackson","BAL",314,464,3678,24,4,113.5],[5,"Dak Prescott","DAL",322,488,3567,22,8,100.4],[6,"Josh Allen","BUF",301,489,3548,26,7,105.3],[7,"C.J. Stroud","HOU",318,492,3427,20,12,96.5],[8,"Jordan Love","GB",306,498,3389,21,11,93.7],[9,"Tua Tagovailoa","MIA",305,458,3312,21,7,99.8],[10,"Brock Purdy","SF",295,438,3212,19,7,92.4]]},
   rushing:{headers:["Rank","Player","Team","Att","Yds","Avg","TD","Lng","FUM"],keyIndex:4,players:[[1,"Saquon Barkley","PHI",312,1648,5.3,11,72,2],[2,"Derrick Henry","BAL",298,1578,5.3,14,87,3],[3,"Josh Jacobs","GB",284,1328,4.7,12,65,4],[4,"Bijan Robinson","ATL",274,1282,4.7,9,63,3],[5,"Jonathan Taylor","IND",262,1218,4.6,8,66,2],[6,"Kyren Williams","LAR",268,1212,4.5,11,49,3],[7,"De'Von Achane","MIA",248,1182,4.8,9,76,3],[8,"James Cook","BUF",242,1126,4.7,8,57,1],[9,"Jahmyr Gibbs","DET",228,1086,4.8,10,70,2],[10,"Christian McCaffrey","SF",198,942,4.8,7,58,2]]},
@@ -761,11 +800,47 @@ function renderFeaturedGame(){
   document.getElementById('featured-time').textContent=fg.time||(scheduled?.time?`${scheduled.time} ET`:'Time TBD');
   document.getElementById('featured-venue').textContent=home.stadium;
   document.getElementById('featured-location').textContent=`${home.city}, ${home.state}`;
-  document.getElementById('featured-distance').textContent=`${dist.toFixed(0)} mi apart`;
+  document.getElementById('featured-distance').innerHTML=`<span data-countup="${dist.toFixed(0)}">0</span> mi apart`;
+  runCountUps(document.getElementById('featured-distance'));
 
   document.getElementById('featured-discussion').textContent=fg.discussion;
-  document.getElementById('featured')?.classList.add('featured-ready');
+
+  const heroSection=document.getElementById('featured');
+  heroSection.style.setProperty('--fg-away',mapAccent(away));
+  heroSection.style.setProperty('--fg-home',mapAccent(home));
+  const ghostAway=document.querySelector('.fg-ghost-away'),ghostHome=document.querySelector('.fg-ghost-home');
+  if(ghostAway)ghostAway.textContent=away.abbr;
+  if(ghostHome)ghostHome.textContent=home.abbr;
+  document.getElementById('featured-away-logo').style.filter=`drop-shadow(0 0 26px ${mapAccent(away)})`;
+  document.getElementById('featured-home-logo').style.filter=`drop-shadow(0 0 26px ${mapAccent(home)})`;
+
+  buildTicker();
+  heroSection.classList.add('featured-ready');
 }
+
+/* ===== Score ticker + count-up helpers ===== */
+function buildTicker(){
+  const track=document.getElementById('ticker-track');if(track===null)return;
+  const fg=FEATURED_GAME,away=getTeam(fg.away),home=getTeam(fg.home);
+  const items=[];
+  if(away&&home){const when=[fg.day,fg.time].filter(Boolean).join(' ');items.push(`Featured Game — Week ${fg.week}: ${fullName(away)} @ ${fullName(home)}${when?` • ${when}`:''}`)}
+  const pass=PLAYER_STATS.passing.players[0],rush=PLAYER_STATS.rushing.players[0],rec=PLAYER_STATS.receiving.players[0],def=PLAYER_STATS.defense.players[0];
+  items.push(`Passing leader: ${pass[1]} (${pass[2]}) — ${pass[5].toLocaleString()} yds, ${pass[6]} TD`);
+  items.push(`Rushing leader: ${rush[1]} (${rush[2]}) — ${rush[4].toLocaleString()} yds, ${rush[6]} TD`);
+  items.push(`Receiving leader: ${rec[1]} (${rec[2]}) — ${rec[5].toLocaleString()} yds, ${rec[7]} TD`);
+  items.push(`Sack leader: ${def[1]} (${def[2]}) — ${def[4]} sacks`);
+  NFL_FUN_FACTS.slice(0,6).forEach(f=>{const fact=f.fact.length>110?f.fact.slice(0,107)+'…':f.fact;items.push(fact)});
+  const html=items.map(t=>`<span class="ticker-item">${t}</span>`).join('');
+  track.innerHTML=html+html;
+}
+function animateCountUp(el){
+  const target=parseFloat(el.dataset.countup||'0');
+  const duration=1200,start=performance.now();
+  const format=v=>Math.round(v).toLocaleString('en-US');
+  function step(now){const p=Math.min(1,(now-start)/duration);const eased=1-Math.pow(1-p,3);el.textContent=format(target*eased);if(p<1)requestAnimationFrame(step)}
+  requestAnimationFrame(step);
+}
+function runCountUps(scope){(scope||document).querySelectorAll('[data-countup]').forEach(el=>{if(el.dataset.countupDone)return;el.dataset.countupDone='1';animateCountUp(el)})}
 
   /* ===== WEATHER ENGINE ===== */
 const SEASON_2026_DATES = {
@@ -988,7 +1063,7 @@ function renderMatchups(){
 
 function renderTeams(){const divisions=[...new Set(NFL_TEAMS.map(t=>t.div))];const divFilters=document.getElementById('division-filters');divFilters.innerHTML=`<button onclick="filterDivision('all')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter==='all'?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="all">All Divisions</button>`;divisions.forEach(d=>{divFilters.innerHTML+=`<button onclick="filterDivision('${d}')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter===d?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="${d}">${d}</button>`});renderTeamCards()}
 
-function renderTeamCards(){const grid=document.getElementById('teams-grid');grid.innerHTML='';NFL_TEAMS.forEach(team=>{if(currentConfFilter!=='all'&&team.conf!==currentConfFilter)return;if(currentDivFilter!=='all'&&team.div!==currentDivFilter)return;const isComparing=compareTeams.includes(team.abbr);const card=document.createElement('div');card.className=`team-card glass-panel rounded-xl p-4 flex flex-col items-center text-center gap-2 ${isComparing?'selected':''}`;card.onclick=()=>showTeamInfoModal(team.abbr);card.innerHTML=`<div class="relative">${logo(team.abbr,52)}</div><div><div class="text-[11px] font-semibold leading-tight">${fullName(team)}</div><div class="text-[9px] text-white/40 mt-0.5">${team.city}, ${team.state}</div></div><div class="text-[8px] font-mono text-white/25 uppercase tracking-wider">${team.div}</div><button onclick="event.stopPropagation();toggleCompareTeam('${team.abbr}')" class="mt-1 text-[9px] px-2 py-1 rounded-md border ${isComparing?'bg-brand-500/20 text-brand-400 border-brand-500/40':'bg-white/5 text-white/40 hover:bg-white/10 border-white/10'} transition">${isComparing?'✓ Selected':'Compare'}</button>`;grid.appendChild(card)})}
+function renderTeamCards(){const grid=document.getElementById('teams-grid');grid.innerHTML='';NFL_TEAMS.forEach(team=>{if(currentConfFilter!=='all'&&team.conf!==currentConfFilter)return;if(currentDivFilter!=='all'&&team.div!==currentDivFilter)return;const isComparing=compareTeams.includes(team.abbr);const card=document.createElement('div');card.className=`team-card glass-panel rounded-xl p-4 flex flex-col items-center text-center gap-2 ${isComparing?'selected':''}`;card.style.setProperty('--tc-p',team.color);card.style.setProperty('--tc-s',team.secColor||team.color);card.onclick=()=>showTeamInfoModal(team.abbr);card.innerHTML=`<div class="relative">${logo(team.abbr,52)}</div><div><div class="text-[11px] font-semibold leading-tight">${fullName(team)}</div><div class="text-[9px] text-white/40 mt-0.5">${team.city}, ${team.state}</div></div><div class="text-[8px] font-mono text-white/25 uppercase tracking-wider">${team.div}</div><button onclick="event.stopPropagation();toggleCompareTeam('${team.abbr}')" class="mt-1 text-[9px] px-2 py-1 rounded-md border ${isComparing?'bg-brand-500/20 text-brand-400 border-brand-500/40':'bg-white/5 text-white/40 hover:bg-white/10 border-white/10'} transition">${isComparing?'✓ Selected':'Compare'}</button>`;grid.appendChild(card)})}
 
 function filterTeams(conf){currentConfFilter=conf;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===conf);b.classList.toggle('text-white/50',b.dataset.filter!==conf)});renderTeamCards()}
 function filterDivision(div){currentDivFilter=div;document.querySelectorAll('.division-btn').forEach(b=>{const a=b.dataset.div===div;b.classList.toggle('!bg-brand-500/15',a);b.classList.toggle('!text-brand-400',a);b.classList.toggle('!border-brand-500/30',a)});renderTeamCards()}
@@ -1157,7 +1232,7 @@ function renderTravel(){
   const farthest=awayGames.reduce((max,g)=>g.distance>max.distance?g:max,{distance:0});
   const closest=awayGames.reduce((min,g)=>g.distance<min.distance?g:min,{distance:Infinity});
 
-  summary.innerHTML=`<div class="space-y-4"><div class="flex items-center gap-3 mb-4">${logo(abbr,48)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state}</div></div></div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-400">${totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Away / Travel Games</span><span class="text-sm font-bold">${awayGames.length}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Avg Trip Distance</span><span class="text-sm font-bold">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Farthest Trip</span><span class="text-sm font-bold">${farthest.team?fullName(farthest.team):'—'}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Closest Trip</span><span class="text-sm font-bold">${closest.team?fullName(closest.team):'—'}</span></div><hr class="border-white/6"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Home Stadium</span><span class="text-[11px] font-medium text-right">${team.stadium}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Time Zone</span><span class="text-[11px] font-medium">${team.tz}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Founded</span><span class="text-[11px] font-medium">${team.founded}</span></div></div></div>`;
+  summary.innerHTML=`<div class="space-y-4"><div class="flex items-center gap-3 mb-4">${logo(abbr,48)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state}</div></div></div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-400"><span data-countup="${totalMiles.toFixed(0)}">0</span> mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Away / Travel Games</span><span class="text-sm font-bold">${awayGames.length}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Avg Trip Distance</span><span class="text-sm font-bold">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Farthest Trip</span><span class="text-sm font-bold">${farthest.team?fullName(farthest.team):'—'}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Closest Trip</span><span class="text-sm font-bold">${closest.team?fullName(closest.team):'—'}</span></div><hr class="border-white/6"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Home Stadium</span><span class="text-[11px] font-medium text-right">${team.stadium}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Time Zone</span><span class="text-[11px] font-medium">${team.tz}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Founded</span><span class="text-[11px] font-medium">${team.founded}</span></div></div></div>`;
 
   awayList.innerHTML=awayGames.map(g=>{
     const isFar=g===farthest;
@@ -1168,6 +1243,8 @@ function renderTravel(){
 
   const tf=STADIUM_FACTS[abbr];
   stadiumFacts.innerHTML=`<div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:building-2" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Stadium</span></div><div class="text-sm font-semibold mb-1">${team.stadium}</div><div class="text-[11px] text-white/50">${tf.roof} • ${tf.surface}</div><div class="text-[11px] text-white/50">Capacity: ${team.stadiumCap.toLocaleString()}</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:map" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Location</span></div><div class="text-sm font-semibold mb-1">${team.city}, ${team.state}</div><div class="text-[11px] text-white/50">Lat: ${team.lat}° N</div><div class="text-[11px] text-white/50">Lng: ${Math.abs(team.lng)}° W</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:sparkles" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Fun Fact</span></div><div class="text-[11px] text-white/60 leading-relaxed">${tf.trivia}</div></div>`;
+
+  runCountUps(summary);
 
   // Also update the interactive map
   renderMap();
@@ -1200,6 +1277,7 @@ async function initMap(){
       .attr("class","state-label")
       .attr("transform",d=>{const c=pathGen.centroid(d);if(isNaN(c[0]))return"translate(-1000,-1000)";return`translate(${c[0]},${c[1]})`})
       .text(d=>FIPS[String(d.id).padStart(2,'0')]||"");
+    renderMap();
   }catch(err){
     console.error("Failed to load map data",err);
     document.getElementById('sidebar-away-list').innerHTML='<p class="text-xs text-red-400">Failed to load map data.</p>';
@@ -1262,7 +1340,7 @@ function renderMap(){
             .attr("x1", awayCoords[0]).attr("y1", awayCoords[1])
             .attr("x2", awayCoords[0] + (vx / mag) * 2000)
             .attr("y2", awayCoords[1] + (vy / mag) * 2000)
-            .attr("stroke", "rgba(1,51,105,0.5)")
+            .attr("stroke", hexA(mapAccent(awayTeam), 0.5))
             .attr("stroke-width", 1.5)
             .attr("stroke-dasharray", "6 4");
         }
@@ -1281,7 +1359,7 @@ function renderMap(){
             .attr("x1", homeCoords[0]).attr("y1", homeCoords[1])
             .attr("x2", homeCoords[0] + (vx / mag) * 2000)
             .attr("y2", homeCoords[1] + (vy / mag) * 2000)
-            .attr("stroke", "rgba(1,51,105,0.5)")
+            .attr("stroke", hexA(mapAccent(homeTeam), 0.5))
             .attr("stroke-width", 1.5)
             .attr("stroke-dasharray", "6 4");
         }
@@ -1328,7 +1406,7 @@ function renderMap(){
       g.on("mouseenter", (event) => {
         const dist = isMatchup ? (isAway ? awayDist : homeDist) : null;
         tooltip.innerHTML = `
-          <div class="text-xs font-bold mb-1" style="color:${t.color}">${fullName(t)}</div>
+          <div class="text-xs font-bold mb-1" style="color:${mapAccent(t)}">${fullName(t)}</div>
           <div class="text-[10px] text-white/50">${t.city}, ${t.state}</div>
           <div class="text-[10px] text-white/40">${t.stadium}</div>
           ${isMatchup ? `<div class="text-[10px] text-brand-400 mt-1.5 font-medium">✈ ${Number(dist).toLocaleString()} mi to ${focusedIntlGame.city}</div>` :
@@ -1365,7 +1443,8 @@ function renderMap(){
 
   document.getElementById('sidebar-team-name').textContent=fullName(team)+' Travel Destinations';
   document.getElementById('sidebar-team-subtitle').textContent=`${team.city}, ${team.state} • ${team.tz}`;
-  document.getElementById('sidebar-total-miles').textContent=totalMiles.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")+' mi';
+  document.getElementById('sidebar-total-miles').innerHTML=`<span data-countup="${totalMiles.toFixed(0)}">0</span> mi`;
+  runCountUps(document.getElementById('sidebar-total-miles'));
 
   const listEl=document.getElementById('sidebar-away-list');
   listEl.innerHTML=awayGamesData.map(g=>{
@@ -1392,26 +1471,32 @@ function renderMap(){
   const linesGroup=svg.select("#svg-lines");
   linesGroup.selectAll("*").remove();
 
+  const teamCol=mapAccent(team);
   awayGamesData.forEach((g,i)=>{
     const destCoords=projection([g.lng, g.lat]);
     if(!destCoords)return;
     const isLong=g.distance>1500;
-    const baseColor=isLong?"rgba(239,68,68,":"rgba(1,51,105,";
+    const col=isLong?"#ef4444":teamCol;
 
-    linesGroup.append("line")
-      .attr("x1",homeCoords[0]).attr("y1",homeCoords[1])
-      .attr("x2",destCoords[0]).attr("y2",destCoords[1])
-      .attr("stroke",baseColor+"0.08)")
+    // Curved great-circle-style arc bowing upward, colored by the selected team.
+    const dx=destCoords[0]-homeCoords[0],dy=destCoords[1]-homeCoords[1];
+    const segLen=Math.sqrt(dx*dx+dy*dy)||1;
+    const mx=(homeCoords[0]+destCoords[0])/2,my=(homeCoords[1]+destCoords[1])/2;
+    const bend=Math.min(60,segLen*0.18);
+    let cx=mx+(-dy/segLen)*bend,cy=my+(dx/segLen)*bend;
+    if(cy>my){cx=mx-(-dy/segLen)*bend;cy=my-(dx/segLen)*bend}
+    const dPath=`M${homeCoords[0]},${homeCoords[1]} Q${cx},${cy} ${destCoords[0]},${destCoords[1]}`;
+
+    linesGroup.append("path").attr("d",dPath).attr("fill","none")
+      .attr("stroke",hexA(col,0.09))
       .attr("stroke-width",4).attr("stroke-linecap","round");
 
-    const len=Math.sqrt(Math.pow(destCoords[0]-homeCoords[0],2)+Math.pow(destCoords[1]-homeCoords[1],2));
-    linesGroup.append("line")
-      .attr("x1",homeCoords[0]).attr("y1",homeCoords[1])
-      .attr("x2",destCoords[0]).attr("y2",destCoords[1])
-      .attr("stroke",baseColor+"0.4)")
+    const arc=linesGroup.append("path").attr("d",dPath).attr("fill","none")
+      .attr("stroke",hexA(col,0.45))
       .attr("stroke-width",1.5).attr("stroke-linecap","round")
-      .attr("data-dest",g.abbr)
-      .attr("stroke-dasharray",len).attr("stroke-dashoffset",len)
+      .attr("data-dest",g.abbr).attr("data-col",col);
+    const len=arc.node().getTotalLength();
+    arc.attr("stroke-dasharray",len).attr("stroke-dashoffset",len)
       .style("animation",`draw-line 1.2s ease ${i*0.05}s forwards`);
   });
 
@@ -1431,16 +1516,16 @@ function renderMap(){
 
     if(isHome){
       g.append("circle").attr("r",10).attr("fill","none")
-        .attr("stroke","#013369").attr("stroke-width",2)
+        .attr("stroke",teamCol).attr("stroke-width",2)
         .style("animation","home-ring-pulse 2s ease-out infinite");
-      g.append("circle").attr("r",8).attr("fill","#013369").attr("opacity",0.5)
+      g.append("circle").attr("r",8).attr("fill",teamCol).attr("opacity",0.5)
         .attr("filter","url(#home-glow)");
       g.append("circle").attr("r",7).attr("fill","#ffffff")
-        .attr("stroke","#013369").attr("stroke-width",2.5)
+        .attr("stroke",teamCol).attr("stroke-width",2.5)
         .style("animation","home-pulse 2s ease-in-out infinite");
       g.append("text")
         .attr("y",-14).attr("text-anchor","middle")
-        .attr("fill","#013369").attr("font-size","8px").attr("font-weight","800")
+        .attr("fill","rgba(255,255,255,0.92)").attr("font-size","8px").attr("font-weight","800")
         .attr("font-family","Inter, sans-serif").attr("letter-spacing","0.5px")
         .text(t.abbr);
     }else if(isAway){
@@ -1482,7 +1567,7 @@ function renderMap(){
       }
 
       tooltip.innerHTML=`
-        <div class="text-xs font-bold mb-1" style="color:${isHome?'#013369':t.color}">${fullName(t)}</div>
+        <div class="text-xs font-bold mb-1" style="color:${mapAccent(t)}">${fullName(t)}</div>
         <div class="text-[10px] text-white/50">${t.city}, ${t.state}</div>
         <div class="text-[10px] text-white/40">${t.stadium}</div>
         ${isHome?'<div class="text-[10px] text-brand-400 mt-1.5 font-medium">⬤ HOME</div>':
@@ -1507,13 +1592,43 @@ function positionTooltip(event){
   tooltip.style.left=tx+'px';tooltip.style.top=ty+'px';
 }
 
+let planeAnimId=null;
+function animatePlaneAlongPath(pathEl,color){
+  stopPlaneAnimation();
+  const svg=d3.select('#map-svg');
+  const plane=svg.append('path').attr('id','plane-marker')
+    .attr('d','M7 0 L-5 3.6 L-2.4 0 L-5 -3.6 Z')
+    .attr('fill','#ffffff')
+    .style('filter',`drop-shadow(0 0 6px ${color})`)
+    .style('pointer-events','none');
+  const len=pathEl.getTotalLength(),duration=1600;
+  let startTime=null;
+  function frame(now){
+    if(!startTime)startTime=now;
+    const progress=((now-startTime)%duration)/duration;
+    const pt=pathEl.getPointAtLength(progress*len);
+    const ahead=pathEl.getPointAtLength(Math.min(len,progress*len+1));
+    const angle=Math.atan2(ahead.y-pt.y,ahead.x-pt.x)*180/Math.PI;
+    plane.attr('transform',`translate(${pt.x},${pt.y}) rotate(${angle})`);
+    planeAnimId=requestAnimationFrame(frame);
+  }
+  planeAnimId=requestAnimationFrame(frame);
+}
+function stopPlaneAnimation(){
+  if(planeAnimId)cancelAnimationFrame(planeAnimId);
+  planeAnimId=null;
+  d3.select('#plane-marker').remove();
+}
+
 function highlightDestination(destAbbr){
-  d3.selectAll('#svg-lines line[data-dest]').each(function(){
-    const line=d3.select(this);
-    if(line.attr('data-dest')===destAbbr){
-      line.attr('stroke','rgba(1,51,105,0.9)').attr('stroke-width',3);
+  d3.selectAll('#svg-lines path[data-dest]').each(function(){
+    const arc=d3.select(this);
+    const col=arc.attr('data-col')||'#013369';
+    if(arc.attr('data-dest')===destAbbr){
+      arc.attr('stroke',hexA(col,0.95)).attr('stroke-width',3);
+      animatePlaneAlongPath(this,col);
     }else{
-      line.attr('stroke','rgba(1,51,105,0.04)').attr('stroke-width',0.5);
+      arc.attr('stroke',hexA(col,0.05)).attr('stroke-width',0.5);
     }
   });
   d3.selectAll('#svg-dots g').each(function(){
@@ -1527,7 +1642,7 @@ function highlightDestination(destAbbr){
   });
 }
 
-function clearHighlight(){if(currentMapTeam)renderMap();}
+function clearHighlight(){stopPlaneAnimation();if(currentMapTeam)renderMap();}
 
 function initScrollReveal(){const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.section-reveal').forEach(el=>observer.observe(el))}
 document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',function(e){e.preventDefault();const t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
