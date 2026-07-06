@@ -4,6 +4,7 @@
   let cachedUser = null;
   let cachedMath = null;
   let cachedIdentity = {};
+  let cachedClassmates = [];
   const queue = [];
   let animating = false;
 
@@ -35,6 +36,11 @@
     .identity-panel{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
     .identity-input{width:100%;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);padding:10px 12px;font-size:12px;color:#fff;outline:none}
     .identity-input:focus{border-color:var(--student-team-secondary,#D50A0A);box-shadow:0 0 0 3px color-mix(in srgb,var(--student-team-primary,#013369) 28%,transparent)}
+    .classmate-card{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 48px rgba(0,0,0,.22)}
+    .classmate-card:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 18% 0,color-mix(in srgb,var(--classmate-primary,#013369) 32%,transparent),transparent 36%),linear-gradient(135deg,transparent,color-mix(in srgb,var(--classmate-secondary,#D50A0A) 14%,transparent));pointer-events:none}
+    .classmate-mini-card{position:relative;overflow:hidden;min-height:220px;background:linear-gradient(145deg,#f7edd4,#d4b879 52%,#a77731);border:4px solid #f7e7bc;color:#241505;box-shadow:inset 0 0 0 2px rgba(75,45,12,.28)}
+    .classmate-mini-card:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(78,48,16,.06) 0 1px,transparent 1px 5px);pointer-events:none}
+    .classmate-jersey{display:grid;place-items:center;width:76px;height:86px;margin:0 auto;background:linear-gradient(180deg,var(--classmate-primary,#013369),var(--classmate-secondary,#D50A0A));clip-path:polygon(21% 0,39% 10%,61% 10%,79% 0,100% 23%,84% 38%,84% 100%,16% 100%,16% 38%,0 23%);color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.4)}
     .badge-progress-track{position:relative;overflow:hidden;height:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 8px rgba(0,0,0,.28)}
     .badge-progress-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--student-team-primary,#013369),var(--student-team-secondary,#D50A0A),#facc15);box-shadow:0 0 26px color-mix(in srgb,var(--student-team-secondary,#D50A0A) 35%,transparent);transition:width .55s ease}
     .badge-progress-fill:after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent,rgba(255,255,255,.38),transparent);animation:badge-progress-shine 2.8s ease-in-out infinite}
@@ -176,6 +182,8 @@
   const optionMarkup = (items, selected) => items.map(item => `<option value="${esc(item)}"${item === selected ? ' selected' : ''}>${esc(item)}</option>`).join('');
   const identityLabel = identity => identity.nickname || cachedUser?.displayName || 'Student';
   const jerseyText = identity => identity.jerseyNumber || initialsFor(cachedUser?.displayName).slice(0, 2);
+  const publicIdentityLabel = student => student.identity?.nickname || student.displayName || 'Student';
+  const publicJerseyText = student => student.identity?.jerseyNumber || initialsFor(student.displayName).slice(0, 2);
 
   function identityFormMarkup(identity) {
     return `<form id="student-identity-form" class="identity-panel p-4 md:p-5">
@@ -215,6 +223,48 @@
         button.disabled = false;
       }
     });
+  }
+
+  function classmateCardMarkup(student) {
+    const team = typeof getNFLTeamBrand === 'function' ? getNFLTeamBrand(student.selectedTeam) : null;
+    const identity = student.identity || {};
+    const earned = student.badges || [];
+    const primary = team?.primary || 'var(--student-team-primary,#013369)';
+    const secondary = team?.secondary || 'var(--student-team-secondary,#D50A0A)';
+    const teamLogo = team?.logo ? `<img src="${esc(team.logo)}" alt="${esc(team.name)} logo" class="w-10 h-10 object-contain">` : `<span class="font-black">${esc(team?.abbr || 'NFL')}</span>`;
+    return `<article class="classmate-card p-4" style="--classmate-primary:${primary};--classmate-secondary:${secondary}">
+      <div class="relative z-10 grid md:grid-cols-[170px_1fr] gap-4">
+        <div class="classmate-mini-card p-3">
+          <div class="relative z-10 flex items-center justify-between gap-2">
+            <div class="min-w-0"><div class="text-[9px] uppercase font-black opacity-60">${esc(team?.name || 'Free Agent')}</div><h3 class="text-xl font-black leading-none truncate mt-1">${esc(publicIdentityLabel(student))}</h3></div>
+            <div class="w-12 h-12 grid place-items-center bg-white/55 border border-black/20 shrink-0">${teamLogo}</div>
+          </div>
+          <div class="relative z-10 mt-4 classmate-jersey"><div class="text-center"><div class="text-[8px] font-black uppercase opacity-75">${esc(team?.abbr || 'NFL')}</div><div class="text-3xl font-black leading-none">${esc(publicJerseyText(student))}</div></div></div>
+          <div class="relative z-10 mt-4 grid grid-cols-2 gap-2 text-center">
+            <div class="bg-black/10 border border-black/15 p-2"><div class="text-[8px] uppercase font-black opacity-60">Position</div><div class="text-[10px] font-black truncate">${esc(identity.favoritePosition || 'Student')}</div></div>
+            <div class="bg-black/10 border border-black/15 p-2"><div class="text-[8px] uppercase font-black opacity-60">Role</div><div class="text-[10px] font-black truncate">${esc(identity.teamRole || 'Rookie')}</div></div>
+          </div>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div><div class="text-[10px] uppercase tracking-[.2em] text-white/35 font-black">${student.isMe ? 'Your Public Card' : 'Classmate Card'}</div><h3 class="text-xl font-black mt-1">${esc(student.displayName)}</h3></div>
+            <div class="text-right text-xs text-white/45"><span class="font-black text-white">${student.earnedCount}</span> / ${student.totalBadges} badges</div>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-2">${earned.length ? earned.slice(0, 6).map(badge => badgeMarkup(badge, true)).join('') : '<div class="sm:col-span-2 p-5 border border-white/10 bg-black/20 text-xs text-white/35">No public badges earned yet.</div>'}</div>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function classmateGalleryMarkup() {
+    const classmates = cachedClassmates || [];
+    return `<section class="locker-section p-5 md:p-6 mb-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-5">
+        <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Classmate Cards</div><h2 class="text-2xl md:text-3xl font-black mt-2">Team locker gallery</h2><p class="text-sm text-white/45 mt-2">View classmates' public trading cards and earned badge patches.</p></div>
+        <div class="text-sm text-white/45">${classmates.length} cards</div>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-4">${classmates.length ? classmates.map(classmateCardMarkup).join('') : '<div class="p-8 border border-white/10 bg-black/20 text-sm text-white/35">No classmate cards are available yet.</div>'}</div>
+    </section>`;
   }
 
   function renderProfilePage(profile) {
@@ -285,6 +335,7 @@
         </div>
       </div>
       <div class="mb-6">${identityFormMarkup(identity)}</div>
+      ${classmateGalleryMarkup()}
       <div class="trophy-case p-5 md:p-6">
         ${badgeProgressBar(percent, profile.earnedCount, profile.total)}
         <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
@@ -384,9 +435,9 @@
     api('/api/badges/profile').then(refreshBadgeSurfaces).catch(() => {});
   };
 
-  window.refreshBadgeCollection = () => Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile'), api('/api/student-identity')]).then(([me, profile, math, identity]) => { cachedUser = me.user; cachedMath = math; cachedIdentity = identity.identity || {}; refreshBadgeSurfaces(profile); });
+  window.refreshBadgeCollection = () => Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile'), api('/api/student-identity'), api('/api/classmates/profiles')]).then(([me, profile, math, identity, classmates]) => { cachedUser = me.user; cachedMath = math; cachedIdentity = identity.identity || {}; cachedClassmates = classmates.students || []; refreshBadgeSurfaces(profile); });
 
-  Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile'), api('/api/student-identity')]).then(([me, profile, math, identity]) => { cachedUser = me.user; cachedMath = math; cachedIdentity = identity.identity || {}; refreshBadgeSurfaces(profile); }).catch(error => {
+  Promise.all([api('/api/me'), api('/api/badges/profile'), api('/api/math-game/profile'), api('/api/student-identity'), api('/api/classmates/profiles')]).then(([me, profile, math, identity, classmates]) => { cachedUser = me.user; cachedMath = math; cachedIdentity = identity.identity || {}; cachedClassmates = classmates.students || []; refreshBadgeSurfaces(profile); }).catch(error => {
     const section = document.getElementById('profile');
     if (section && page === 'profile') section.innerHTML = `<div class="p-10 text-red-300">${esc(error.message)}</div>`;
   });
