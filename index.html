@@ -48,7 +48,7 @@ html[data-portal-page="cities"]:not(.portal-ready) body>#cities{visibility:hidde
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#0a0a0a}::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--student-team-primary,#013369) 45%,#333);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--student-team-primary,#013369) 70%,#555)}
 section h2,#featured-away-name,#featured-home-name{font-family:'Anton','Inter',sans-serif;font-weight:400!important;text-transform:uppercase;letter-spacing:.02em}
 #featured-away-name,#featured-home-name{transform:skewX(-3deg)}
-.vs-glow{font-family:'Anton',sans-serif}
+.vs-glow{font-family:'Anton',sans-serif;display:inline-block;line-height:1.2!important;padding:.12em .14em .2em;overflow:visible}
 .noise{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:0.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .glass-panel{background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08)}
 .team-card{position:relative;overflow:hidden;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);cursor:pointer}
@@ -68,7 +68,7 @@ section h2,#featured-away-name,#featured-home-name{font-family:'Anton','Inter',s
 .tcu-page:before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 86px),linear-gradient(90deg,rgba(77,25,121,.22),transparent 22%,transparent 78%,rgba(255,255,255,.05));opacity:.7}
 .tcu-shell{position:relative;z-index:1}.tcu-hero{position:relative;overflow:hidden;min-height:420px;background:linear-gradient(135deg,#4D1979 0,#241033 48%,#050407 100%);border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 90px rgba(0,0,0,.45)}
 .tcu-hero:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.11) 0 1px,transparent 1px 10%),linear-gradient(180deg,rgba(255,255,255,.12),transparent 45%,rgba(0,0,0,.42));opacity:.5}
-.tcu-hero:after{content:'TCU';position:absolute;right:-20px;bottom:-48px;font-size:180px;font-weight:900;line-height:.8;color:rgba(255,255,255,.045);letter-spacing:-10px}
+.tcu-hero:after{content:'TCU';position:absolute;right:-20px;bottom:-48px;font-family:'Anton',sans-serif;font-size:180px;font-weight:400;line-height:.8;color:rgba(255,255,255,.045);letter-spacing:-6px}
 .tcu-logo-lockup{background:rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 .tcu-panel{background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.028));border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 60px rgba(0,0,0,.24)}
 .tcu-panel h3 iconify-icon,.tcu-purple{color:#B89CFF}.tcu-tab-active{background:rgba(77,25,121,.34)!important;border-color:rgba(184,156,255,.45)!important;color:#fff!important}
@@ -178,7 +178,7 @@ select option{background:#111827;color:#fff}
           </div>
         </div>
         <div class="slide-up slide-up-d2 flex items-center justify-center md:mx-4">
-          <div class="vs-glow text-3xl md:text-5xl font-black tracking-tighter bg-gradient-to-b from-white/80 to-white/20 bg-clip-text text-transparent select-none">VS</div>
+          <div class="vs-glow text-3xl md:text-5xl font-black tracking-tighter bg-gradient-to-b from-white to-white/80 bg-clip-text text-transparent select-none">VS</div>
         </div>
         <div class="slide-up slide-up-d3 flex items-center gap-4 md:gap-5">
           <div id="featured-home-logo" class="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center p-2 backdrop-blur-sm"></div>
