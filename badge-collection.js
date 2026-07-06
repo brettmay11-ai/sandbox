@@ -36,6 +36,10 @@
     .identity-panel{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
     .identity-input{width:100%;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);padding:10px 12px;font-size:12px;color:#fff;outline:none}
     .identity-input:focus{border-color:var(--student-team-secondary,#D50A0A);box-shadow:0 0 0 3px color-mix(in srgb,var(--student-team-primary,#013369) 28%,transparent)}
+    .profile-tabs{display:inline-flex;gap:6px;padding:6px;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .profile-tab-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.52);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;transition:background .18s ease,color .18s ease,border-color .18s ease}
+    .profile-tab-btn.active{background:linear-gradient(135deg,var(--student-team-primary,#013369),var(--student-team-secondary,#D50A0A));border-color:rgba(255,255,255,.18);color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.24)}
+    .profile-tab-panel[hidden]{display:none}
     .classmate-card{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 48px rgba(0,0,0,.22)}
     .classmate-card:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 18% 0,color-mix(in srgb,var(--classmate-primary,#013369) 32%,transparent),transparent 36%),linear-gradient(135deg,transparent,color-mix(in srgb,var(--classmate-secondary,#D50A0A) 14%,transparent));pointer-events:none}
     .classmate-mini-card{position:relative;overflow:hidden;width:min(100%,190px);aspect-ratio:2.5/3.5;margin:0 auto;background:linear-gradient(145deg,#f7edd4,#d4b879 52%,#a77731);border:4px solid #f7e7bc;color:#241505;box-shadow:inset 0 0 0 2px rgba(75,45,12,.28),0 16px 34px rgba(0,0,0,.25)}
@@ -267,6 +271,18 @@
     </section>`;
   }
 
+  function bindProfileTabs() {
+    const buttons = [...document.querySelectorAll('[data-profile-tab]')];
+    const panels = [...document.querySelectorAll('[data-profile-panel]')];
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.profileTab;
+        buttons.forEach(tab => tab.classList.toggle('active', tab === button));
+        panels.forEach(panel => { panel.hidden = panel.dataset.profilePanel !== target; });
+      });
+    });
+  }
+
   function renderProfilePage(profile) {
     const section = document.getElementById('profile');
     if (!section) return;
@@ -310,42 +326,55 @@
       </div>
     </div>`;
     section.innerHTML = `<div class="locker-room max-w-6xl mx-auto px-4 md:px-6">
-      <div class="locker-hero mb-6 p-5 md:p-7">
-        <div class="relative z-10 grid lg:grid-cols-[1fr_320px] gap-6 items-center">
-          <div class="flex flex-col justify-between gap-8">
-            <div class="locker-nameplate p-5 md:p-6">
-              <div class="text-[10px] uppercase tracking-[.26em] text-white/50 font-black">Student Locker</div>
-              <h1 class="text-4xl md:text-6xl font-black mt-3 leading-none">${esc(user.displayName || 'Student')}</h1>
-              ${identity.nickname ? `<div class="text-xl md:text-2xl font-black text-brand-400 mt-2">"${esc(identity.nickname)}"</div>` : ''}
-              <div class="flex flex-wrap items-center gap-2 mt-4 text-xs text-white/55">
-                <span class="px-3 py-1 border border-white/10 bg-black/20">${esc(team?.name || 'Team assignment pending')}</span>
-                <span class="px-3 py-1 border border-white/10 bg-black/20">Locker ${esc(user.username || initialsFor(user.displayName))}</span>
-                <span class="px-3 py-1 border border-white/10 bg-black/20">#${esc(jerseyText(identity))}</span>
-                <span class="px-3 py-1 border border-white/10 bg-black/20">${esc(identity.teamRole || 'Rookie')}</span>
-                <span class="px-3 py-1 border border-white/10 bg-black/20">${profile.earnedCount} badges earned</span>
-              </div>
-            </div>
-            <div class="grid sm:grid-cols-3 gap-3">
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Badge Wall</div><div class="text-2xl font-black mt-1">${profile.earnedCount} / ${profile.total}</div></div>
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Completion</div><div class="text-2xl font-black mt-1">${percent}%</div></div>
-              <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Latest Patch</div><div class="text-lg font-black mt-1 truncate">${recent[0] ? esc(recent[0].title) : 'None yet'}</div></div>
-            </div>
-          </div>
-          ${playerCardMarkup}
+      <div class="flex justify-center mb-6">
+        <div class="profile-tabs">
+          <button type="button" class="profile-tab-btn active" data-profile-tab="personal"><iconify-icon icon="lucide:id-card"></iconify-icon> Personal Profile</button>
+          <button type="button" class="profile-tab-btn" data-profile-tab="classroom"><iconify-icon icon="lucide:users-round"></iconify-icon> Classroom</button>
         </div>
       </div>
-      <div class="mb-6">${identityFormMarkup(identity)}</div>
-      ${classmateGalleryMarkup()}
-      <div class="trophy-case p-5 md:p-6">
-        ${badgeProgressBar(percent, profile.earnedCount, profile.total)}
-        <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
-          <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Badge Trophy Case</div><h2 class="text-2xl md:text-3xl font-black mt-2">Badge collection</h2><p class="text-sm text-white/45 mt-2">Earn patches from math plays, writing assignments, city scouting, and coach challenges.</p></div>
-          <div class="text-sm text-white/45">${profile.earnedCount} of ${profile.total} earned</div>
+
+      <div class="profile-tab-panel" data-profile-panel="personal">
+        <div class="locker-hero mb-6 p-5 md:p-7">
+          <div class="relative z-10 grid lg:grid-cols-[1fr_320px] gap-6 items-center">
+            <div class="flex flex-col justify-between gap-8">
+              <div class="locker-nameplate p-5 md:p-6">
+                <div class="text-[10px] uppercase tracking-[.26em] text-white/50 font-black">Student Locker</div>
+                <h1 class="text-4xl md:text-6xl font-black mt-3 leading-none">${esc(user.displayName || 'Student')}</h1>
+                ${identity.nickname ? `<div class="text-xl md:text-2xl font-black text-brand-400 mt-2">"${esc(identity.nickname)}"</div>` : ''}
+                <div class="flex flex-wrap items-center gap-2 mt-4 text-xs text-white/55">
+                  <span class="px-3 py-1 border border-white/10 bg-black/20">${esc(team?.name || 'Team assignment pending')}</span>
+                  <span class="px-3 py-1 border border-white/10 bg-black/20">Locker ${esc(user.username || initialsFor(user.displayName))}</span>
+                  <span class="px-3 py-1 border border-white/10 bg-black/20">#${esc(jerseyText(identity))}</span>
+                  <span class="px-3 py-1 border border-white/10 bg-black/20">${esc(identity.teamRole || 'Rookie')}</span>
+                  <span class="px-3 py-1 border border-white/10 bg-black/20">${profile.earnedCount} badges earned</span>
+                </div>
+              </div>
+              <div class="grid sm:grid-cols-3 gap-3">
+                <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Badge Wall</div><div class="text-2xl font-black mt-1">${profile.earnedCount} / ${profile.total}</div></div>
+                <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Completion</div><div class="text-2xl font-black mt-1">${percent}%</div></div>
+                <div class="locker-stat p-4"><div class="text-[9px] uppercase text-white/35 font-black">Latest Patch</div><div class="text-lg font-black mt-1 truncate">${recent[0] ? esc(recent[0].title) : 'None yet'}</div></div>
+              </div>
+            </div>
+            ${playerCardMarkup}
+          </div>
         </div>
-        <div class="relative z-10 locker-badge-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-3">${profile.badges.map(badge => badgeMarkup(badge)).join('')}</div>
+        <div class="mb-6">${identityFormMarkup(identity)}</div>
+        <div class="trophy-case p-5 md:p-6">
+          ${badgeProgressBar(percent, profile.earnedCount, profile.total)}
+          <div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
+            <div><div class="text-[10px] uppercase tracking-[.24em] text-brand-400 font-black">Badge Trophy Case</div><h2 class="text-2xl md:text-3xl font-black mt-2">Badge collection</h2><p class="text-sm text-white/45 mt-2">Earn patches from math plays, writing assignments, city scouting, and coach challenges.</p></div>
+            <div class="text-sm text-white/45">${profile.earnedCount} of ${profile.total} earned</div>
+          </div>
+          <div class="relative z-10 locker-badge-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-3">${profile.badges.map(badge => badgeMarkup(badge)).join('')}</div>
+        </div>
+      </div>
+
+      <div class="profile-tab-panel" data-profile-panel="classroom" hidden>
+        ${classmateGalleryMarkup()}
       </div>
     </div>`;
     bindIdentityForm(profile);
+    bindProfileTabs();
   }
 
   function attachDashboardPreview(profile) {
