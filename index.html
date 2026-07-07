@@ -132,6 +132,40 @@ select option{background:#111827;color:#fff}
 .map-tooltip.visible{opacity:1;transform:translateY(0)}
 .away-item{transition:all 0.2s ease}.away-item:hover{background:color-mix(in srgb,var(--student-team-primary,#013369) 8%,transparent);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 25%,transparent)}
 .away-item.highlighted{background:color-mix(in srgb,var(--student-team-primary,#013369) 13%,transparent);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 38%,transparent)}
+/* ===== Stats / Players page facelift ===== */
+.stats-page,.players-page{position:relative;overflow:hidden;background:radial-gradient(circle at 12% 8%,color-mix(in srgb,var(--student-team-primary,#013369) 22%,transparent),transparent 34%),radial-gradient(circle at 90% 14%,color-mix(in srgb,var(--student-team-secondary,#D50A0A) 12%,transparent),transparent 30%),linear-gradient(180deg,#0a0a0a,#0b0e13 50%,#0a0a0a)}
+.stats-page:before,.players-page:before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 96px);-webkit-mask:radial-gradient(ellipse at 50% 24%,#000 22%,transparent 74%);mask:radial-gradient(ellipse at 50% 24%,#000 22%,transparent 74%)}
+.stats-ghost,.players-ghost{position:absolute;top:1%;right:-1%;z-index:0;pointer-events:none;font-family:'Anton',sans-serif;font-size:clamp(120px,20vw,300px);line-height:.8;color:var(--student-team-primary,#013369);opacity:.06;user-select:none;transform:skewX(-4deg)}
+.stat-card{position:relative;overflow:hidden;transition:transform .25s ease,border-color .25s ease}
+.stat-card:hover{transform:translateY(-3px)}
+.stat-card:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.stat-card-off:before{background:linear-gradient(180deg,#34d399,transparent)}
+.stat-card-def:before{background:linear-gradient(180deg,#fb7185,transparent)}
+.stat-tag{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;border-radius:99px}
+.stat-tag-off{color:#6ee7b7;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.28)}
+.stat-tag-def{color:#fda4af;background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.28)}
+.stat-rank{font-size:10px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,.32);width:16px;text-align:right;flex-shrink:0}
+.stat-rank-lead{color:#f7d154;font-weight:900}
+.stat-row{padding:2px 8px;margin:0 -8px;border-radius:10px}
+.stat-row-lead{background:linear-gradient(90deg,rgba(247,209,84,.12),transparent)}
+.stat-row-you{background:color-mix(in srgb,var(--student-team-primary,#013369) 16%,transparent)}
+.stats-banner{position:relative;overflow:hidden;background:linear-gradient(120deg,color-mix(in srgb,var(--stb-p,#013369) 46%,#0b0d12),#0b0d12 58%,color-mix(in srgb,var(--stb-s,#D50A0A) 30%,#0b0d12))}
+.stats-banner:before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,rgba(255,255,255,.04) 0 2px,transparent 2px 60px)}
+.stats-banner-name{font-family:'Anton','Inter',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.01em;line-height:.95}
+.seg-tabs{position:relative}
+.seg-btn{display:inline-flex;align-items:center;gap:6px}
+.player-podium-card{position:relative;overflow:hidden;border-radius:18px;padding:18px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);backdrop-filter:blur(10px);transition:transform .25s ease}
+.player-podium-card:hover{transform:translateY(-3px)}
+.player-podium-card.pp-1{border-color:rgba(247,209,84,.42);background:linear-gradient(160deg,rgba(247,209,84,.13),rgba(255,255,255,.02))}
+.player-podium-card.pp-2{border-color:rgba(200,205,212,.34)}
+.player-podium-card.pp-3{border-color:rgba(217,154,108,.34)}
+.pp-medal{display:grid;place-items:center;width:28px;height:28px;border-radius:99px;font-size:12px;font-weight:900;color:#1a1206}
+.pp-value{font-family:'Anton',sans-serif;font-size:clamp(34px,4.4vw,44px);line-height:1;margin-top:10px}
+.medal-1,.pl-rank-1{background:linear-gradient(135deg,#f7d154,#b8860b)}
+.medal-2,.pl-rank-2{background:linear-gradient(135deg,#e8e8e8,#9ba3ad)}
+.medal-3,.pl-rank-3{background:linear-gradient(135deg,#d99a6c,#8c5427)}
+.pl-rank{font-size:11px;font-family:'JetBrains Mono',monospace;color:rgba(255,255,255,.4);font-weight:700}
+.pl-rank-1,.pl-rank-2,.pl-rank-3{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:99px;font-weight:900;color:#1a1206}
 </style>
 </head>
 <body>
@@ -256,33 +290,37 @@ select option{background:#111827;color:#fff}
   </div>
 </section>
 
-<section id="stats" class="py-24 px-4 md:px-6 section-reveal">
-  <div class="max-w-6xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+<section id="stats" class="stats-page py-24 px-4 md:px-6 section-reveal">
+  <div class="stats-ghost" aria-hidden="true">STATS</div>
+  <div class="relative z-10 max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
       <div>
         <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Analytics</span>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Team Statistics</h2>
+        <h2 class="text-4xl md:text-6xl tracking-tight">Team Statistics</h2>
       </div>
       <select id="stats-team-select" onchange="renderTeamStats()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"><option value="all">All Teams (Top 10)</option></select>
     </div>
+    <div id="stats-team-banner" class="hidden mb-8"></div>
     <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
   </div>
 </section>
 
-<section id="players" class="py-24 px-4 md:px-6 section-reveal">
-  <div class="max-w-6xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+<section id="players" class="players-page py-24 px-4 md:px-6 section-reveal">
+  <div class="players-ghost" aria-hidden="true">LEADERS</div>
+  <div class="relative z-10 max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
       <div>
         <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Leaders</span>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Player Stats</h2>
+        <h2 class="text-4xl md:text-6xl tracking-tight">Player Stats</h2>
       </div>
-      <div class="flex gap-2 flex-wrap" id="player-tabs">
-        <button onclick="switchPlayerTab('passing')" class="tab-btn active text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 uppercase tracking-wider" data-ptab="passing">Passing</button>
-        <button onclick="switchPlayerTab('rushing')" class="tab-btn text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-ptab="rushing">Rushing</button>
-        <button onclick="switchPlayerTab('receiving')" class="tab-btn text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-ptab="receiving">Receiving</button>
-        <button onclick="switchPlayerTab('defense')" class="tab-btn text-[11px] px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-ptab="defense">Defense</button>
+      <div class="seg-tabs inline-flex flex-wrap gap-1 p-1 rounded-xl bg-white/5 border border-white/10" id="player-tabs">
+        <button onclick="switchPlayerTab('passing')" class="tab-btn active seg-btn text-[11px] px-4 py-2 rounded-lg uppercase tracking-wider" data-ptab="passing"><iconify-icon icon="lucide:trending-up"></iconify-icon>Passing</button>
+        <button onclick="switchPlayerTab('rushing')" class="tab-btn seg-btn text-[11px] px-4 py-2 rounded-lg text-white/50 uppercase tracking-wider" data-ptab="rushing"><iconify-icon icon="lucide:footprints"></iconify-icon>Rushing</button>
+        <button onclick="switchPlayerTab('receiving')" class="tab-btn seg-btn text-[11px] px-4 py-2 rounded-lg text-white/50 uppercase tracking-wider" data-ptab="receiving"><iconify-icon icon="lucide:hand"></iconify-icon>Receiving</button>
+        <button onclick="switchPlayerTab('defense')" class="tab-btn seg-btn text-[11px] px-4 py-2 rounded-lg text-white/50 uppercase tracking-wider" data-ptab="defense"><iconify-icon icon="lucide:shield"></iconify-icon>Defense</button>
       </div>
     </div>
+    <div id="player-podium" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6"></div>
     <div class="glass-panel rounded-2xl overflow-hidden"><div class="overflow-x-auto"><table class="w-full" id="player-table"><thead id="player-thead"></thead><tbody id="player-tbody"></tbody></table></div></div>
   </div>
 </section>
@@ -865,8 +903,9 @@ function buildTickerLegacy(){
 }
 function animateCountUp(el){
   const target=parseFloat(el.dataset.countup||'0');
+  const dec=parseInt(el.dataset.decimals||'0',10);
   const duration=1200,start=performance.now();
-  const format=v=>Math.round(v).toLocaleString('en-US');
+  const format=v=>dec>0?Number(v).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}):Math.round(v).toLocaleString('en-US');
   function step(now){const p=Math.min(1,(now-start)/duration);const eased=1-Math.pow(1-p,3);el.textContent=format(target*eased);if(p<1)requestAnimationFrame(step)}
   requestAnimationFrame(step);
 }
@@ -1187,11 +1226,78 @@ async function showMatchupModal(awayAbbr, homeAbbr, weekNum, dayStr){
 
 function changeWeek(delta){currentWeek=Math.max(0,Math.min(WEEKS.length-1,currentWeek+delta));renderMatchups()}
 
-function renderTeamStats(){const container=document.getElementById('stats-container');const sel=document.getElementById('stats-team-select').value;container.innerHTML='';const allCats=[...TEAM_STATS.offensive,...TEAM_STATS.defensive];allCats.forEach((cat,idx)=>{const isOff=idx<TEAM_STATS.offensive.length;let data=sel==='all'?cat.data.slice(0,10):cat.data.filter(d=>d.team===sel);const maxVal=Math.max(...cat.data.map(d=>d.val));const card=document.createElement('div');card.className='glass-panel rounded-xl p-5';card.innerHTML=`<div class="flex items-center justify-between mb-4"><h3 class="text-sm font-semibold flex items-center gap-2"><iconify-icon icon="${isOff?'lucide:swords':'lucide:shield'}" class="text-brand-400 text-xs"></iconify-icon>${cat.stat}</h3><span class="text-[10px] font-mono text-white/30">${isOff?'OFFENSE':'DEFENSE'}</span></div><div class="space-y-2">${data.map(d=>{const team=getTeam(d.team);const pct=(d.val/maxVal*100).toFixed(0);const rank=cat.data.findIndex(x=>x.team===d.team)+1;const isHighlighted=sel!=='all'&&d.team===sel;return`<div class="flex items-center gap-3 ${isHighlighted?'bg-brand-500/10 -mx-2 px-2 rounded-lg':''}"><span class="text-[10px] font-mono text-white/30 w-4 text-right">${rank}</span>${logo(d.team,24)}<div class="flex-1 min-w-0"><div class="flex items-center justify-between mb-1"><span class="text-[11px] font-medium truncate">${fullName(team)}</span><span class="text-[11px] font-mono text-brand-400 shrink-0 ml-2">${d.val}</span></div><div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="stat-bar-fill h-full rounded-full" style="width:${pct}%;background:linear-gradient(to right,${team.color},${team.secColor||team.color})"></div></div></div></div>`}).join('')}</div>`;container.appendChild(card)})}
+function renderStatsTeamBanner(sel){
+  const banner=document.getElementById('stats-team-banner');
+  if(!banner)return;
+  if(sel==='all'){banner.classList.add('hidden');banner.innerHTML='';return}
+  const team=getTeam(sel);
+  if(!team){banner.classList.add('hidden');return}
+  const allCats=[...TEAM_STATS.offensive,...TEAM_STATS.defensive];
+  const chips=allCats.map((cat,idx)=>{
+    const isOff=idx<TEAM_STATS.offensive.length;
+    const rank=cat.data.findIndex(d=>d.team===sel)+1;
+    const entry=cat.data.find(d=>d.team===sel);
+    if(!rank||!entry)return'';
+    const tone=rank<=5?'text-green-300 border-green-400/30':rank<=20?'text-white/75 border-white/12':'text-red-300 border-red-400/25';
+    return`<div class="px-3 py-2 rounded-xl border ${tone} bg-black/20"><div class="text-[8px] uppercase tracking-wider text-white/40 truncate">${cat.stat}</div><div class="text-sm font-black mt-0.5">${entry.val} <span class="text-[10px] opacity-70">#${rank}</span></div><div class="text-[7px] uppercase tracking-widest ${isOff?'text-emerald-300/70':'text-rose-300/70'} mt-0.5">${isOff?'OFF':'DEF'}</div></div>`;
+  }).join('');
+  banner.innerHTML=`<div class="stats-banner rounded-2xl p-6 border border-white/12" style="--stb-p:${team.color};--stb-s:${team.secColor||team.color}">
+    <div class="relative z-10 flex items-center gap-4 mb-5">
+      <div class="w-16 h-16 rounded-2xl bg-black/30 border border-white/15 grid place-items-center p-2 shrink-0">${logo(sel,52)}</div>
+      <div class="min-w-0"><div class="text-[10px] uppercase tracking-[.2em] text-white/50 font-bold">${team.div}</div><h3 class="stats-banner-name text-3xl md:text-4xl mt-1">${fullName(team)}</h3></div>
+    </div>
+    <div class="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2">${chips}</div>
+  </div>`;
+  banner.classList.remove('hidden');
+}
+function renderTeamStats(){
+  const container=document.getElementById('stats-container');
+  const sel=document.getElementById('stats-team-select').value;
+  renderStatsTeamBanner(sel);
+  container.innerHTML='';
+  const allCats=[...TEAM_STATS.offensive,...TEAM_STATS.defensive];
+  allCats.forEach((cat,idx)=>{
+    const isOff=idx<TEAM_STATS.offensive.length;
+    const data=sel==='all'?cat.data.slice(0,10):cat.data.filter(d=>d.team===sel);
+    const maxVal=Math.max(...cat.data.map(d=>d.val));
+    const card=document.createElement('div');
+    card.className=`stat-card ${isOff?'stat-card-off':'stat-card-def'} glass-panel rounded-2xl p-5 pl-6`;
+    card.innerHTML=`<div class="flex items-center justify-between mb-4"><h3 class="text-sm font-semibold flex items-center gap-2"><iconify-icon icon="${isOff?'lucide:swords':'lucide:shield'}" class="${isOff?'text-emerald-400':'text-rose-400'} text-sm"></iconify-icon>${cat.stat}</h3><span class="stat-tag ${isOff?'stat-tag-off':'stat-tag-def'}">${isOff?'Offense':'Defense'}</span></div><div class="space-y-0.5">${data.map(d=>{const team=getTeam(d.team);const pct=(d.val/maxVal*100).toFixed(1);const rank=cat.data.findIndex(x=>x.team===d.team)+1;const isHi=sel!=='all'&&d.team===sel;const isLead=rank===1&&sel==='all';return`<div class="stat-row flex items-center gap-3 ${isHi?'stat-row-you':''} ${isLead?'stat-row-lead':''}"><span class="stat-rank ${isLead?'stat-rank-lead':''}">${rank}</span>${logo(d.team,22)}<div class="flex-1 min-w-0"><div class="flex items-center justify-between mb-1"><span class="text-[11px] font-medium truncate">${fullName(team)}</span><span class="text-[11px] font-mono ${isLead?'text-amber-300 font-bold':'text-white/80'} shrink-0 ml-2">${d.val}</span></div><div class="h-2 bg-white/5 rounded-full overflow-hidden"><div class="stat-bar-fill h-full rounded-full" data-w="${pct}" style="width:0;background:linear-gradient(90deg,${team.color},${team.secColor||team.color})"></div></div></div></div>`}).join('')}</div>`;
+    container.appendChild(card);
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{container.querySelectorAll('.stat-bar-fill[data-w]').forEach(bar=>{bar.style.width=bar.dataset.w+'%'})}));
+}
 
 function switchPlayerTab(tab){currentPlayerTab=tab;currentSortCol=-1;currentSortDir='desc';document.querySelectorAll('[data-ptab]').forEach(b=>{b.classList.toggle('active',b.dataset.ptab===tab);b.classList.toggle('text-white/50',b.dataset.ptab!==tab)});renderPlayerStats()}
 function sortPlayerStats(colIndex){if(colIndex===0)return;if(currentSortCol===colIndex){currentSortDir=currentSortDir==='desc'?'asc':'desc'}else{currentSortCol=colIndex;currentSortDir='desc'}renderPlayerStats()}
-function renderPlayerStats(){const data=PLAYER_STATS[currentPlayerTab];let players=[...data.players.map(p=>[...p])];if(currentSortCol>=0){const ci=currentSortCol;players.sort((a,b)=>{let va=a[ci],vb=b[ci];if(typeof va==='string')return currentSortDir==='desc'?vb.localeCompare(va):va.localeCompare(vb);return currentSortDir==='desc'?vb-va:va-vb})}const thead=document.getElementById('player-thead');const tbody=document.getElementById('player-tbody');thead.innerHTML=`<tr class="border-b border-white/6">${data.headers.map((h,i)=>{const arrow=currentSortCol===i?(currentSortDir==='desc'?' ↓':' ↑'):'';const sortable=i!==0&&i!==1;return`<th class="px-4 py-3 text-left text-[10px] font-mono text-white/40 uppercase tracking-wider whitespace-nowrap ${sortable?'sort-header':''}" ${sortable?`onclick="sortPlayerStats(${i})"`:''}>${h}${arrow}</th>`}).join('')}</tr>`;tbody.innerHTML=players.map((p,idx)=>{const team=getTeam(p[2]);return`<tr class="player-row border-b border-white/4 transition">${p.map((val,i)=>{if(i===0)return`<td class="px-4 py-3 text-[11px] font-mono text-white/30">${idx+1}</td>`;if(i===1)return`<td class="px-4 py-3 text-[12px] font-semibold whitespace-nowrap">${val}</td>`;if(i===2)return`<td class="px-4 py-3"><span class="inline-flex items-center gap-1.5">${logo(p[2],20)}<span class="text-[11px] text-white/60">${fullName(team)}</span></span></td>`;return`<td class="px-4 py-3 text-[11px] font-mono text-white/60">${val}</td>`}).join('')}</tr>`}).join('')}
+function renderPlayerPodium(data){
+  const podium=document.getElementById('player-podium');
+  if(!podium)return;
+  const key=data.keyIndex,label=data.headers[key];
+  podium.innerHTML=data.players.slice(0,3).map((p,i)=>{
+    const team=getTeam(p[2]);const val=p[key];const dec=Number.isInteger(val)?'':'data-decimals="1"';
+    return`<div class="player-podium-card pp-${i+1}"><div class="flex items-center justify-between mb-3"><span class="pp-medal medal-${i+1}">${i+1}</span><span class="shrink-0">${logo(p[2],30)}</span></div><div class="text-base font-black leading-tight">${p[1]}</div><div class="text-[11px] text-white/40">${fullName(team)}</div><div class="pp-value"><span data-countup="${val}" ${dec}>0</span></div><div class="text-[9px] uppercase tracking-[.14em] text-white/40 font-black mt-1">${label}</div></div>`;
+  }).join('');
+  if(typeof runCountUps==='function')runCountUps(podium);
+}
+function renderPlayerStats(){
+  const data=PLAYER_STATS[currentPlayerTab];
+  renderPlayerPodium(data);
+  let players=[...data.players.map(p=>[...p])];
+  if(currentSortCol>=0){const ci=currentSortCol;players.sort((a,b)=>{let va=a[ci],vb=b[ci];if(typeof va==='string')return currentSortDir==='desc'?vb.localeCompare(va):va.localeCompare(vb);return currentSortDir==='desc'?vb-va:va-vb})}
+  const key=data.keyIndex;
+  const colMax=Math.max(...data.players.map(p=>Number(p[key])||0));
+  const thead=document.getElementById('player-thead');
+  const tbody=document.getElementById('player-tbody');
+  thead.innerHTML=`<tr class="border-b border-white/6">${data.headers.map((h,i)=>{const arrow=currentSortCol===i?(currentSortDir==='desc'?' ↓':' ↑'):'';const sortable=i!==0&&i!==1;return`<th class="px-4 py-3 text-left text-[10px] font-mono text-white/40 uppercase tracking-wider whitespace-nowrap ${sortable?'sort-header':''}" ${sortable?`onclick="sortPlayerStats(${i})"`:''}>${h}${arrow}</th>`}).join('')}</tr>`;
+  tbody.innerHTML=players.map((p,idx)=>{const team=getTeam(p[2]);const rank=idx+1;return`<tr class="player-row border-b border-white/4 transition">${p.map((val,i)=>{
+    if(i===0)return`<td class="px-4 py-3" style="border-left:3px solid ${team.color}"><span class="pl-rank ${rank<=3?'pl-rank-'+rank:''}">${rank}</span></td>`;
+    if(i===1)return`<td class="px-4 py-3 text-[12px] font-semibold whitespace-nowrap">${val}</td>`;
+    if(i===2)return`<td class="px-4 py-3"><span class="inline-flex items-center gap-1.5">${logo(p[2],20)}<span class="text-[11px] text-white/60">${fullName(team)}</span></span></td>`;
+    if(i===key){const pct=colMax?(Number(val)/colMax*100).toFixed(0):0;return`<td class="px-4 py-3"><div class="flex items-center gap-2"><span class="text-[11px] font-mono font-bold text-white/90 w-12 text-right shrink-0">${val}</span><div class="hidden sm:block h-1.5 w-16 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,${team.color},${team.secColor||team.color})"></div></div></div></td>`}
+    return`<td class="px-4 py-3 text-[11px] font-mono text-white/60">${val}</td>`
+  }).join('')}</tr>`}).join('');
+}
 
   function getTeamTravelDestinations(abbr) {
   const destinations = [];
