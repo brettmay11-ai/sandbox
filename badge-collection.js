@@ -335,11 +335,16 @@
 
       <div class="profile-tab-panel" data-profile-panel="personal">
         <div class="locker-hero mb-6 p-5 md:p-7">
+          <div class="locker-header-plate">
+            <div class="locker-header-mark">${teamLogoMarkup}</div>
+            <div class="min-w-0"><div class="text-[9px] uppercase tracking-[.24em] text-white/45 font-black">Player locker</div><h1 class="text-2xl md:text-4xl font-black mt-1 leading-none truncate">${esc(user.displayName || 'Student')}</h1><div class="text-[10px] uppercase tracking-[.18em] text-white/45 font-black mt-2">${esc(team?.name || 'Team assignment pending')} / ${esc(identity.teamRole || 'Rookie')}</div></div>
+            <div class="locker-header-meta"><div>Locker ${esc(user.username || initialsFor(user.displayName))}</div><div class="mt-2">#${esc(jerseyText(identity))}</div></div>
+          </div>
           <div class="relative z-10 grid lg:grid-cols-[1fr_320px] gap-6 items-center">
             <div class="flex flex-col justify-between gap-8">
               <div class="locker-nameplate p-5 md:p-6">
-                <div class="text-[10px] uppercase tracking-[.26em] text-white/50 font-black">Student Locker</div>
-                <h1 class="text-4xl md:text-6xl font-black mt-3 leading-none">${esc(user.displayName || 'Student')}</h1>
+                <div class="text-[10px] uppercase tracking-[.26em] text-white/50 font-black">Equipment bay</div>
+                <div class="text-2xl md:text-3xl font-black mt-3 leading-none">Ready for kickoff</div>
                 ${identity.nickname ? `<div class="text-xl md:text-2xl font-black text-brand-400 mt-2">"${esc(identity.nickname)}"</div>` : ''}
                 <div class="flex flex-wrap items-center gap-2 mt-4 text-xs text-white/55">
                   <span class="px-3 py-1 border border-white/10 bg-black/20">${esc(team?.name || 'Team assignment pending')}</span>

@@ -156,7 +156,7 @@ async function installPlayerPageTeamLeaders() {
 
   const panel = document.createElement('div');
   panel.id = 'live-team-leader-panel';
-  panel.className = 'mb-8';
+  panel.className = 'mb-8 team-leader-section';
   panel.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
     <div><div class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Updated By Team</div><h3 class="text-xl font-bold mt-1">Team Stat Leaders</h3></div>
     <select id="live-leader-team-select" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none">
@@ -165,7 +165,9 @@ async function installPlayerPageTeamLeaders() {
   </div><div id="live-team-leader-results"></div>`;
 
   const tableWrap = playerTable.closest('.glass-panel');
-  tableWrap.parentElement.insertBefore(panel, tableWrap);
+  const leaderAnchor = document.getElementById('players-team-leaders');
+  if (leaderAnchor) leaderAnchor.appendChild(panel);
+  else tableWrap.parentElement.insertBefore(panel, tableWrap);
   const select = panel.querySelector('#live-leader-team-select');
   const results = panel.querySelector('#live-team-leader-results');
   const assignedTeam = await getAssignedTeamAbbr();
