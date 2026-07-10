@@ -208,7 +208,6 @@
     $('wl-title').value = entry.title || '';
     $('wl-content').value = entry.content || '';
     $('wl-xp-preview').textContent = `+${activity.xp} XP`;
-    lastSaved = { title:entry.title || '', content:entry.content || '', checklist:JSON.stringify(entry.checklist || {}) };
     $('wl-starters').innerHTML = activity.starters.map(text => `<button class="wl-starter px-3 py-2 text-[11px] text-white/55">${esc(text)}</button>`).join('');
     [...$('wl-starters').children].forEach((button, index) => button.onclick = () => {
       const starter = activity.starters[index];
@@ -218,6 +217,10 @@
       $('wl-content').focus();
     });
     renderChecklist(entry);
+    // Snapshot AFTER the checklist renders so the saved state uses the same
+    // normalized key set that checklist() produces — otherwise isDirty() is
+    // permanently true (saved {capitals:true} vs live {capitals:true,punctuation:false,...}).
+    lastSaved = { title:entry.title || '', content:entry.content || '', checklist:JSON.stringify(checklist()) };
     renderStatusFlow(entry);
     renderFeedback(entry);
     renderActivities();
@@ -371,7 +374,17 @@
   $('wl-content').addEventListener('keydown', event => {
     if ((event.metaKey || event.ctrlKey) && event.key === 's') { event.preventDefault(); if (!$('wl-content').disabled) save(false); }
   });
-  window.addEventListener('beforeunload', event => { if (isDirty() && !$('wl-content').disabled) { event.preventDefault(); event.returnValue = ''; } });
+  function flushOnExit() {
+    if ($('wl-content').disabled || !isDirty()) return;
+    const title = $('wl-title').value, content = $('wl-content').value;
+    if (!title.trim() && !content.trim()) return;
+    try {
+      const body = new Blob([JSON.stringify({ activity:state.activity, title, content, checklist:checklist() })], { type:'application/json' });
+      navigator.sendBeacon('/api/writing/save', body);
+      lastSaved = { title, content, checklist:JSON.stringify(checklist()) };
+    } catch (error) {}
+  }
+  window.addEventListener('pagehide', flushOnExit);
   $('wl-save').onclick = () => save(false);
   $('wl-submit').onclick = openConfirm;
   $('wl-confirm-cancel').onclick = closeConfirm;
