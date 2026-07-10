@@ -174,6 +174,7 @@ select option{background:#111827;color:#fff}
 .math-fallback-card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 45%,transparent)}
 .math-fallback-card:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--student-team-secondary,#D50A0A),transparent)}
 </style>
+<link rel="stylesheet" href="visual-system.css">
 </head>
 <body>
 <div class="noise"></div>
@@ -260,87 +261,111 @@ select option{background:#111827;color:#fff}
   </div>
 </section>
 
-<section id="teams" class="py-24 px-4 md:px-6 section-reveal">
-  <div class="max-w-7xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-      <div>
-        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">32 Teams</span>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Pick Your Team</h2>
-        <p class="text-white/50 text-sm mt-2 max-w-md">Click to assign. Click "View Dashboard" for the full dashboard with stats, players, and travel.</p>
+<section id="teams" class="data-page py-24 px-4 md:px-6 section-reveal">
+  <div class="data-page-shell max-w-7xl mx-auto">
+    <div class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-kicker">32 NFL Teams</span>
+        <h2 class="page-title">NFL Teams</h2>
+        <p class="page-copy">Explore every team, open team details, and build a two-team comparison.</p>
       </div>
-      <div class="flex gap-2 flex-wrap">
+      <div class="page-controls">
         <button onclick="filterTeams('all')" class="tab-btn active text-[11px] px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 uppercase tracking-wider" data-filter="all">All</button>
         <button onclick="filterTeams('AFC')" class="tab-btn text-[11px] px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-filter="AFC">AFC</button>
         <button onclick="filterTeams('NFC')" class="tab-btn text-[11px] px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/50 uppercase tracking-wider" data-filter="NFC">NFC</button>
       </div>
     </div>
-    <div class="flex gap-2 flex-wrap mb-8" id="division-filters"></div>
-    <div id="teams-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3"></div>
+    <div id="teams-team-focus" class="team-focus-slot" aria-live="polite"><div class="team-focus-skeleton"><span>Loading your team...</span></div></div>
+    <details class="data-expander" open>
+      <summary><span class="data-expander-title"><iconify-icon icon="lucide:layout-grid"></iconify-icon>Browse All Teams <span class="data-expander-note">Conference filters and team comparison</span></span><iconify-icon icon="lucide:chevron-down" class="data-expander-chevron"></iconify-icon></summary>
+      <div class="data-expander-content">
+        <div class="flex gap-2 flex-wrap mb-8" id="division-filters"></div>
+        <div id="teams-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3"></div>
+      </div>
+    </details>
   </div>
 </section>
 
-<section id="matchups" class="py-24 px-4 md:px-6 section-reveal">
-  <div class="max-w-6xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-      <div>
-        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">2026 Schedule</span>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Weekly Matchups</h2>
+<section id="matchups" class="data-page py-24 px-4 md:px-6 section-reveal">
+  <div class="data-page-shell max-w-6xl mx-auto">
+    <div class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-kicker">2026 Schedule</span>
+        <h2 class="page-title">Weekly Matchups</h2>
         <p class="text-white/50 text-sm mt-2">Full 18-week 2026 schedule. <a href="https://www.nfl.com/schedules" target="_blank" class="text-brand-400 hover:underline">Source: NFL.com →</a></p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="page-controls">
         <button onclick="changeWeek(-1)" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:chevron-left" class="text-sm"></iconify-icon></button>
         <span class="text-sm font-mono text-white/70 min-w-[90px] text-center" id="week-label">Week 1</span>
         <button onclick="changeWeek(1)" class="w-9 h-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:chevron-right" class="text-sm"></iconify-icon></button>
       </div>
     </div>
-    <div id="matchups-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    <div id="matchups-team-focus" class="team-focus-slot" aria-live="polite"><div class="team-focus-skeleton"><span>Loading your matchup...</span></div></div>
+    <details class="data-expander" open>
+      <summary><span class="data-expander-title"><iconify-icon icon="lucide:calendar-days"></iconify-icon>Full Week Schedule <span class="data-expander-note">All NFL games this week</span></span><iconify-icon icon="lucide:chevron-down" class="data-expander-chevron"></iconify-icon></summary>
+      <div class="data-expander-content"><div id="matchups-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div></div>
+    </details>
   </div>
 </section>
 
-<section id="stats" class="stats-page py-24 px-4 md:px-6 section-reveal">
+<section id="stats" class="stats-page data-page py-24 px-4 md:px-6 section-reveal">
   <div class="stats-ghost" aria-hidden="true">STATS</div>
-  <div class="relative z-10 max-w-6xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
-      <div>
-        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Analytics</span>
-        <h2 class="text-4xl md:text-6xl tracking-tight">Team Statistics</h2>
+  <div class="relative z-10 data-page-shell max-w-6xl mx-auto">
+    <div class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-kicker">Team Analytics</span>
+        <h2 class="page-title">Team Statistics</h2>
+        <p class="page-copy">Compare scoring, yardage, and defense across the league.</p>
       </div>
-      <select id="stats-team-select" onchange="renderTeamStats()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"><option value="all">All Teams (Top 10)</option></select>
+      <div class="page-controls"><select id="stats-team-select" onchange="renderTeamStats()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"><option value="all">All Teams (Top 10)</option></select></div>
     </div>
     <div id="stats-team-banner" class="hidden mb-8"></div>
-    <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    <div id="stats-team-focus" class="team-focus-slot" aria-live="polite"><div class="team-focus-skeleton"><span>Loading your team's numbers...</span></div></div>
+    <details class="data-expander" open>
+      <summary><span class="data-expander-title"><iconify-icon icon="lucide:chart-no-axes-combined"></iconify-icon>All-Team Rankings <span class="data-expander-note">Offense and defense</span></span><iconify-icon icon="lucide:chevron-down" class="data-expander-chevron"></iconify-icon></summary>
+      <div class="data-expander-content"><div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div>
+    </details>
   </div>
 </section>
 
-<section id="players" class="players-page py-24 px-4 md:px-6 section-reveal">
+<section id="players" class="players-page data-page py-24 px-4 md:px-6 section-reveal">
   <div class="players-ghost" aria-hidden="true">LEADERS</div>
-  <div class="relative z-10 max-w-6xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-      <div>
-        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Leaders</span>
-        <h2 class="text-4xl md:text-6xl tracking-tight">Player Stats</h2>
+  <div class="relative z-10 data-page-shell max-w-6xl mx-auto">
+    <div class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-kicker">Player Leaders</span>
+        <h2 class="page-title">Player Stats</h2>
+        <p class="page-copy">Start with your team's leaders, then open the league-wide top ten.</p>
       </div>
-      <div class="seg-tabs inline-flex flex-wrap gap-1 p-1 rounded-xl bg-white/5 border border-white/10" id="player-tabs">
+      <div class="page-controls seg-tabs inline-flex flex-wrap gap-1 p-1 rounded-xl bg-white/5 border border-white/10" id="player-tabs">
         <button onclick="switchPlayerTab('passing')" class="tab-btn active seg-btn text-[11px] px-4 py-2 rounded-lg uppercase tracking-wider" data-ptab="passing"><iconify-icon icon="lucide:trending-up"></iconify-icon>Passing</button>
         <button onclick="switchPlayerTab('rushing')" class="tab-btn seg-btn text-[11px] px-4 py-2 rounded-lg text-white/50 uppercase tracking-wider" data-ptab="rushing"><iconify-icon icon="lucide:footprints"></iconify-icon>Rushing</button>
         <button onclick="switchPlayerTab('receiving')" class="tab-btn seg-btn text-[11px] px-4 py-2 rounded-lg text-white/50 uppercase tracking-wider" data-ptab="receiving"><iconify-icon icon="lucide:hand"></iconify-icon>Receiving</button>
         <button onclick="switchPlayerTab('defense')" class="tab-btn seg-btn text-[11px] px-4 py-2 rounded-lg text-white/50 uppercase tracking-wider" data-ptab="defense"><iconify-icon icon="lucide:shield"></iconify-icon>Defense</button>
       </div>
     </div>
+    <div id="players-team-focus" class="team-focus-slot" aria-live="polite"><div class="team-focus-skeleton"><span>Loading your team's leaders...</span></div></div>
+    <div id="players-team-leaders"></div>
     <div id="player-podium" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6"></div>
-    <div class="glass-panel rounded-2xl overflow-hidden"><div class="overflow-x-auto"><table class="w-full" id="player-table"><thead id="player-thead"></thead><tbody id="player-tbody"></tbody></table></div></div>
+    <details class="data-expander">
+      <summary><span class="data-expander-title"><iconify-icon icon="lucide:list-ordered"></iconify-icon>League Top 10 <span class="data-expander-note">Passing, rushing, receiving, and defense</span></span><iconify-icon icon="lucide:chevron-down" class="data-expander-chevron"></iconify-icon></summary>
+      <div class="data-expander-content"><div class="glass-panel rounded-2xl overflow-hidden"><div class="overflow-x-auto"><table class="w-full" id="player-table"><thead id="player-thead"></thead><tbody id="player-tbody"></tbody></table></div></div></div>
+    </details>
   </div>
 </section>
 
-<section id="travel" class="py-24 px-4 md:px-6 section-reveal">
-  <div class="max-w-6xl mx-auto">
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-      <div>
-        <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Distance</span>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Travel Tracker</h2>
+<section id="travel" class="data-page py-24 px-4 md:px-6 section-reveal">
+  <div class="data-page-shell max-w-6xl mx-auto">
+    <div class="page-intro">
+      <div class="page-intro-copy">
+        <span class="page-kicker">Season Travel</span>
+        <h2 class="page-title">Travel Tracker</h2>
+        <p class="page-copy">See where your team travels, how far it goes, and which road trip is the longest.</p>
       </div>
-      <select id="travel-team-select" onchange="renderTravel()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select>
+      <div class="page-controls"><select id="travel-team-select" onchange="renderTravel()" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white/80 outline-none"></select></div>
     </div>
+
+    <div id="travel-team-focus" class="team-focus-slot" aria-live="polite"><div class="team-focus-skeleton"><span>Loading your team's travel...</span></div></div>
 
     <div class="mb-4 flex items-center gap-5 text-xs text-white/40 flex-wrap">
       <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-brand-500 border-2 border-white"></span> Home City</span>
@@ -369,7 +394,9 @@ select option{background:#111827;color:#fff}
       </div>
     </div>
 
-   
+    <details class="data-expander">
+      <summary><span class="data-expander-title"><iconify-icon icon="lucide:route"></iconify-icon>Season Details <span class="data-expander-note">International games, trip log, and stadium facts</span></span><iconify-icon icon="lucide:chevron-down" class="data-expander-chevron"></iconify-icon></summary>
+      <div class="data-expander-content">
 <!-- International Games Side Box -->
     <div class="mb-8 glass-panel rounded-2xl p-6">
       <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:globe" class="text-brand-400"></iconify-icon> 2026 International Series</h3>
@@ -382,6 +409,8 @@ select option{background:#111827;color:#fff}
       <div class="lg:col-span-2 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:map-pin" class="text-brand-400"></iconify-icon> All 2026 Away Games</h3><div id="away-games-list" class="space-y-1 max-h-[600px] overflow-y-auto pr-2"></div></div>
     </div>
     <div class="mt-6 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:building-2" class="text-brand-400"></iconify-icon> Stadium & City Facts</h3><div id="stadium-facts" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div></div>
+      </div>
+    </details>
   </div>
 </section>
 
@@ -401,7 +430,7 @@ select option{background:#111827;color:#fff}
   </div>
 </section>
 
-<section id="cities" class="py-24 px-4 md:px-6 section-reveal">
+<section id="cities" class="data-page py-24 px-4 md:px-6 section-reveal">
   <div class="max-w-6xl mx-auto">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
       <div><span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest mb-2 block">Social Studies</span><h2 class="text-3xl md:text-4xl font-bold tracking-tight">City & State Explorer</h2></div>
@@ -814,7 +843,7 @@ const WRITING_PROMPTS=[
 /* ===== Map FIPS data ===== */
 const FIPS={"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI","45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"};
 
-let compareTeams=[];let currentWeek=0;let currentPlayerTab='passing';let currentConfFilter='all';let currentDivFilter='all';let currentSortCol=-1;let currentSortDir='desc';
+let compareTeams=[];let currentWeek=0;let currentPlayerTab='passing';let currentConfFilter='all';let currentDivFilter='all';let currentSortCol=-1;let currentSortDir='desc';let focusedIntlGame=null;
 
 /* ===== Map state ===== */
 let currentMapTeam=null;let awayGamesData=[];let projection=null;let pathGen=null;
@@ -1136,11 +1165,29 @@ function renderMatchups(){
     `;
     grid.appendChild(byeCard);
   }
+  window.refreshDataExperience?.();
 }
 
 function renderTeams(){const divisions=[...new Set(NFL_TEAMS.map(t=>t.div))];const divFilters=document.getElementById('division-filters');divFilters.innerHTML=`<button onclick="filterDivision('all')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter==='all'?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="all">All Divisions</button>`;divisions.forEach(d=>{divFilters.innerHTML+=`<button onclick="filterDivision('${d}')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter===d?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="${d}">${d}</button>`});renderTeamCards()}
 
-function renderTeamCards(){const grid=document.getElementById('teams-grid');grid.innerHTML='';NFL_TEAMS.forEach(team=>{if(currentConfFilter!=='all'&&team.conf!==currentConfFilter)return;if(currentDivFilter!=='all'&&team.div!==currentDivFilter)return;const isComparing=compareTeams.includes(team.abbr);const card=document.createElement('div');card.className=`team-card glass-panel rounded-xl p-4 flex flex-col items-center text-center gap-2 ${isComparing?'selected':''}`;card.style.setProperty('--tc-p',team.color);card.style.setProperty('--tc-s',team.secColor||team.color);card.onclick=()=>showTeamInfoModal(team.abbr);card.innerHTML=`<div class="relative">${logo(team.abbr,52)}</div><div><div class="text-[11px] font-semibold leading-tight">${fullName(team)}</div><div class="text-[9px] text-white/40 mt-0.5">${team.city}, ${team.state}</div></div><div class="text-[8px] font-mono text-white/25 uppercase tracking-wider">${team.div}</div><button onclick="event.stopPropagation();toggleCompareTeam('${team.abbr}')" class="mt-1 text-[9px] px-2 py-1 rounded-md border ${isComparing?'bg-brand-500/20 text-brand-400 border-brand-500/40':'bg-white/5 text-white/40 hover:bg-white/10 border-white/10'} transition">${isComparing?'✓ Selected':'Compare'}</button>`;grid.appendChild(card)})}
+function renderTeamCards(){
+  const grid=document.getElementById('teams-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  NFL_TEAMS.forEach(team=>{
+    if(currentConfFilter!=='all'&&team.conf!==currentConfFilter)return;
+    if(currentDivFilter!=='all'&&team.div!==currentDivFilter)return;
+    const isComparing=compareTeams.includes(team.abbr);
+    const isAssigned=window.assignedTeamAbbr===team.abbr;
+    const card=document.createElement('div');
+    card.className=`team-card glass-panel rounded-xl p-4 flex flex-col items-center text-center gap-2 ${isComparing?'selected':''} ${isAssigned?'is-assigned':''}`;
+    card.style.setProperty('--tc-p',team.color);
+    card.style.setProperty('--tc-s',team.secColor||team.color);
+    card.onclick=()=>showTeamInfoModal(team.abbr);
+    card.innerHTML=`${isAssigned?'<span class="your-team-badge"><iconify-icon icon="lucide:user-round-check"></iconify-icon>Your Team</span>':''}<div class="relative">${logo(team.abbr,52)}</div><div><div class="text-[11px] font-semibold leading-tight">${fullName(team)}</div><div class="text-[9px] text-white/40 mt-0.5">${team.city}, ${team.state}</div></div><div class="text-[8px] font-mono text-white/25 uppercase tracking-wider">${team.div}</div><button onclick="event.stopPropagation();toggleCompareTeam('${team.abbr}')" class="team-compare-button mt-1 text-[9px] px-2 py-1 rounded-md border ${isComparing?'bg-brand-500/20 text-brand-400 border-brand-500/40':'bg-white/5 text-white/40 hover:bg-white/10 border-white/10'} transition">${isComparing?'<span class="inline-flex items-center gap-1"><iconify-icon icon="lucide:check"></iconify-icon>Selected</span>':'Compare'}</button>`;
+    grid.appendChild(card);
+  });
+}
 
 function filterTeams(conf){currentConfFilter=conf;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===conf);b.classList.toggle('text-white/50',b.dataset.filter!==conf)});renderTeamCards()}
 function filterDivision(div){currentDivFilter=div;document.querySelectorAll('.division-btn').forEach(b=>{const a=b.dataset.div===div;b.classList.toggle('!bg-brand-500/15',a);b.classList.toggle('!text-brand-400',a);b.classList.toggle('!border-brand-500/30',a)});renderTeamCards()}
@@ -1359,7 +1406,7 @@ function renderPlayerStats(){
 }
   
 function renderTravel(){
-  focusedIntlGame = null; // <--- ADD THIS LINE
+  focusedIntlGame = null;
   const abbr=document.getElementById('travel-team-select').value;
   const team=getTeam(abbr);
   const summary=document.getElementById('travel-summary');
@@ -1392,6 +1439,7 @@ function renderTravel(){
 
   // Also update the interactive map
   renderMap();
+  window.refreshDataExperience?.();
 }
 
 function generateMathProblems(){const grid=document.getElementById('math-problems');if(!grid)return;let problems=[];const t1=NFL_TEAMS[Math.floor(Math.random()*32)];const t2=NFL_TEAMS[Math.floor(Math.random()*32)];const dist=haversine(t1.lat,t1.lng,t2.lat,t2.lng);problems.push({title:"Travel Distance",icon:"lucide:plane",question:`The ${fullName(t1)} travel to face the ${fullName(t2)}. The straight-line distance is approximately ${dist.toFixed(0)} miles. If the team charter flight travels at 500 mph, how long is the flight?`,formula:`Time = Distance ÷ Speed = ${dist.toFixed(0)} ÷ 500 = ${(dist/500).toFixed(2)} hours = ${Math.floor(dist/500)}h ${Math.round((dist/500%1)*60)}m`});const p1=PLAYER_STATS.passing.players[Math.floor(Math.random()*5)];const compPct=((p1[3]/p1[4])*100).toFixed(1);problems.push({title:"Completion Percentage",icon:"lucide:percent",question:`${p1[1]} completed ${p1[3]} out of ${p1[4]} pass attempts. What is his completion percentage?`,formula:`(Completions ÷ Attempts) × 100 = (${p1[3]} ÷ ${p1[4]}) × 100 = ${compPct}%`});const t3=NFL_TEAMS[Math.floor(Math.random()*32)];const avgTicket=125;problems.push({title:"Game Day Revenue",icon:"lucide:dollar-sign",question:`If the average ticket at ${t3.stadium} costs $${avgTicket} and the capacity is ${t3.stadiumCap.toLocaleString()}, what is the maximum ticket revenue for one sold-out game?`,formula:`Capacity × Price = ${t3.stadiumCap.toLocaleString()} × $${avgTicket} = $${(t3.stadiumCap*avgTicket).toLocaleString()}`});const r1=PLAYER_STATS.rushing.players[Math.floor(Math.random()*5)];problems.push({title:"Yards Per Carry",icon:"lucide:trending-up",question:`${r1[1]} had ${r1[3]} rushing attempts for ${r1[4].toLocaleString()} yards. Calculate his average yards per carry.`,formula:`Yards ÷ Carries = ${r1[4].toLocaleString()} ÷ ${r1[3]} = ${(r1[4]/r1[3]).toFixed(1)} YPC`});grid.innerHTML=problems.map(p=>`<div class="math-fallback-card glass-panel rounded-2xl p-6 pl-7"><div class="flex items-center gap-2.5 mb-3"><div class="w-9 h-9 rounded-xl grid place-items-center shrink-0" style="background:color-mix(in srgb,var(--student-team-primary,#013369) 22%,rgba(255,255,255,.04))"><iconify-icon icon="${p.icon}" class="text-brand-400"></iconify-icon></div><h3 class="text-sm font-black">${p.title}</h3></div><p class="text-[12.5px] text-white/65 leading-relaxed mb-4">${p.question}</p><details class="text-[11px] group"><summary class="inline-flex items-center gap-1.5 text-brand-400 cursor-pointer font-bold list-none"><iconify-icon icon="lucide:lightbulb" class="text-xs"></iconify-icon> Show Solution</summary><div class="mt-3 p-3.5 bg-black/25 border border-white/8 rounded-xl font-mono text-[11px] text-white/75 leading-relaxed">${p.formula}</div></details></div>`).join('')}
