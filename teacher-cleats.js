@@ -114,35 +114,78 @@
   })();
 
   /* ---------- Applying the student's drawing ---------- */
-  const loader = new THREE.TextureLoader();
-  let currentObjectUrl = null;
+  let sourceImage = null;          // the uploaded photo/scan, unmodified
+  let sourceObjectUrl = null;
+  let drawingTexture = null;
+  const adjust = { flipH: false, rot: 0, fine: 0 }; // rot in 90° steps, fine in degrees
+  const workCanvas = document.createElement('canvas');   // orientation-corrected image
+  const detectCanvas = document.createElement('canvas'); // downscaled copy for detection
 
-  // Find the drawn cleat inside an uploaded photo/scan: the bounding box of
-  // non-white (inked or colored) pixels, ignoring the bottom-right watermark.
-  // Returns fractions of the image so we can map onto any crop or zoom.
-  function detectContentBox(image) {
+  const adjustBar = document.getElementById('cleat-adjust');
+  const straightenInput = document.getElementById('cleat-straighten');
+  const straightenVal = document.getElementById('cleat-straighten-val');
+
+  // Bounding box of the largest connected blob in a 1/0 mask (4-neighbour).
+  function largestComponentBox(mask, w, h) {
+    const label = new Int32Array(w * h);
+    let best = null, bestSize = 0, cur = 0;
+    const stack = [];
+    for (let start = 0; start < w * h; start++) {
+      if (!mask[start] || label[start]) continue;
+      cur++; let size = 0, x0 = w, y0 = h, x1 = 0, y1 = 0;
+      stack.length = 0; stack.push(start); label[start] = cur;
+      while (stack.length) {
+        const p = stack.pop(); size++;
+        const x = p % w, y = (p / w) | 0;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        if (x + 1 < w && mask[p + 1] && !label[p + 1]) { label[p + 1] = cur; stack.push(p + 1); }
+        if (x - 1 >= 0 && mask[p - 1] && !label[p - 1]) { label[p - 1] = cur; stack.push(p - 1); }
+        if (y + 1 < h && mask[p + w] && !label[p + w]) { label[p + w] = cur; stack.push(p + w); }
+        if (y - 1 >= 0 && mask[p - w] && !label[p - w]) { label[p - w] = cur; stack.push(p - w); }
+      }
+      if (size > bestSize) { bestSize = size; best = { x0, y0, x1, y1 }; }
+    }
+    return best;
+  }
+
+  // Locate the drawn cleat inside a (corrected) image: find the paper (largest
+  // bright region) to ignore any dark desk/background, then take the largest
+  // inked/colored blob inside it — the cleat — ignoring stray text/watermarks.
+  // Returns fractions of the source canvas.
+  function detectContentBox(srcCanvas) {
     try {
-      const cap = 500;
-      const s = Math.min(1, cap / Math.max(image.width, image.height));
-      const w = Math.max(1, Math.round((image.width || image.naturalWidth) * s));
-      const h = Math.max(1, Math.round((image.height || image.naturalHeight) * s));
-      const c = document.createElement('canvas'); c.width = w; c.height = h;
-      const cx = c.getContext('2d', { willReadFrequently: true });
-      cx.drawImage(image, 0, 0, w, h);
+      const cap = 520;
+      const s = Math.min(1, cap / Math.max(srcCanvas.width, srcCanvas.height));
+      const w = Math.max(1, Math.round(srcCanvas.width * s));
+      const h = Math.max(1, Math.round(srcCanvas.height * s));
+      detectCanvas.width = w; detectCanvas.height = h;
+      const cx = detectCanvas.getContext('2d', { willReadFrequently: true });
+      cx.drawImage(srcCanvas, 0, 0, w, h);
       const data = cx.getImageData(0, 0, w, h).data;
-      let minx = w, miny = h, maxx = 0, maxy = 0, found = false;
-      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-        const i = (y * w + x) * 4;
-        const r = data[i], g = data[i + 1], b = data[i + 2];
+      const N = w * h;
+      const paper = new Uint8Array(N);
+      for (let i = 0; i < N; i++) {
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
         const lum = 0.299 * r + 0.587 * g + 0.114 * b;
         const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-        const isContent = lum < 232 || chroma > 24;
-        const inWatermark = x > w * 0.72 && y > h * 0.93;
-        if (isContent && !inWatermark) { found = true; if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
+        paper[i] = (lum > 200 && chroma < 30) ? 1 : 0;
       }
-      if (!found) return { fx0: 0, fy0: 0, fx1: 1, fy1: 1 };
-      const px = (maxx - minx) * 0.01, py = (maxy - miny) * 0.01;
-      return { fx0: Math.max(0, (minx - px) / w), fy0: Math.max(0, (miny - py) / h), fx1: Math.min(1, (maxx + px) / w), fy1: Math.min(1, (maxy + py) / h) };
+      const paperBox = largestComponentBox(paper, w, h) || { x0: 0, y0: 0, x1: w - 1, y1: h - 1 };
+      const inset = Math.round(Math.min(w, h) * 0.012);
+      const content = new Uint8Array(N);
+      for (let y = Math.max(0, paperBox.y0 + inset); y <= Math.min(h - 1, paperBox.y1 - inset); y++) {
+        for (let x = Math.max(0, paperBox.x0 + inset); x <= Math.min(w - 1, paperBox.x1 - inset); x++) {
+          const i = y * w + x;
+          const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+          content[i] = (lum < 205 || chroma > 32) ? 1 : 0;
+        }
+      }
+      const box = largestComponentBox(content, w, h);
+      if (!box) return { fx0: 0, fy0: 0, fx1: 1, fy1: 1 };
+      const px = (box.x1 - box.x0) * 0.012, py = (box.y1 - box.y0) * 0.012;
+      return { fx0: Math.max(0, (box.x0 - px) / w), fy0: Math.max(0, (box.y0 - py) / h), fx1: Math.min(1, (box.x1 + px) / w), fy1: Math.min(1, (box.y1 + py) / h) };
     } catch (e) {
       return { fx0: 0, fy0: 0, fx1: 1, fy1: 1 };
     }
@@ -161,30 +204,51 @@
     texture.needsUpdate = true;
   }
 
-  function applyDrawing(url) {
-    loader.load(url, texture => {
-      mapDrawing(texture, detectContentBox(texture.image));
-      [decalFrontMat, decalBackMat].forEach(mat => {
-        if (mat.map) mat.map.dispose();
-        mat.map = texture;
-        mat.opacity = 1;
-        mat.needsUpdate = true;
-      });
-      empty.classList.add('is-ready');
-      note.textContent = 'Drawing projected onto the cleat. Drag to see both sides.';
-      note.dataset.tone = 'success';
-    }, undefined, () => {
-      note.textContent = 'That file could not be read as an image. Use a photo, PNG, or JPG of the worksheet.';
-      note.dataset.tone = 'info';
-    });
+  // Redraw the uploaded photo into workCanvas with the teacher's flip / rotate /
+  // straighten adjustments applied, on a white background (so corners read as
+  // paper, not black). This is what the detector and the texture both use.
+  function renderCorrectedCanvas() {
+    const img = sourceImage;
+    const sw = img.naturalWidth || img.width, sh = img.naturalHeight || img.height;
+    const angle = adjust.rot * Math.PI / 2 + adjust.fine * Math.PI / 180;
+    const cos = Math.abs(Math.cos(angle)), sin = Math.abs(Math.sin(angle));
+    const ow = Math.max(1, Math.ceil(sw * cos + sh * sin));
+    const oh = Math.max(1, Math.ceil(sw * sin + sh * cos));
+    workCanvas.width = ow; workCanvas.height = oh;
+    const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, ow, oh);
+    ctx.save();
+    ctx.translate(ow / 2, oh / 2);
+    ctx.rotate(angle);
+    ctx.scale(adjust.flipH ? -1 : 1, 1);
+    ctx.drawImage(img, -sw / 2, -sh / 2);
+    ctx.restore();
   }
+
+  function projectDrawing() {
+    if (!sourceImage) return;
+    renderCorrectedCanvas();
+    const box = detectContentBox(workCanvas);
+    if (drawingTexture) drawingTexture.dispose();
+    drawingTexture = new THREE.CanvasTexture(workCanvas);
+    mapDrawing(drawingTexture, box);
+    [decalFrontMat, decalBackMat].forEach(mat => { mat.map = drawingTexture; mat.opacity = 1; mat.needsUpdate = true; });
+    empty.classList.add('is-ready');
+    note.textContent = 'Drawing projected onto the cleat. Use Flip / Rotate / Straighten if it needs aligning.';
+    note.dataset.tone = 'success';
+  }
+
   function clearDrawing() {
-    [decalFrontMat, decalBackMat].forEach(mat => {
-      if (mat.map) { mat.map.dispose(); mat.map = null; }
-      mat.opacity = 0;
-      mat.needsUpdate = true;
-    });
+    [decalFrontMat, decalBackMat].forEach(mat => { mat.map = null; mat.opacity = 0; mat.needsUpdate = true; });
+    if (drawingTexture) { drawingTexture.dispose(); drawingTexture = null; }
   }
+
+  function syncAdjustUI() {
+    if (straightenInput) straightenInput.value = String(adjust.fine);
+    if (straightenVal) straightenVal.textContent = `${adjust.fine}°`;
+  }
+  function showAdjustBar(show) { if (adjustBar) adjustBar.hidden = !show; }
+
   function loadFromInput() {
     const file = templateInput.files[0];
     if (!file) return false;
@@ -193,12 +257,35 @@
       note.dataset.tone = 'info';
       return false;
     }
-    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-    currentObjectUrl = URL.createObjectURL(file);
-    applyDrawing(currentObjectUrl);
+    if (sourceObjectUrl) URL.revokeObjectURL(sourceObjectUrl);
+    sourceObjectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      sourceImage = img;
+      adjust.flipH = false; adjust.rot = 0; adjust.fine = 0;
+      syncAdjustUI(); showAdjustBar(true);
+      projectDrawing();
+    };
+    img.onerror = () => {
+      note.textContent = 'That file could not be read as an image. Use a photo, PNG, or JPG of the worksheet.';
+      note.dataset.tone = 'info';
+    };
+    img.src = sourceObjectUrl;
     return true;
   }
   templateInput.addEventListener('change', loadFromInput);
+
+  // Adjust controls (only meaningful once a photo is loaded).
+  let straightenRaf = 0;
+  document.getElementById('cleat-flip')?.addEventListener('click', () => { adjust.flipH = !adjust.flipH; projectDrawing(); });
+  document.getElementById('cleat-rotate')?.addEventListener('click', () => { adjust.rot = (adjust.rot + 1) % 4; projectDrawing(); });
+  document.getElementById('cleat-adjust-reset')?.addEventListener('click', () => { adjust.flipH = false; adjust.rot = 0; adjust.fine = 0; syncAdjustUI(); projectDrawing(); });
+  straightenInput?.addEventListener('input', () => {
+    adjust.fine = Number(straightenInput.value) || 0;
+    if (straightenVal) straightenVal.textContent = `${adjust.fine}°`;
+    if (straightenRaf) cancelAnimationFrame(straightenRaf);
+    straightenRaf = requestAnimationFrame(projectDrawing);
+  });
 
   /* ---------- Color controls (base cleat color + edge accent) ---------- */
   const namedColor = value => {
@@ -248,12 +335,11 @@
     name.textContent = student ? `${student}'s cleat` : 'Generic football cleat';
     meta.textContent = [team, cause].filter(Boolean).join(' · ') || 'Drag the cleat to rotate it.';
     applyColors();
-    const staged = loadFromInput();
-    if (!staged) {
+    if (sourceImage) {
+      projectDrawing();
+    } else {
       empty.classList.add('is-ready');
-      note.textContent = templateInput.files[0]
-        ? `Template staged: ${templateInput.files[0].name}`
-        : 'Preview staged privately with your colors. Add a worksheet photo to project the drawing.';
+      note.textContent = 'Preview staged privately with your colors. Add a worksheet photo to project the drawing.';
       note.dataset.tone = 'success';
     }
   });
@@ -261,7 +347,10 @@
   document.getElementById('cleat-reset').addEventListener('click', () => {
     ['cleat-student-name', 'cleat-team', 'cleat-cause', 'cleat-primary', 'cleat-secondary', 'cleat-notes'].forEach(id => { document.getElementById(id).value = ''; });
     templateInput.value = ''; modelInput.value = '';
-    if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
+    if (sourceObjectUrl) { URL.revokeObjectURL(sourceObjectUrl); sourceObjectUrl = null; }
+    sourceImage = null;
+    adjust.flipH = false; adjust.rot = 0; adjust.fine = 0;
+    syncAdjustUI(); showAdjustBar(false);
     clearDrawing();
     bodyMaterial.color.set(0xe9edf4);
     rotation = 0; stage.rotation.y = 0;
