@@ -9,7 +9,8 @@
     ['featured', 'Featured Game', 'star'],
     ['coach', 'Research Coach', 'graduation-cap'],
     ['writing', 'Writing Reviews', 'notebook-pen'],
-    ['teks', 'TEKS Alignment', 'book-check']
+    ['teks', 'TEKS Alignment', 'book-check'],
+    ['cleats', 'Cleat Studio', 'footprints']
   ];
   const requested = new URLSearchParams(location.search).get('page');
   const current = pages.some(([id]) => id === requested) ? requested : 'students';
