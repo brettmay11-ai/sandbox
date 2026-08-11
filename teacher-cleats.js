@@ -45,21 +45,28 @@
   const bounds = outlineBounds();
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-  camera.position.set(0, 1.7, 8.4);
-  camera.lookAt(0, 1.35, 0);
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 2.0, 9);
+  camera.lookAt(0, 1.25, 0);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   host.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x101827, 2.2));
-  const key = new THREE.DirectionalLight(0xffffff, 3.2);
-  key.position.set(4, 6, 6);
-  scene.add(key);
-  const rim = new THREE.DirectionalLight(0x5aa8ff, 1.7);
-  rim.position.set(-5, 2, -4);
-  scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xbfc4cc, 1.15));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
+  keyLight.position.set(5, 9, 7);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.bias = -0.0004;
+  keyLight.shadow.camera.left = -6; keyLight.shadow.camera.right = 6;
+  keyLight.shadow.camera.top = 6; keyLight.shadow.camera.bottom = -6;
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.85);
+  fillLight.position.set(-5, 2, 6);
+  scene.add(fillLight);
 
   // stage = user drag rotation (spin around Y to see both painted sides)
   const stage = new THREE.Group();
@@ -68,33 +75,80 @@
   const cleatGroup = new THREE.Group();
   stage.add(cleatGroup);
 
-  const outline = buildOutlineShape();
-
-  // 1) Solid 3D body (thickness + beveled edge). Base/primary color.
-  const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xe9edf4, roughness: 0.66, metalness: 0.06 });
-  const body = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(outline, { depth: DEPTH, bevelEnabled: true, bevelSize: 0.02, bevelThickness: 0.015, bevelSegments: 1 }),
-    bodyMaterial
-  );
-  body.position.z = -DEPTH / 2;
-  cleatGroup.add(body);
-
-  // 2) Artwork decals — flat panels shaped exactly like the outline, one on
-  //    each visible side. The student's drawing is painted here. ShapeGeometry
-  //    UVs equal vertex x,y, so we normalize the texture to the outline's
-  //    bounding box and the art lands precisely inside the silhouette.
-  function makeDecalMaterial() {
-    return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.74, metalness: 0.03, transparent: true, opacity: 0, side: THREE.DoubleSide });
+  // Build the ROUNDED cleat body by "inflating" the flat silhouette into a
+  // 3D volume: thickness is greatest along the centerline and tapers to zero
+  // at the outline, giving a real shoe-like dome (rounded toe box, instep,
+  // heel) instead of a flat extruded slab. UVs stay planar (raw x,y), so the
+  // student's drawing still projects straight onto the domed upper.
+  function buildInflatedGeometry() {
+    const minX = bounds.minX, minY = bounds.minY, w = bounds.w, h = bounds.h;
+    const CELL = 0.026, MAX_HALF = 0.62, K = 0.72; // grid step, thickness cap, dome steepness
+    const gw = Math.ceil(w / CELL) + 1, gh = Math.ceil(h / CELL) + 1;
+    const P = CLEAT_OUTLINE;
+    const X = gx => minX + gx * CELL, Y = gy => minY + gy * CELL;
+    const inPoly = (px, py) => {
+      let c = false;
+      for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+        const xi = P[i][0], yi = P[i][1], xj = P[j][0], yj = P[j][1];
+        if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) c = !c;
+      }
+      return c;
+    };
+    const inside = new Uint8Array(gw * gh);
+    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) inside[gy * gw + gx] = inPoly(X(gx), Y(gy)) ? 1 : 0;
+    // chamfer distance transform: distance (in cells) from each inside node to the edge
+    const dist = new Float32Array(gw * gh);
+    for (let i = 0; i < gw * gh; i++) dist[i] = inside[i] ? 1e9 : 0;
+    const oC = 1, dC = Math.SQRT2;
+    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+      const i = gy * gw + gx; if (!inside[i]) continue; let m = dist[i];
+      if (gx > 0) m = Math.min(m, dist[i - 1] + oC);
+      if (gy > 0) m = Math.min(m, dist[i - gw] + oC);
+      if (gx > 0 && gy > 0) m = Math.min(m, dist[i - gw - 1] + dC);
+      if (gx < gw - 1 && gy > 0) m = Math.min(m, dist[i - gw + 1] + dC); dist[i] = m;
+    }
+    for (let gy = gh - 1; gy >= 0; gy--) for (let gx = gw - 1; gx >= 0; gx--) {
+      const i = gy * gw + gx; if (!inside[i]) continue; let m = dist[i];
+      if (gx < gw - 1) m = Math.min(m, dist[i + 1] + oC);
+      if (gy < gh - 1) m = Math.min(m, dist[i + gw] + oC);
+      if (gx < gw - 1 && gy < gh - 1) m = Math.min(m, dist[i + gw + 1] + dC);
+      if (gx > 0 && gy < gh - 1) m = Math.min(m, dist[i + gw - 1] + dC); dist[i] = m;
+    }
+    const bulge = i => Math.min(MAX_HALF, K * Math.sqrt(Math.max(0, (dist[i] - 1)) * CELL)); // 0 at rim -> closes the volume
+    const idxOf = new Int32Array(gw * gh).fill(-1);
+    const pos = [], uv = []; let n = 0;
+    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+      const i = gy * gw + gx; if (!inside[i]) continue;
+      idxOf[i] = n++; const x = X(gx), y = Y(gy), z = bulge(i); pos.push(x, y, z); uv.push(x, y);
+    }
+    const frontCount = n;
+    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+      const i = gy * gw + gx; if (!inside[i]) continue;
+      const x = X(gx), y = Y(gy), z = bulge(i); pos.push(x, y, -z); uv.push(x, y); n++;
+    }
+    const tris = [];
+    for (let gy = 0; gy < gh - 1; gy++) for (let gx = 0; gx < gw - 1; gx++) {
+      const i00 = gy * gw + gx, i10 = i00 + 1, i01 = i00 + gw, i11 = i01 + 1;
+      if (inside[i00] && inside[i10] && inside[i01] && inside[i11]) {
+        const a = idxOf[i00], b = idxOf[i10], c = idxOf[i01], d = idxOf[i11];
+        tris.push(a, c, b, b, c, d); // front (+z)
+        const A = a + frontCount, B = b + frontCount, C = c + frontCount, D = d + frontCount;
+        tris.push(A, B, C, B, D, C); // back (-z), reversed winding
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(tris);
+    g.computeVertexNormals();
+    return g;
   }
-  const decalFrontMat = makeDecalMaterial();
-  const decalBackMat = makeDecalMaterial();
-  const decalFront = new THREE.Mesh(new THREE.ShapeGeometry(outline), decalFrontMat);
-  decalFront.position.z = DEPTH / 2 + 0.05;
-  cleatGroup.add(decalFront);
-  const decalBack = new THREE.Mesh(new THREE.ShapeGeometry(outline), decalBackMat);
-  decalBack.position.z = -DEPTH / 2 - 0.05;
-  decalBack.rotation.y = Math.PI; // face outward on the far side (mirrors the art, like a real shoe)
-  cleatGroup.add(decalBack);
+
+  // One material for the whole cleat; the drawing becomes its map when uploaded.
+  const cleatMaterial = new THREE.MeshStandardMaterial({ color: 0xeef1f5, roughness: 0.52, metalness: 0.05, side: THREE.DoubleSide });
+  const cleat = new THREE.Mesh(buildInflatedGeometry(), cleatMaterial);
+  cleat.castShadow = true;
+  cleatGroup.add(cleat);
 
   // Lay the cleat down (toe -> left, heel/collar -> right, sole+studs -> down),
   // then auto-center and scale to fill the viewer regardless of outline size.
@@ -105,13 +159,20 @@
     cleatGroup.updateMatrixWorld(true);
     let box = new THREE.Box3().setFromObject(cleatGroup);
     const size = box.getSize(new THREE.Vector3());
-    const factor = 5.6 / Math.max(size.x, size.y);
+    const factor = 5.4 / Math.max(size.x, size.y);
     cleatGroup.scale.setScalar(factor);
     cleatGroup.updateMatrixWorld(true);
     box = new THREE.Box3().setFromObject(cleatGroup);
     const center = box.getCenter(new THREE.Vector3());
-    cleatGroup.position.set(-center.x, 1.35 - center.y, -center.z);
+    cleatGroup.position.set(-center.x, 1.25 - center.y, -center.z);
   })();
+
+  // Soft ground shadow to seat the cleat.
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.26 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -1.5;
+  ground.receiveShadow = true;
+  scene.add(ground);
 
   /* ---------- Applying the student's drawing ---------- */
   let sourceImage = null;          // the uploaded photo/scan, unmodified
@@ -232,14 +293,18 @@
     if (drawingTexture) drawingTexture.dispose();
     drawingTexture = new THREE.CanvasTexture(workCanvas);
     mapDrawing(drawingTexture, box);
-    [decalFrontMat, decalBackMat].forEach(mat => { mat.map = drawingTexture; mat.opacity = 1; mat.needsUpdate = true; });
+    cleatMaterial.map = drawingTexture;
+    cleatMaterial.color.set(0xffffff); // let the drawing show its true colors
+    cleatMaterial.needsUpdate = true;
     empty.classList.add('is-ready');
     note.textContent = 'Drawing projected onto the cleat. Use Flip / Rotate / Straighten if it needs aligning.';
     note.dataset.tone = 'success';
   }
 
   function clearDrawing() {
-    [decalFrontMat, decalBackMat].forEach(mat => { mat.map = null; mat.opacity = 0; mat.needsUpdate = true; });
+    cleatMaterial.map = null;
+    cleatMaterial.color.set(0xeef1f5);
+    cleatMaterial.needsUpdate = true;
     if (drawingTexture) { drawingTexture.dispose(); drawingTexture = null; }
   }
 
@@ -296,7 +361,7 @@
   };
   function applyColors() {
     const primary = namedColor(document.getElementById('cleat-primary').value);
-    if (primary) bodyMaterial.color.copy(primary);
+    if (primary && !cleatMaterial.map) cleatMaterial.color.copy(primary);
   }
 
   /* ---------- Interaction ---------- */
@@ -352,7 +417,7 @@
     adjust.flipH = false; adjust.rot = 0; adjust.fine = 0;
     syncAdjustUI(); showAdjustBar(false);
     clearDrawing();
-    bodyMaterial.color.set(0xe9edf4);
+    cleatMaterial.color.set(0xeef1f5);
     rotation = 0; stage.rotation.y = 0;
     name.textContent = 'Generic football cleat';
     meta.textContent = 'Drag the cleat to rotate it.';
