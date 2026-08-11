@@ -32,6 +32,11 @@ if (page) {
   const approveInsideButton = document.getElementById('cleat-approve-inside');
   const removeInsideButton = document.getElementById('cleat-remove-inside');
   const insideState = document.getElementById('cleat-inside-state');
+  const insideUploadLabel = document.createElement('label');
+  insideUploadLabel.className = 'cleat-inside-secondary cleat-inside-upload';
+  insideUploadLabel.innerHTML = '<iconify-icon icon="lucide:upload"></iconify-icon>Upload inside<input id="cleat-inside-upload" type="file" accept="image/png,image/jpeg,.pdf">';
+  generateInsideButton.insertAdjacentElement('beforebegin', insideUploadLabel);
+  const insideArtworkInput = document.getElementById('cleat-inside-upload');
   const defaultModelUrl = 'assets/models/red-chaos-cleat.glb';
 
   const scene = new THREE.Scene();
@@ -449,6 +454,20 @@ if (page) {
     return canvas;
   }
 
+  function applyInsideArtworkCanvas(source) {
+    const generatedArtwork = prepareGeneratedArtwork(source);
+    insideArtworkTexture?.dispose();
+    insideArtworkTexture = new THREE.CanvasTexture(generatedArtwork);
+    insideArtworkTexture.colorSpace = THREE.SRGBColorSpace;
+    insideArtworkTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    insideArtworkAspect = generatedArtwork.width / generatedArtwork.height;
+    insideApproved = false;
+    rebuildDecals();
+    rotation = Math.PI;
+    lastInteraction = performance.now();
+    updateInsideControls();
+  }
+
   function imageDataUrlToCanvas(dataUrl) {
     return new Promise((resolve, reject) => {
       const image = new Image();
@@ -513,6 +532,7 @@ if (page) {
       artworkTexture?.dispose();
       insideArtworkTexture?.dispose();
       insideArtworkTexture = null;
+      insideArtworkInput.value = '';
       insideApproved = false;
       artworkReferenceCanvas = artwork.reference;
       artworkTexture = new THREE.CanvasTexture(artwork.decal);
@@ -625,6 +645,19 @@ if (page) {
     await applyArtworkFile(file);
   });
 
+  insideArtworkInput.addEventListener('change', async () => {
+    const file = insideArtworkInput.files[0];
+    if (!file) return;
+    setStatus('Preparing the uploaded inside artwork...', 'info');
+    try {
+      applyInsideArtworkCanvas(await fileToCanvas(file));
+      setStatus('Inside artwork loaded. Rotate the cleat to review both sides.', 'success');
+    } catch (error) {
+      console.error('Unable to prepare inside cleat artwork', error);
+      setStatus('The inside artwork could not be prepared. Try a clear JPG or PNG.', 'error');
+    }
+  });
+
   generateInsideButton.addEventListener('click', async () => {
     if (!artworkReferenceCanvas || generatingInside) return;
     generatingInside = true;
@@ -649,15 +682,7 @@ if (page) {
       if (!response.ok) throw new Error(result.error || 'Inside artwork generation failed.');
 
       const generatedSource = await imageDataUrlToCanvas(result.imageDataUrl);
-      const generatedArtwork = prepareGeneratedArtwork(generatedSource);
-      insideArtworkTexture?.dispose();
-      insideArtworkTexture = new THREE.CanvasTexture(generatedArtwork);
-      insideArtworkTexture.colorSpace = THREE.SRGBColorSpace;
-      insideArtworkTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-      insideArtworkAspect = generatedArtwork.width / generatedArtwork.height;
-      rebuildDecals();
-      rotation = Math.PI;
-      lastInteraction = performance.now();
+      applyInsideArtworkCanvas(generatedSource);
       setStatus('Inside design generated. Review it on the cleat, then approve or regenerate.', 'success');
     } catch (error) {
       console.error('Unable to generate inside cleat artwork', error);
@@ -683,6 +708,7 @@ if (page) {
   removeInsideButton.addEventListener('click', () => {
     insideArtworkTexture?.dispose();
     insideArtworkTexture = null;
+    insideArtworkInput.value = '';
     insideApproved = false;
     mirrorInput.disabled = false;
     rebuildDecals();
@@ -716,6 +742,7 @@ if (page) {
     artworkTexture = null;
     insideArtworkTexture?.dispose();
     insideArtworkTexture = null;
+    insideArtworkInput.value = '';
     artworkReferenceCanvas = null;
     insideApproved = false;
     setModelNeutral(false);
@@ -744,6 +771,7 @@ if (page) {
     artworkTexture = null;
     insideArtworkTexture?.dispose();
     insideArtworkTexture = null;
+    insideArtworkInput.value = '';
     artworkReferenceCanvas = null;
     insideApproved = false;
     setModelNeutral(false);

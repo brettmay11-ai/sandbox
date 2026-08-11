@@ -42,6 +42,8 @@
 .cleat-inside-secondary { border: 1px solid rgba(255,255,255,.13); background: rgba(255,255,255,.06); color: rgba(255,255,255,.8); }
 .cleat-inside-secondary:hover:not(:disabled) { border-color: rgba(96,165,250,.55); background: rgba(96,165,250,.12); }
 .cleat-inside-secondary:disabled { color: #86efac; cursor: default; }
+.cleat-inside-upload { position: relative; }
+.cleat-inside-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .cleat-inside-actions [hidden] { display: none; }
 .cleat-mirror-toggle:has(input:disabled) { opacity: .5; }
 .cleat-actions { display: flex; gap: 9px; margin-top: 20px; }
