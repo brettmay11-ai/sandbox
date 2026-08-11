@@ -15,7 +15,7 @@ test('buildPrompt carries teacher context and protects student intent', () => {
   assert.match(prompt, /Royal blue/);
   assert.match(prompt, /Gold laces/);
   assert.match(prompt, /not a simple horizontal mirror/);
-  assert.match(prompt, /heel on the left and toe pointing right/);
+  assert.match(prompt, /toe pointing left and heel on the right/);
   assert.match(prompt, /Do not invent brand logos/);
 });
 

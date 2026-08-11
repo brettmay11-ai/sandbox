@@ -84,7 +84,7 @@ Secondary color: ${secondary}
 Lace or sole notes: ${notes}
 
 Output requirements:
-- A true inside-side flat artwork asset, heel on the left and toe pointing right, so it projects correctly on the medial side of the 3D cleat.
+- A true inside-side flat artwork asset, toe pointing left and heel on the right, so lettering remains readable when it is baked onto the opposite side of the 3D cleat.
 - Plain white background with generous empty space around the artwork.
 - Artwork only: no realistic shoe, no cleats, no sole, no laces, no mockup, no shadows, no scenery, and no labels.
 - Keep all important marks safely inside a wide football-cleat side silhouette.

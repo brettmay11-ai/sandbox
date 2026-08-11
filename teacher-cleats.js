@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 
 const page = document.querySelector('[data-teacher-page="cleats"]');
 
@@ -25,6 +24,9 @@ if (page) {
   artworkControls.hidden = true;
   artworkControls.innerHTML = `<div class="cleat-artwork-controls-head"><span><iconify-icon icon="lucide:scan-line"></iconify-icon>Artwork placement</span><div><label class="cleat-mirror-toggle"><input id="cleat-artwork-mirror" type="checkbox" checked>Inside fallback</label><button type="button" id="cleat-artwork-rotate" class="cleat-artwork-remove" title="Rotate artwork 180 degrees"><iconify-icon icon="lucide:rotate-cw"></iconify-icon></button><button type="button" id="cleat-artwork-remove" class="cleat-artwork-remove" title="Remove artwork"><iconify-icon icon="lucide:x"></iconify-icon></button></div></div><div class="cleat-placement-grid"><label><span>Left / right</span><input type="range" data-cleat-placement="x" min="-20" max="20" value="0"></label><label><span>Up / down</span><input type="range" data-cleat-placement="y" min="-20" max="20" value="0"></label><label><span>Size</span><input type="range" data-cleat-placement="scale" min="70" max="125" value="100"></label><label><span>Turn</span><input type="range" data-cleat-placement="rotation" min="-20" max="20" value="0"></label></div><div class="cleat-inside-generator"><div class="cleat-inside-head"><span><iconify-icon icon="lucide:sparkles"></iconify-icon>Inside design</span><strong id="cleat-inside-state">Mirrored outside</strong></div><p>Create a coordinated inside from the student’s original drawing, then inspect it on the cleat.</p><div class="cleat-inside-actions"><button type="button" id="cleat-generate-inside" class="cleat-generate-action"><iconify-icon icon="lucide:sparkles"></iconify-icon><span>Generate inside</span></button><button type="button" id="cleat-view-inside" class="cleat-inside-secondary" hidden><iconify-icon icon="lucide:rotate-3d"></iconify-icon>View inside</button><button type="button" id="cleat-approve-inside" class="cleat-inside-secondary" hidden><iconify-icon icon="lucide:check"></iconify-icon>Approve</button><button type="button" id="cleat-remove-inside" class="cleat-artwork-remove" title="Remove generated inside" hidden><iconify-icon icon="lucide:trash-2"></iconify-icon></button></div></div>`;
   templateInput.closest('.cleat-wide-field').insertAdjacentElement('afterend', artworkControls);
+  artworkControls.querySelector('.cleat-placement-grid')?.remove();
+  document.getElementById('cleat-artwork-rotate')?.remove();
+  artworkControls.querySelector('.cleat-artwork-controls-head > span').innerHTML = '<iconify-icon icon="lucide:layers-3"></iconify-icon>Material texture';
   const mirrorInput = document.getElementById('cleat-artwork-mirror');
   const generateInsideButton = document.getElementById('cleat-generate-inside');
   const generateInsideLabel = generateInsideButton.querySelector('span');
@@ -65,8 +67,6 @@ if (page) {
 
   const stage = new THREE.Group();
   scene.add(stage);
-  const decalGroup = new THREE.Group();
-  stage.add(decalGroup);
 
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(30, 30),
@@ -81,15 +81,15 @@ if (page) {
   let modelMesh = null;
   let modelBounds = null;
   let currentObjectUrl = null;
-  let artworkTexture = null;
-  let artworkAspect = 2.6;
+  let outsideArtworkCanvas = null;
   let artworkReferenceCanvas = null;
-  let insideArtworkTexture = null;
-  let insideArtworkAspect = 2.6;
+  let insideArtworkCanvas = null;
+  let bakedArtworkTexture = null;
   let insideApproved = false;
   let generatingInside = false;
-  let decalTimer = null;
-  const placement = { x: 0, y: 0, scale: 1, rotation: 0, orientation: 0, mirror: true };
+  let bakeTimer = null;
+  let bakeGeneration = 0;
+  let mirrorInside = true;
   let rotation = -0.18;
   let cameraDistance = 6.5;
   let framedSize = null;
@@ -119,18 +119,9 @@ if (page) {
     });
   }
 
-  function clearDecals() {
-    while (decalGroup.children.length) {
-      const decal = decalGroup.children.pop();
-      decal.geometry?.dispose();
-      decal.material?.dispose();
-    }
-  }
-
   function clearCurrentModel() {
     if (!currentModel) return;
-    clearDecals();
-    setModelNeutral(false);
+    applyModelTexture(null);
     stage.remove(currentModel);
     disposeModel(currentModel);
     currentModel = null;
@@ -189,10 +180,7 @@ if (page) {
     frameCamera();
 
     stage.rotation.y = rotation;
-    if (artworkTexture) {
-      setModelNeutral(true);
-      rebuildDecals();
-    }
+    if (outsideArtworkCanvas) scheduleTextureBake();
     return { size, center: displayCenter };
   }
 
@@ -209,7 +197,7 @@ if (page) {
     camera.updateProjectionMatrix();
   }
 
-  function setModelNeutral(neutral) {
+  function applyModelTexture(texture) {
     if (!currentModel) return;
     currentModel.traverse(child => {
       if (!child.isMesh) return;
@@ -224,76 +212,137 @@ if (page) {
           };
         }
         const original = material.userData.cleatOriginal;
-        material.map = neutral ? null : original.map;
-        if (material.color && original.color) material.color.copy(neutral ? new THREE.Color(0xf4f5f7) : original.color);
-        if (typeof material.roughness === 'number') material.roughness = neutral ? 0.72 : original.roughness;
+        material.map = texture || original.map;
+        if (material.color && original.color) material.color.copy(texture ? new THREE.Color(0xffffff) : original.color);
+        if (typeof material.roughness === 'number') material.roughness = texture ? 0.74 : original.roughness;
         material.needsUpdate = true;
       });
     });
   }
 
-  function decalMaterial(texture) {
-    return new THREE.MeshStandardMaterial({
-      map: texture,
-      transparent: true,
-      alphaTest: 0.02,
-      roughness: 0.68,
-      metalness: 0,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -4,
-      side: THREE.DoubleSide
-    });
-  }
-
-  function rebuildDecals() {
-    clearDecals();
-    if (!modelMesh || !modelBounds || !artworkTexture) return;
-
+  function bakeMaterialTexture(outsideCanvas, insideCanvas) {
+    if (!modelMesh?.geometry?.attributes?.uv || !modelBounds) return null;
     const previousRotation = stage.rotation.y;
     stage.rotation.y = 0;
     scene.updateMatrixWorld(true);
+    const textureSize = 2048;
+    const canvas = document.createElement('canvas');
+    canvas.width = textureSize;
+    canvas.height = textureSize;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const output = context.createImageData(textureSize, textureSize);
+    const pixels = output.data;
+    for (let offset = 0; offset < pixels.length; offset += 4) {
+      pixels[offset] = 244;
+      pixels[offset + 1] = 245;
+      pixels[offset + 2] = 247;
+      pixels[offset + 3] = 255;
+    }
+
+    const sourceData = source => {
+      const sourceContext = source.getContext('2d', { willReadFrequently: true });
+      return { width: source.width, height: source.height, pixels: sourceContext.getImageData(0, 0, source.width, source.height).data };
+    };
+    const outside = sourceData(outsideCanvas);
+    const inside = sourceData(insideCanvas || outsideCanvas);
+    const geometry = modelMesh.geometry;
+    const positions = geometry.attributes.position;
+    const uvs = geometry.attributes.uv;
+    const indices = geometry.index;
+    const vertexCount = positions.count;
+    const worldPositions = new Float32Array(vertexCount * 3);
+    const vertex = new THREE.Vector3();
+    for (let index = 0; index < vertexCount; index++) {
+      vertex.fromBufferAttribute(positions, index).applyMatrix4(modelMesh.matrixWorld);
+      worldPositions[index * 3] = vertex.x;
+      worldPositions[index * 3 + 1] = vertex.y;
+      worldPositions[index * 3 + 2] = vertex.z;
+    }
 
     const size = modelBounds.getSize(new THREE.Vector3());
     const center = modelBounds.getCenter(new THREE.Vector3());
-    const x = center.x + size.x * placement.x;
-    const y = modelBounds.min.y + size.y * (0.5 + placement.y);
-    const depth = size.z * 0.48;
-    const rotationZ = THREE.MathUtils.degToRad(placement.rotation + placement.orientation);
+    const triangleCount = indices ? indices.count / 3 : positions.count / 3;
+    const getIndex = offset => indices ? indices.getX(offset) : offset;
 
-    const addDecal = (z, texture, aspect, inside = false) => {
-      let width = size.x * 0.88 * placement.scale;
-      let height = width / Math.max(aspect, 0.2);
-      const maxHeight = size.y * 0.78 * placement.scale;
-      if (height > maxHeight) {
-        const correction = maxHeight / height;
-        width *= correction;
-        height *= correction;
+    for (let triangle = 0; triangle < triangleCount; triangle++) {
+      const ids = [getIndex(triangle * 3), getIndex(triangle * 3 + 1), getIndex(triangle * 3 + 2)];
+      const tx = ids.map(id => uvs.getX(id) * (textureSize - 1));
+      const ty = ids.map(id => uvs.getY(id) * (textureSize - 1));
+      const denominator = (ty[1] - ty[2]) * (tx[0] - tx[2]) + (tx[2] - tx[1]) * (ty[0] - ty[2]);
+      if (Math.abs(denominator) < 0.00001) continue;
+      const minX = Math.max(0, Math.floor(Math.min(...tx)));
+      const maxX = Math.min(textureSize - 1, Math.ceil(Math.max(...tx)));
+      const minY = Math.max(0, Math.floor(Math.min(...ty)));
+      const maxY = Math.min(textureSize - 1, Math.ceil(Math.max(...ty)));
+      const averageZ = ids.reduce((sum, id) => sum + worldPositions[id * 3 + 2], 0) / 3;
+      const isOutside = averageZ < center.z;
+      const source = isOutside ? outside : inside;
+
+      for (let py = minY; py <= maxY; py++) {
+        for (let px = minX; px <= maxX; px++) {
+          const sampleX = px + 0.5;
+          const sampleY = py + 0.5;
+          const w0 = ((ty[1] - ty[2]) * (sampleX - tx[2]) + (tx[2] - tx[1]) * (sampleY - ty[2])) / denominator;
+          const w1 = ((ty[2] - ty[0]) * (sampleX - tx[2]) + (tx[0] - tx[2]) * (sampleY - ty[2])) / denominator;
+          const w2 = 1 - w0 - w1;
+          if (w0 < -0.001 || w1 < -0.001 || w2 < -0.001) continue;
+
+          const worldX = ids.reduce((sum, id, index) => sum + worldPositions[id * 3] * [w0, w1, w2][index], 0);
+          const worldY = ids.reduce((sum, id, index) => sum + worldPositions[id * 3 + 1] * [w0, w1, w2][index], 0);
+          const modelU = THREE.MathUtils.clamp((worldX - modelBounds.min.x) / size.x, 0, 1);
+          const designU = isOutside ? 1 - modelU : modelU;
+          const designV = 1 - THREE.MathUtils.clamp((worldY - modelBounds.min.y) / size.y, 0, 1);
+          const sx = Math.min(source.width - 1, Math.max(0, Math.round(designU * (source.width - 1))));
+          const sy = Math.min(source.height - 1, Math.max(0, Math.round(designV * (source.height - 1))));
+          const sourceOffset = (sy * source.width + sx) * 4;
+          const targetIndex = py * textureSize + px;
+          const targetOffset = targetIndex * 4;
+          const alpha = source.pixels[sourceOffset + 3] / 255;
+          if (alpha > 0.01) {
+            pixels[targetOffset] = Math.round(source.pixels[sourceOffset] * alpha + 244 * (1 - alpha));
+            pixels[targetOffset + 1] = Math.round(source.pixels[sourceOffset + 1] * alpha + 245 * (1 - alpha));
+            pixels[targetOffset + 2] = Math.round(source.pixels[sourceOffset + 2] * alpha + 247 * (1 - alpha));
+          }
+        }
       }
-      const orientation = new THREE.Euler(0, inside ? Math.PI : 0, inside ? -rotationZ : rotationZ);
-      const geometry = new DecalGeometry(
-        modelMesh,
-        new THREE.Vector3(x, y, z),
-        orientation,
-        new THREE.Vector3(width, height, depth)
-      );
-      const decal = new THREE.Mesh(geometry, decalMaterial(texture));
-      decal.renderOrder = 3;
-      decalGroup.add(decal);
-    };
-
-    addDecal(modelBounds.max.z - size.z * 0.12, artworkTexture, artworkAspect);
-    if (insideArtworkTexture) {
-      addDecal(modelBounds.min.z + size.z * 0.12, insideArtworkTexture, insideArtworkAspect, true);
-    } else if (placement.mirror) {
-      addDecal(modelBounds.min.z + size.z * 0.12, artworkTexture, artworkAspect, true);
     }
+
+    context.putImageData(output, 0, 0);
     stage.rotation.y = previousRotation;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.flipY = false;
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    texture.needsUpdate = true;
+    return texture;
   }
 
-  function scheduleDecals() {
-    window.clearTimeout(decalTimer);
-    decalTimer = window.setTimeout(rebuildDecals, 70);
+  function scheduleTextureBake() {
+    window.clearTimeout(bakeTimer);
+    const generation = ++bakeGeneration;
+    if (!outsideArtworkCanvas || !modelMesh) return;
+    setStatus('Wrapping the artwork into the cleat material...', 'info');
+    bakeTimer = window.setTimeout(() => {
+      let insideSource = insideArtworkCanvas;
+      if (!insideSource && mirrorInside) insideSource = outsideArtworkCanvas;
+      if (!insideSource) {
+        insideSource = document.createElement('canvas');
+        insideSource.width = outsideArtworkCanvas.width;
+        insideSource.height = outsideArtworkCanvas.height;
+      }
+      const texture = bakeMaterialTexture(outsideArtworkCanvas, insideSource);
+      if (!texture || generation !== bakeGeneration) {
+        texture?.dispose();
+        return;
+      }
+      bakedArtworkTexture?.dispose();
+      bakedArtworkTexture = texture;
+      applyModelTexture(texture);
+      setStatus('Artwork is baked into the cleat material. Rotate to inspect every surface.', 'success');
+    }, 80);
   }
 
   function largestInkBox(canvas) {
@@ -424,20 +473,7 @@ if (page) {
     reference.height = canvas.height;
     reference.getContext('2d').drawImage(canvas, 0, 0);
     makePageBackgroundTransparent(canvas);
-    return { decal: canvas, reference };
-  }
-
-  function makeWhiteBackgroundTransparent(canvas) {
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    const image = context.getImageData(0, 0, canvas.width, canvas.height);
-    const pixels = image.data;
-    for (let point = 0; point < canvas.width * canvas.height; point++) {
-      const offset = point * 4;
-      const whiteness = Math.min(pixels[offset], pixels[offset + 1], pixels[offset + 2]);
-      if (whiteness > 246) pixels[offset + 3] = 0;
-      else if (whiteness > 220) pixels[offset + 3] = Math.round((246 - whiteness) * 9.8);
-    }
-    context.putImageData(image, 0, 0);
+    return { design: canvas, reference };
   }
 
   function prepareGeneratedArtwork(source) {
@@ -450,20 +486,16 @@ if (page) {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
     context.drawImage(source, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
-    makeWhiteBackgroundTransparent(canvas);
+    makePageBackgroundTransparent(canvas);
     return canvas;
   }
 
   function applyInsideArtworkCanvas(source) {
     const generatedArtwork = prepareGeneratedArtwork(source);
-    insideArtworkTexture?.dispose();
-    insideArtworkTexture = new THREE.CanvasTexture(generatedArtwork);
-    insideArtworkTexture.colorSpace = THREE.SRGBColorSpace;
-    insideArtworkTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-    insideArtworkAspect = generatedArtwork.width / generatedArtwork.height;
+    insideArtworkCanvas = generatedArtwork;
     insideApproved = false;
-    rebuildDecals();
-    rotation = Math.PI;
+    scheduleTextureBake();
+    rotation = 0;
     lastInteraction = performance.now();
     updateInsideControls();
   }
@@ -483,8 +515,8 @@ if (page) {
     });
   }
 
-  function updateInsideControls(state = insideArtworkTexture ? 'ready' : 'fallback') {
-    const ready = Boolean(insideArtworkTexture);
+  function updateInsideControls(state = insideArtworkCanvas ? 'ready' : 'fallback') {
+    const ready = Boolean(insideArtworkCanvas);
     insideState.textContent = state === 'generating' ? 'Generating...' : state === 'approved' ? 'Approved' : ready ? 'Ready to review' : 'Mirrored outside';
     insideState.dataset.state = state;
     generateInsideButton.disabled = generatingInside || !artworkReferenceCanvas;
@@ -529,22 +561,17 @@ if (page) {
     try {
       const source = await fileToCanvas(file);
       const artwork = prepareArtwork(source);
-      artworkTexture?.dispose();
-      insideArtworkTexture?.dispose();
-      insideArtworkTexture = null;
+      outsideArtworkCanvas = artwork.design;
+      insideArtworkCanvas = null;
       insideArtworkInput.value = '';
       insideApproved = false;
       artworkReferenceCanvas = artwork.reference;
-      artworkTexture = new THREE.CanvasTexture(artwork.decal);
-      artworkTexture.colorSpace = THREE.SRGBColorSpace;
-      artworkTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-      artworkAspect = artwork.decal.width / artwork.decal.height;
-      placement.orientation = 0;
       artworkControls.hidden = false;
-      setModelNeutral(true);
-      rebuildDecals();
+      scheduleTextureBake();
+      rotation = Math.PI;
+      lastInteraction = performance.now();
       updateInsideControls();
-      setStatus('Outside artwork is ready. Generate a coordinated inside or keep the mirrored fallback.', 'success');
+      setStatus('Outside artwork is ready and being wrapped into the cleat material.', 'success');
     } catch (error) {
       console.error('Unable to prepare cleat artwork', error);
       setStatus('The worksheet could not be prepared. Try a clear JPG or PNG.', 'error');
@@ -694,7 +721,7 @@ if (page) {
   });
 
   viewInsideButton.addEventListener('click', () => {
-    rotation = Math.PI;
+    rotation = 0;
     lastInteraction = performance.now();
     setStatus('Showing the generated inside design.', 'info');
   });
@@ -706,46 +733,31 @@ if (page) {
   });
 
   removeInsideButton.addEventListener('click', () => {
-    insideArtworkTexture?.dispose();
-    insideArtworkTexture = null;
+    insideArtworkCanvas = null;
     insideArtworkInput.value = '';
     insideApproved = false;
     mirrorInput.disabled = false;
-    rebuildDecals();
+    scheduleTextureBake();
     updateInsideControls();
     setStatus('Generated inside removed. The mirrored outside is showing again.', 'info');
   });
 
-  artworkControls.querySelectorAll('[data-cleat-placement]').forEach(input => {
-    input.addEventListener('input', () => {
-      const key = input.dataset.cleatPlacement;
-      const value = Number(input.value);
-      placement[key] = key === 'scale' ? value / 100 : key === 'rotation' ? value : value / 100;
-      scheduleDecals();
-    });
-  });
-
   mirrorInput.addEventListener('change', () => {
-    placement.mirror = mirrorInput.checked;
-    scheduleDecals();
-  });
-
-  document.getElementById('cleat-artwork-rotate').addEventListener('click', () => {
-    placement.orientation = placement.orientation ? 0 : 180;
-    rebuildDecals();
-    setStatus('Artwork rotated 180 degrees.', 'info');
+    mirrorInside = mirrorInput.checked;
+    scheduleTextureBake();
   });
 
   document.getElementById('cleat-artwork-remove').addEventListener('click', () => {
-    clearDecals();
-    artworkTexture?.dispose();
-    artworkTexture = null;
-    insideArtworkTexture?.dispose();
-    insideArtworkTexture = null;
+    window.clearTimeout(bakeTimer);
+    bakeGeneration++;
+    applyModelTexture(null);
+    bakedArtworkTexture?.dispose();
+    bakedArtworkTexture = null;
+    outsideArtworkCanvas = null;
+    insideArtworkCanvas = null;
     insideArtworkInput.value = '';
     artworkReferenceCanvas = null;
     insideApproved = false;
-    setModelNeutral(false);
     templateInput.value = '';
     artworkControls.hidden = true;
     updateInsideControls();
@@ -766,28 +778,21 @@ if (page) {
     templateInput.value = '';
     modelInput.value = '';
     rotation = -0.18;
-    clearDecals();
-    artworkTexture?.dispose();
-    artworkTexture = null;
-    insideArtworkTexture?.dispose();
-    insideArtworkTexture = null;
+    window.clearTimeout(bakeTimer);
+    bakeGeneration++;
+    applyModelTexture(null);
+    bakedArtworkTexture?.dispose();
+    bakedArtworkTexture = null;
+    outsideArtworkCanvas = null;
+    insideArtworkCanvas = null;
     insideArtworkInput.value = '';
     artworkReferenceCanvas = null;
     insideApproved = false;
-    setModelNeutral(false);
     artworkControls.hidden = true;
-    placement.x = 0;
-    placement.y = 0;
-    placement.scale = 1;
-    placement.rotation = 0;
-    placement.orientation = 0;
-    placement.mirror = true;
+    mirrorInside = true;
     mirrorInput.checked = true;
     mirrorInput.disabled = false;
     updateInsideControls();
-    artworkControls.querySelectorAll('[data-cleat-placement]').forEach(input => {
-      input.value = input.dataset.cleatPlacement === 'scale' ? '100' : '0';
-    });
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl);
       currentObjectUrl = null;
