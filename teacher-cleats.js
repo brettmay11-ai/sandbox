@@ -436,12 +436,15 @@ if (page) {
       const r = pixels[offset];
       const g = pixels[offset + 1];
       const b = pixels[offset + 2];
+      const brightest = Math.max(r, g, b);
       const darkest = Math.min(r, g, b);
-      const colorRange = Math.max(r, g, b) - darkest;
-      if (darkest > 238 || colorRange < 15) {
+      const colorRange = brightest - darkest;
+      const saturation = brightest ? colorRange / brightest : 0;
+      if (darkest > 238 || colorRange < 24 || saturation < 0.18) {
         pixels[offset + 3] = 0;
       } else {
-        pixels[offset + 3] = Math.min(255, Math.max(0, (colorRange - 8) * 12));
+        const colorStrength = Math.min(colorRange - 20, (saturation - 0.14) * 320);
+        pixels[offset + 3] = Math.min(255, Math.max(0, colorStrength * 12));
       }
     }
     context.putImageData(image, 0, 0);
