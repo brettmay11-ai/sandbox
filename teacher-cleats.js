@@ -1,442 +1,785 @@
-(() => {
-  if (!document.querySelector('[data-teacher-page="cleats"]') || !window.THREE) return;
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
+
+const page = document.querySelector('[data-teacher-page="cleats"]');
+
+if (page) {
+  const cleatStyles = document.createElement('link');
+  cleatStyles.rel = 'stylesheet';
+  cleatStyles.href = 'cleat-studio.css?v=2';
+  document.head.appendChild(cleatStyles);
 
   const host = document.getElementById('cleat-viewer');
   const empty = document.getElementById('cleat-viewer-empty');
-  const name = document.getElementById('cleat-preview-name');
-  const meta = document.getElementById('cleat-preview-meta');
+  const previewName = document.getElementById('cleat-preview-name');
+  const previewMeta = document.getElementById('cleat-preview-meta');
   const angleLabel = document.getElementById('cleat-viewer-angle');
   const note = document.getElementById('cleat-upload-note');
   const modelInput = document.getElementById('cleat-model');
   const templateInput = document.getElementById('cleat-template');
-
-  /* ============================================================
-     SHARED CLEAT TEMPLATE OUTLINE
-     ------------------------------------------------------------
-     Traced directly from the printed "My Cause My Cleats" paper
-     worksheet (MyCleatMyCause1.pdf), so the 3D silhouette matches
-     the shape students color in. Coordinates are in the SAME
-     orientation as the worksheet: portrait, toe at the bottom
-     (low y), ankle collar at the top (high y), studs on the right
-     (high x), laces on the left (low x). Because the student's
-     drawing is projected using this outline's bounding box, the
-     art lands exactly inside the silhouette. Re-trace and replace
-     these points if the worksheet art ever changes.
-     ============================================================ */
-  const CLEAT_OUTLINE = [
-    [0.375,5.6],[0.471,5.589],[0.584,5.45],[0.68,5.38],[0.771,5.364],[0.841,5.172],[0.728,5.124],[0.744,5.075],[0.814,5.043],[0.846,4.984],[1.06,4.952],[1.071,4.797],[1.028,4.77],[1.049,4.62],[0.878,4.529],[0.835,4.433],[0.867,4.117],[0.99,3.978],[1.162,3.93],[1.231,3.86],[1.226,3.715],[1.028,3.63],[0.942,3.485],[0.953,3.442],[1.103,3.421],[1.108,3.255],[1.14,3.234],[1.146,3.094],[1.13,3.052],[1.001,3.03],[0.921,2.95],[0.857,2.281],[0.857,1.633],[0.942,1.537],[1.114,1.51],[1.124,1.354],[1.108,1.296],[0.905,1.247],[0.819,1.14],[0.835,0.996],[0.889,0.889],[1.178,0.776],[1.21,0.717],[1.21,0.584],[0.953,0.503],[0.932,0.444],[0.857,0.391],[0.803,0.203],[0.696,0.096],[0.567,0.037],[0.385,0],[0.118,0],[-0.246,0.054],[-0.423,0.054],[-0.685,0.182],[-0.862,0.225],[-1.065,0.359],[-1.087,0.482],[-1.06,0.535],[-0.964,0.616],[-0.728,0.728],[-0.626,0.814],[-0.53,0.969],[-0.509,1.14],[-0.567,1.371],[-0.712,1.622],[-0.787,1.708],[-0.883,1.665],[-0.969,1.665],[-1.049,1.708],[-1.162,1.847],[-1.231,2.061],[-1.231,2.136],[-1.033,2.5],[-1.001,2.639],[-0.91,2.698],[-0.857,2.784],[-0.835,2.912],[-0.755,2.971],[-0.717,3.046],[-0.685,3.121],[-0.68,3.228],[-0.605,3.303],[-0.519,3.56],[-0.434,3.71],[-0.412,3.833],[-0.337,3.946],[-0.348,4.021],[-0.294,4.074],[-0.198,4.428],[-0.123,4.861],[0.037,5.327],[0.198,5.536],[0.369,5.6]
-  ];
-  const DEPTH = 0.9; // shoe width (extrusion depth), in outline units
-
-  function buildOutlineShape() {
-    const shape = new THREE.Shape();
-    CLEAT_OUTLINE.forEach(([x, y], i) => (i ? shape.lineTo(x, y) : shape.moveTo(x, y)));
-    shape.closePath();
-    return shape;
-  }
-  function outlineBounds() {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const [x, y] of CLEAT_OUTLINE) {
-      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-      minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-    }
-    return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
-  }
-  const bounds = outlineBounds();
+  templateInput.accept = 'image/png,image/jpeg,.pdf';
+  const artworkControls = document.createElement('div');
+  artworkControls.className = 'cleat-artwork-controls';
+  artworkControls.id = 'cleat-artwork-controls';
+  artworkControls.hidden = true;
+  artworkControls.innerHTML = `<div class="cleat-artwork-controls-head"><span><iconify-icon icon="lucide:scan-line"></iconify-icon>Artwork placement</span><div><label class="cleat-mirror-toggle"><input id="cleat-artwork-mirror" type="checkbox" checked>Inside fallback</label><button type="button" id="cleat-artwork-rotate" class="cleat-artwork-remove" title="Rotate artwork 180 degrees"><iconify-icon icon="lucide:rotate-cw"></iconify-icon></button><button type="button" id="cleat-artwork-remove" class="cleat-artwork-remove" title="Remove artwork"><iconify-icon icon="lucide:x"></iconify-icon></button></div></div><div class="cleat-placement-grid"><label><span>Left / right</span><input type="range" data-cleat-placement="x" min="-20" max="20" value="0"></label><label><span>Up / down</span><input type="range" data-cleat-placement="y" min="-20" max="20" value="0"></label><label><span>Size</span><input type="range" data-cleat-placement="scale" min="70" max="125" value="100"></label><label><span>Turn</span><input type="range" data-cleat-placement="rotation" min="-20" max="20" value="0"></label></div><div class="cleat-inside-generator"><div class="cleat-inside-head"><span><iconify-icon icon="lucide:sparkles"></iconify-icon>Inside design</span><strong id="cleat-inside-state">Mirrored outside</strong></div><p>Create a coordinated inside from the student’s original drawing, then inspect it on the cleat.</p><div class="cleat-inside-actions"><button type="button" id="cleat-generate-inside" class="cleat-generate-action"><iconify-icon icon="lucide:sparkles"></iconify-icon><span>Generate inside</span></button><button type="button" id="cleat-view-inside" class="cleat-inside-secondary" hidden><iconify-icon icon="lucide:rotate-3d"></iconify-icon>View inside</button><button type="button" id="cleat-approve-inside" class="cleat-inside-secondary" hidden><iconify-icon icon="lucide:check"></iconify-icon>Approve</button><button type="button" id="cleat-remove-inside" class="cleat-artwork-remove" title="Remove generated inside" hidden><iconify-icon icon="lucide:trash-2"></iconify-icon></button></div></div>`;
+  templateInput.closest('.cleat-wide-field').insertAdjacentElement('afterend', artworkControls);
+  const mirrorInput = document.getElementById('cleat-artwork-mirror');
+  const generateInsideButton = document.getElementById('cleat-generate-inside');
+  const generateInsideLabel = generateInsideButton.querySelector('span');
+  const viewInsideButton = document.getElementById('cleat-view-inside');
+  const approveInsideButton = document.getElementById('cleat-approve-inside');
+  const removeInsideButton = document.getElementById('cleat-remove-inside');
+  const insideState = document.getElementById('cleat-inside-state');
+  const defaultModelUrl = 'assets/models/red-chaos-cleat.glb';
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 2.0, 9);
-  camera.lookAt(0, 1.25, 0);
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   host.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xbfc4cc, 1.15));
-  const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
-  keyLight.position.set(5, 9, 7);
+  scene.add(new THREE.HemisphereLight(0xf8fbff, 0x252a32, 2.2));
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 4.2);
+  keyLight.position.set(-4, 7, 6);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(2048, 2048);
-  keyLight.shadow.bias = -0.0004;
-  keyLight.shadow.camera.left = -6; keyLight.shadow.camera.right = 6;
-  keyLight.shadow.camera.top = 6; keyLight.shadow.camera.bottom = -6;
+  keyLight.shadow.bias = -0.0003;
   scene.add(keyLight);
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.85);
-  fillLight.position.set(-5, 2, 6);
-  scene.add(fillLight);
 
-  // stage = user drag rotation (spin around Y to see both painted sides)
+  const rimLight = new THREE.DirectionalLight(0xdce9ff, 2.4);
+  rimLight.position.set(5, 3, -5);
+  scene.add(rimLight);
+
   const stage = new THREE.Group();
   scene.add(stage);
-  // cleatGroup = the shoe itself, laid down naturally and auto-centered
-  const cleatGroup = new THREE.Group();
-  stage.add(cleatGroup);
+  const decalGroup = new THREE.Group();
+  stage.add(decalGroup);
 
-  // Build the ROUNDED cleat body by "inflating" the flat silhouette into a
-  // 3D volume: thickness is greatest along the centerline and tapers to zero
-  // at the outline, giving a real shoe-like dome (rounded toe box, instep,
-  // heel) instead of a flat extruded slab. UVs stay planar (raw x,y), so the
-  // student's drawing still projects straight onto the domed upper.
-  function buildInflatedGeometry() {
-    const minX = bounds.minX, minY = bounds.minY, w = bounds.w, h = bounds.h;
-    const CELL = 0.026, MAX_HALF = 0.62, K = 0.72; // grid step, thickness cap, dome steepness
-    const gw = Math.ceil(w / CELL) + 1, gh = Math.ceil(h / CELL) + 1;
-    const P = CLEAT_OUTLINE;
-    const X = gx => minX + gx * CELL, Y = gy => minY + gy * CELL;
-    const inPoly = (px, py) => {
-      let c = false;
-      for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
-        const xi = P[i][0], yi = P[i][1], xj = P[j][0], yj = P[j][1];
-        if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) c = !c;
-      }
-      return c;
-    };
-    const inside = new Uint8Array(gw * gh);
-    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) inside[gy * gw + gx] = inPoly(X(gx), Y(gy)) ? 1 : 0;
-    // chamfer distance transform: distance (in cells) from each inside node to the edge
-    const dist = new Float32Array(gw * gh);
-    for (let i = 0; i < gw * gh; i++) dist[i] = inside[i] ? 1e9 : 0;
-    const oC = 1, dC = Math.SQRT2;
-    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-      const i = gy * gw + gx; if (!inside[i]) continue; let m = dist[i];
-      if (gx > 0) m = Math.min(m, dist[i - 1] + oC);
-      if (gy > 0) m = Math.min(m, dist[i - gw] + oC);
-      if (gx > 0 && gy > 0) m = Math.min(m, dist[i - gw - 1] + dC);
-      if (gx < gw - 1 && gy > 0) m = Math.min(m, dist[i - gw + 1] + dC); dist[i] = m;
-    }
-    for (let gy = gh - 1; gy >= 0; gy--) for (let gx = gw - 1; gx >= 0; gx--) {
-      const i = gy * gw + gx; if (!inside[i]) continue; let m = dist[i];
-      if (gx < gw - 1) m = Math.min(m, dist[i + 1] + oC);
-      if (gy < gh - 1) m = Math.min(m, dist[i + gw] + oC);
-      if (gx < gw - 1 && gy < gh - 1) m = Math.min(m, dist[i + gw + 1] + dC);
-      if (gx > 0 && gy < gh - 1) m = Math.min(m, dist[i + gw - 1] + dC); dist[i] = m;
-    }
-    const bulge = i => Math.min(MAX_HALF, K * Math.sqrt(Math.max(0, (dist[i] - 1)) * CELL)); // 0 at rim -> closes the volume
-    const idxOf = new Int32Array(gw * gh).fill(-1);
-    const pos = [], uv = []; let n = 0;
-    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-      const i = gy * gw + gx; if (!inside[i]) continue;
-      idxOf[i] = n++; const x = X(gx), y = Y(gy), z = bulge(i); pos.push(x, y, z); uv.push(x, y);
-    }
-    const frontCount = n;
-    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
-      const i = gy * gw + gx; if (!inside[i]) continue;
-      const x = X(gx), y = Y(gy), z = bulge(i); pos.push(x, y, -z); uv.push(x, y); n++;
-    }
-    const tris = [];
-    for (let gy = 0; gy < gh - 1; gy++) for (let gx = 0; gx < gw - 1; gx++) {
-      const i00 = gy * gw + gx, i10 = i00 + 1, i01 = i00 + gw, i11 = i01 + 1;
-      if (inside[i00] && inside[i10] && inside[i01] && inside[i11]) {
-        const a = idxOf[i00], b = idxOf[i10], c = idxOf[i01], d = idxOf[i11];
-        tris.push(a, c, b, b, c, d); // front (+z)
-        const A = a + frontCount, B = b + frontCount, C = c + frontCount, D = d + frontCount;
-        tris.push(A, B, C, B, D, C); // back (-z), reversed winding
-      }
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    g.setIndex(tris);
-    g.computeVertexNormals();
-    return g;
-  }
-
-  // One material for the whole cleat; the drawing becomes its map when uploaded.
-  const cleatMaterial = new THREE.MeshStandardMaterial({ color: 0xeef1f5, roughness: 0.52, metalness: 0.05, side: THREE.DoubleSide });
-  const cleat = new THREE.Mesh(buildInflatedGeometry(), cleatMaterial);
-  cleat.castShadow = true;
-  cleatGroup.add(cleat);
-
-  // Lay the cleat down (toe -> left, heel/collar -> right, sole+studs -> down),
-  // then auto-center and scale to fill the viewer regardless of outline size.
-  cleatGroup.rotation.z = -Math.PI / 2;
-  (function fit() {
-    cleatGroup.scale.setScalar(1);
-    cleatGroup.position.set(0, 0, 0);
-    cleatGroup.updateMatrixWorld(true);
-    let box = new THREE.Box3().setFromObject(cleatGroup);
-    const size = box.getSize(new THREE.Vector3());
-    const factor = 5.4 / Math.max(size.x, size.y);
-    cleatGroup.scale.setScalar(factor);
-    cleatGroup.updateMatrixWorld(true);
-    box = new THREE.Box3().setFromObject(cleatGroup);
-    const center = box.getCenter(new THREE.Vector3());
-    cleatGroup.position.set(-center.x, 1.25 - center.y, -center.z);
-  })();
-
-  // Soft ground shadow to seat the cleat.
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.26 }));
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(30, 30),
+    new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.35 })
+  );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1.5;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  /* ---------- Applying the student's drawing ---------- */
-  let sourceImage = null;          // the uploaded photo/scan, unmodified
-  let sourceObjectUrl = null;
-  let drawingTexture = null;
-  const adjust = { flipH: false, rot: 0, fine: 0 }; // rot in 90° steps, fine in degrees
-  const workCanvas = document.createElement('canvas');   // orientation-corrected image
-  const detectCanvas = document.createElement('canvas'); // downscaled copy for detection
+  const loader = new GLTFLoader();
+  let currentModel = null;
+  let modelMesh = null;
+  let modelBounds = null;
+  let currentObjectUrl = null;
+  let artworkTexture = null;
+  let artworkAspect = 2.6;
+  let artworkReferenceCanvas = null;
+  let insideArtworkTexture = null;
+  let insideArtworkAspect = 2.6;
+  let insideApproved = false;
+  let generatingInside = false;
+  let decalTimer = null;
+  const placement = { x: 0, y: 0, scale: 1, rotation: 0, orientation: 0, mirror: true };
+  let rotation = -0.18;
+  let cameraDistance = 6.5;
+  let framedSize = null;
+  let cameraTargetY = 0;
+  let zoom = 1;
+  let dragging = false;
+  let lastPointerX = 0;
+  let lastInteraction = performance.now();
 
-  const adjustBar = document.getElementById('cleat-adjust');
-  const straightenInput = document.getElementById('cleat-straighten');
-  const straightenVal = document.getElementById('cleat-straighten-val');
-
-  // Bounding box of the largest connected blob in a 1/0 mask (4-neighbour).
-  function largestComponentBox(mask, w, h) {
-    const label = new Int32Array(w * h);
-    let best = null, bestSize = 0, cur = 0;
-    const stack = [];
-    for (let start = 0; start < w * h; start++) {
-      if (!mask[start] || label[start]) continue;
-      cur++; let size = 0, x0 = w, y0 = h, x1 = 0, y1 = 0;
-      stack.length = 0; stack.push(start); label[start] = cur;
-      while (stack.length) {
-        const p = stack.pop(); size++;
-        const x = p % w, y = (p / w) | 0;
-        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-        if (x + 1 < w && mask[p + 1] && !label[p + 1]) { label[p + 1] = cur; stack.push(p + 1); }
-        if (x - 1 >= 0 && mask[p - 1] && !label[p - 1]) { label[p - 1] = cur; stack.push(p - 1); }
-        if (y + 1 < h && mask[p + w] && !label[p + w]) { label[p + w] = cur; stack.push(p + w); }
-        if (y - 1 >= 0 && mask[p - w] && !label[p - w]) { label[p - w] = cur; stack.push(p - w); }
-      }
-      if (size > bestSize) { bestSize = size; best = { x0, y0, x1, y1 }; }
-    }
-    return best;
+  function setStatus(message, tone = '') {
+    note.textContent = message;
+    note.dataset.tone = tone;
   }
 
-  // Locate the drawn cleat inside a (corrected) image: find the paper (largest
-  // bright region) to ignore any dark desk/background, then take the largest
-  // inked/colored blob inside it — the cleat — ignoring stray text/watermarks.
-  // Returns fractions of the source canvas.
-  function detectContentBox(srcCanvas) {
-    try {
-      const cap = 520;
-      const s = Math.min(1, cap / Math.max(srcCanvas.width, srcCanvas.height));
-      const w = Math.max(1, Math.round(srcCanvas.width * s));
-      const h = Math.max(1, Math.round(srcCanvas.height * s));
-      detectCanvas.width = w; detectCanvas.height = h;
-      const cx = detectCanvas.getContext('2d', { willReadFrequently: true });
-      cx.drawImage(srcCanvas, 0, 0, w, h);
-      const data = cx.getImageData(0, 0, w, h).data;
-      const N = w * h;
-      const paper = new Uint8Array(N);
-      for (let i = 0; i < N; i++) {
-        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-        paper[i] = (lum > 200 && chroma < 30) ? 1 : 0;
+  function disposeModel(model) {
+    model.traverse(child => {
+      if (!child.isMesh) return;
+      child.geometry?.dispose();
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach(material => {
+        if (!material) return;
+        Object.values(material).forEach(value => {
+          if (value?.isTexture) value.dispose();
+        });
+        material.dispose();
+      });
+    });
+  }
+
+  function clearDecals() {
+    while (decalGroup.children.length) {
+      const decal = decalGroup.children.pop();
+      decal.geometry?.dispose();
+      decal.material?.dispose();
+    }
+  }
+
+  function clearCurrentModel() {
+    if (!currentModel) return;
+    clearDecals();
+    setModelNeutral(false);
+    stage.remove(currentModel);
+    disposeModel(currentModel);
+    currentModel = null;
+    modelMesh = null;
+    modelBounds = null;
+  }
+
+  function prepareModel(model) {
+    stage.rotation.y = 0;
+    let largestMesh = null;
+    let largestVertexCount = 0;
+    model.traverse(child => {
+      if (!child.isMesh) return;
+      const vertexCount = child.geometry?.attributes?.position?.count || 0;
+      if (vertexCount > largestVertexCount) {
+        largestVertexCount = vertexCount;
+        largestMesh = child;
       }
-      const paperBox = largestComponentBox(paper, w, h) || { x0: 0, y0: 0, x1: w - 1, y1: h - 1 };
-      const inset = Math.round(Math.min(w, h) * 0.012);
-      const content = new Uint8Array(N);
-      for (let y = Math.max(0, paperBox.y0 + inset); y <= Math.min(h - 1, paperBox.y1 - inset); y++) {
-        for (let x = Math.max(0, paperBox.x0 + inset); x <= Math.min(w - 1, paperBox.x1 - inset); x++) {
-          const i = y * w + x;
-          const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-          content[i] = (lum < 205 || chroma > 32) ? 1 : 0;
+      child.castShadow = true;
+      child.receiveShadow = true;
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach(material => {
+        if (!material) return;
+        material.side = THREE.FrontSide;
+        if (material.map) material.map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+        material.needsUpdate = true;
+      });
+    });
+
+    model.position.set(0, 0, 0);
+    model.rotation.set(0, 0, 0);
+    model.scale.setScalar(1);
+    model.updateMatrixWorld(true);
+
+    let box = new THREE.Box3().setFromObject(model);
+    const naturalSize = box.getSize(new THREE.Vector3());
+    const scale = 5.5 / Math.max(naturalSize.x, naturalSize.y, naturalSize.z);
+    model.scale.setScalar(scale);
+    model.updateMatrixWorld(true);
+
+    box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    model.position.set(-center.x, -box.min.y, -center.z);
+    model.updateMatrixWorld(true);
+
+    box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const displayCenter = box.getCenter(new THREE.Vector3());
+    modelMesh = largestMesh;
+    modelBounds = box.clone();
+    ground.position.y = box.min.y - 0.035;
+
+    framedSize = size;
+    cameraTargetY = displayCenter.y;
+    zoom = 1;
+    frameCamera();
+
+    stage.rotation.y = rotation;
+    if (artworkTexture) {
+      setModelNeutral(true);
+      rebuildDecals();
+    }
+    return { size, center: displayCenter };
+  }
+
+  function frameCamera() {
+    if (!framedSize) return;
+    const halfFovTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const horizontalFit = framedSize.x / (2 * halfFovTan * Math.max(camera.aspect, 0.45));
+    const verticalFit = framedSize.y / (2 * halfFovTan);
+    cameraDistance = Math.max(horizontalFit, verticalFit) * 1.22 * zoom;
+    camera.position.set(0, cameraTargetY + framedSize.y * 0.06, cameraDistance);
+    camera.lookAt(0, cameraTargetY, 0);
+    camera.near = Math.max(0.01, cameraDistance / 100);
+    camera.far = cameraDistance * 10;
+    camera.updateProjectionMatrix();
+  }
+
+  function setModelNeutral(neutral) {
+    if (!currentModel) return;
+    currentModel.traverse(child => {
+      if (!child.isMesh) return;
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach(material => {
+        if (!material) return;
+        if (!material.userData.cleatOriginal) {
+          material.userData.cleatOriginal = {
+            map: material.map,
+            color: material.color?.clone(),
+            roughness: material.roughness
+          };
+        }
+        const original = material.userData.cleatOriginal;
+        material.map = neutral ? null : original.map;
+        if (material.color && original.color) material.color.copy(neutral ? new THREE.Color(0xf4f5f7) : original.color);
+        if (typeof material.roughness === 'number') material.roughness = neutral ? 0.72 : original.roughness;
+        material.needsUpdate = true;
+      });
+    });
+  }
+
+  function decalMaterial(texture) {
+    return new THREE.MeshStandardMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.02,
+      roughness: 0.68,
+      metalness: 0,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      side: THREE.DoubleSide
+    });
+  }
+
+  function rebuildDecals() {
+    clearDecals();
+    if (!modelMesh || !modelBounds || !artworkTexture) return;
+
+    const previousRotation = stage.rotation.y;
+    stage.rotation.y = 0;
+    scene.updateMatrixWorld(true);
+
+    const size = modelBounds.getSize(new THREE.Vector3());
+    const center = modelBounds.getCenter(new THREE.Vector3());
+    const x = center.x + size.x * placement.x;
+    const y = modelBounds.min.y + size.y * (0.5 + placement.y);
+    const depth = size.z * 0.48;
+    const rotationZ = THREE.MathUtils.degToRad(placement.rotation + placement.orientation);
+
+    const addDecal = (z, texture, aspect, inside = false) => {
+      let width = size.x * 0.88 * placement.scale;
+      let height = width / Math.max(aspect, 0.2);
+      const maxHeight = size.y * 0.78 * placement.scale;
+      if (height > maxHeight) {
+        const correction = maxHeight / height;
+        width *= correction;
+        height *= correction;
+      }
+      const orientation = new THREE.Euler(0, inside ? Math.PI : 0, inside ? -rotationZ : rotationZ);
+      const geometry = new DecalGeometry(
+        modelMesh,
+        new THREE.Vector3(x, y, z),
+        orientation,
+        new THREE.Vector3(width, height, depth)
+      );
+      const decal = new THREE.Mesh(geometry, decalMaterial(texture));
+      decal.renderOrder = 3;
+      decalGroup.add(decal);
+    };
+
+    addDecal(modelBounds.max.z - size.z * 0.12, artworkTexture, artworkAspect);
+    if (insideArtworkTexture) {
+      addDecal(modelBounds.min.z + size.z * 0.12, insideArtworkTexture, insideArtworkAspect, true);
+    } else if (placement.mirror) {
+      addDecal(modelBounds.min.z + size.z * 0.12, artworkTexture, artworkAspect, true);
+    }
+    stage.rotation.y = previousRotation;
+  }
+
+  function scheduleDecals() {
+    window.clearTimeout(decalTimer);
+    decalTimer = window.setTimeout(rebuildDecals, 70);
+  }
+
+  function largestInkBox(canvas) {
+    const cap = 720;
+    const scale = Math.min(1, cap / Math.max(canvas.width, canvas.height));
+    const width = Math.max(1, Math.round(canvas.width * scale));
+    const height = Math.max(1, Math.round(canvas.height * scale));
+    const scan = document.createElement('canvas');
+    scan.width = width;
+    scan.height = height;
+    const context = scan.getContext('2d', { willReadFrequently: true });
+    context.drawImage(canvas, 0, 0, width, height);
+    const pixels = context.getImageData(0, 0, width, height).data;
+    const ink = new Uint8Array(width * height);
+
+    for (let index = 0; index < ink.length; index++) {
+      const offset = index * 4;
+      const r = pixels[offset];
+      const g = pixels[offset + 1];
+      const b = pixels[offset + 2];
+      const darkest = Math.min(r, g, b);
+      const colorRange = Math.max(r, g, b) - darkest;
+      ink[index] = darkest < 218 || colorRange > 26 ? 1 : 0;
+    }
+
+    const visited = new Uint8Array(ink.length);
+    const queue = new Int32Array(ink.length);
+    let best = null;
+    let bestSize = 0;
+
+    for (let start = 0; start < ink.length; start++) {
+      if (!ink[start] || visited[start]) continue;
+      let head = 0;
+      let tail = 0;
+      let count = 0;
+      let minX = width;
+      let minY = height;
+      let maxX = 0;
+      let maxY = 0;
+      queue[tail++] = start;
+      visited[start] = 1;
+
+      while (head < tail) {
+        const point = queue[head++];
+        const x = point % width;
+        const y = Math.floor(point / width);
+        count++;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+
+        const neighbors = [point - 1, point + 1, point - width, point + width];
+        for (const next of neighbors) {
+          if (next < 0 || next >= ink.length || visited[next] || !ink[next]) continue;
+          if ((next === point - 1 || next === point + 1) && Math.floor(next / width) !== y) continue;
+          visited[next] = 1;
+          queue[tail++] = next;
         }
       }
-      const box = largestComponentBox(content, w, h);
-      if (!box) return { fx0: 0, fy0: 0, fx1: 1, fy1: 1 };
-      const px = (box.x1 - box.x0) * 0.012, py = (box.y1 - box.y0) * 0.012;
-      return { fx0: Math.max(0, (box.x0 - px) / w), fy0: Math.max(0, (box.y0 - py) / h), fx1: Math.min(1, (box.x1 + px) / w), fy1: Math.min(1, (box.y1 + py) / h) };
-    } catch (e) {
-      return { fx0: 0, fy0: 0, fx1: 1, fy1: 1 };
+
+      const boxWidth = maxX - minX + 1;
+      const boxHeight = maxY - minY + 1;
+      const score = count + boxWidth * boxHeight * 0.02;
+      if (score > bestSize && boxWidth > width * 0.12 && boxHeight > height * 0.12) {
+        bestSize = score;
+        best = { minX, minY, maxX, maxY };
+      }
+    }
+
+    if (!best) return { x: 0, y: 0, width: canvas.width, height: canvas.height };
+    const padding = Math.max(best.maxX - best.minX, best.maxY - best.minY) * 0.025;
+    const x0 = Math.max(0, best.minX - padding);
+    const y0 = Math.max(0, best.minY - padding);
+    const x1 = Math.min(width, best.maxX + padding);
+    const y1 = Math.min(height, best.maxY + padding);
+    return {
+      x: x0 / scale,
+      y: y0 / scale,
+      width: (x1 - x0) / scale,
+      height: (y1 - y0) / scale
+    };
+  }
+
+  function makePageBackgroundTransparent(canvas) {
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const image = context.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = image.data;
+    for (let point = 0; point < canvas.width * canvas.height; point++) {
+      const offset = point * 4;
+      const r = pixels[offset];
+      const g = pixels[offset + 1];
+      const b = pixels[offset + 2];
+      const darkest = Math.min(r, g, b);
+      const colorRange = Math.max(r, g, b) - darkest;
+      if (darkest > 238 || colorRange < 15) {
+        pixels[offset + 3] = 0;
+      } else {
+        pixels[offset + 3] = Math.min(255, Math.max(0, (colorRange - 8) * 12));
+      }
+    }
+    context.putImageData(image, 0, 0);
+  }
+
+  function prepareArtwork(source) {
+    const crop = largestInkBox(source);
+    const rotate = crop.height > crop.width;
+    const naturalWidth = rotate ? crop.height : crop.width;
+    const naturalHeight = rotate ? crop.width : crop.height;
+    const scale = Math.min(1, 1200 / Math.max(naturalWidth, naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(2, Math.round(naturalWidth * scale));
+    canvas.height = Math.max(2, Math.round(naturalHeight * scale));
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+
+    if (rotate) {
+      context.translate(0, canvas.height);
+      context.rotate(-Math.PI / 2);
+      context.drawImage(source, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.height, canvas.width);
+    } else {
+      context.drawImage(source, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
+    }
+
+    const reference = document.createElement('canvas');
+    reference.width = canvas.width;
+    reference.height = canvas.height;
+    reference.getContext('2d').drawImage(canvas, 0, 0);
+    makePageBackgroundTransparent(canvas);
+    return { decal: canvas, reference };
+  }
+
+  function makeWhiteBackgroundTransparent(canvas) {
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const image = context.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = image.data;
+    for (let point = 0; point < canvas.width * canvas.height; point++) {
+      const offset = point * 4;
+      const whiteness = Math.min(pixels[offset], pixels[offset + 1], pixels[offset + 2]);
+      if (whiteness > 246) pixels[offset + 3] = 0;
+      else if (whiteness > 220) pixels[offset + 3] = Math.round((246 - whiteness) * 9.8);
+    }
+    context.putImageData(image, 0, 0);
+  }
+
+  function prepareGeneratedArtwork(source) {
+    const crop = largestInkBox(source);
+    const scale = Math.min(1, 1200 / Math.max(crop.width, crop.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(2, Math.round(crop.width * scale));
+    canvas.height = Math.max(2, Math.round(crop.height * scale));
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(source, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
+    makeWhiteBackgroundTransparent(canvas);
+    return canvas;
+  }
+
+  function imageDataUrlToCanvas(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        canvas.getContext('2d').drawImage(image, 0, 0);
+        resolve(canvas);
+      };
+      image.onerror = reject;
+      image.src = dataUrl;
+    });
+  }
+
+  function updateInsideControls(state = insideArtworkTexture ? 'ready' : 'fallback') {
+    const ready = Boolean(insideArtworkTexture);
+    insideState.textContent = state === 'generating' ? 'Generating...' : state === 'approved' ? 'Approved' : ready ? 'Ready to review' : 'Mirrored outside';
+    insideState.dataset.state = state;
+    generateInsideButton.disabled = generatingInside || !artworkReferenceCanvas;
+    generateInsideLabel.textContent = generatingInside ? 'Generating...' : ready ? 'Regenerate' : 'Generate inside';
+    viewInsideButton.hidden = !ready;
+    approveInsideButton.hidden = !ready;
+    approveInsideButton.disabled = insideApproved;
+    approveInsideButton.innerHTML = insideApproved
+      ? '<iconify-icon icon="lucide:check-check"></iconify-icon>Approved'
+      : '<iconify-icon icon="lucide:check"></iconify-icon>Approve';
+    removeInsideButton.hidden = !ready;
+    mirrorInput.disabled = ready;
+  }
+
+  async function fileToCanvas(file) {
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+      const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      const page = await pdf.getPage(1);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: Math.min(2.4, 1800 / baseViewport.width) });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      return canvas;
+    }
+
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 2200 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    return canvas;
+  }
+
+  async function applyArtworkFile(file) {
+    setStatus('Finding the cleat artwork on the page...', 'info');
+    try {
+      const source = await fileToCanvas(file);
+      const artwork = prepareArtwork(source);
+      artworkTexture?.dispose();
+      insideArtworkTexture?.dispose();
+      insideArtworkTexture = null;
+      insideApproved = false;
+      artworkReferenceCanvas = artwork.reference;
+      artworkTexture = new THREE.CanvasTexture(artwork.decal);
+      artworkTexture.colorSpace = THREE.SRGBColorSpace;
+      artworkTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      artworkAspect = artwork.decal.width / artwork.decal.height;
+      placement.orientation = 0;
+      artworkControls.hidden = false;
+      setModelNeutral(true);
+      rebuildDecals();
+      updateInsideControls();
+      setStatus('Outside artwork is ready. Generate a coordinated inside or keep the mirrored fallback.', 'success');
+    } catch (error) {
+      console.error('Unable to prepare cleat artwork', error);
+      setStatus('The worksheet could not be prepared. Try a clear JPG or PNG.', 'error');
     }
   }
 
-  // Map the shared outline onto the detected cleat region of the image.
-  // Flip-aware: worksheet top (collar) is the image top, but textures sample
-  // bottom-up, so v is inverted. Outline y runs toe(0) -> collar(max).
-  function mapDrawing(texture, box) {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.wrapS = THREE.ClampToEdgeWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    const fw = box.fx1 - box.fx0, fh = box.fy1 - box.fy0;
-    texture.repeat.set(fw / bounds.w, fh / bounds.h);
-    texture.offset.set(box.fx0 - bounds.minX * (fw / bounds.w), (1 - box.fy1) - bounds.minY * (fh / bounds.h));
-    texture.needsUpdate = true;
+  function loadModel(url, label, revokeAfterLoad = false) {
+    empty.classList.remove('is-ready');
+    empty.querySelector('strong').textContent = 'Loading 3D cleat';
+    empty.querySelector('span').textContent = 'Preparing the detailed model...';
+    setStatus('Loading the 3D cleat...', 'info');
+
+    loader.load(
+      url,
+      gltf => {
+        clearCurrentModel();
+        currentModel = gltf.scene;
+        stage.add(currentModel);
+        prepareModel(currentModel);
+        empty.classList.add('is-ready');
+        previewName.textContent = label;
+        previewMeta.textContent = 'Drag to rotate. Scroll to zoom.';
+        setStatus('Real 3D cleat loaded and ready to inspect.', 'success');
+        if (revokeAfterLoad) URL.revokeObjectURL(url);
+      },
+      event => {
+        if (!event.total) return;
+        const percent = Math.round((event.loaded / event.total) * 100);
+        empty.querySelector('span').textContent = `${percent}% loaded`;
+      },
+      error => {
+        console.error('Unable to load cleat model', error);
+        empty.querySelector('strong').textContent = 'Model could not load';
+        empty.querySelector('span').textContent = 'Try reloading the page or selecting the GLB again.';
+        setStatus('The GLB could not be opened.', 'error');
+        if (revokeAfterLoad) URL.revokeObjectURL(url);
+      }
+    );
   }
 
-  // Redraw the uploaded photo into workCanvas with the teacher's flip / rotate /
-  // straighten adjustments applied, on a white background (so corners read as
-  // paper, not black). This is what the detector and the texture both use.
-  function renderCorrectedCanvas() {
-    const img = sourceImage;
-    const sw = img.naturalWidth || img.width, sh = img.naturalHeight || img.height;
-    const angle = adjust.rot * Math.PI / 2 + adjust.fine * Math.PI / 180;
-    const cos = Math.abs(Math.cos(angle)), sin = Math.abs(Math.sin(angle));
-    const ow = Math.max(1, Math.ceil(sw * cos + sh * sin));
-    const oh = Math.max(1, Math.ceil(sw * sin + sh * cos));
-    workCanvas.width = ow; workCanvas.height = oh;
-    const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, ow, oh);
-    ctx.save();
-    ctx.translate(ow / 2, oh / 2);
-    ctx.rotate(angle);
-    ctx.scale(adjust.flipH ? -1 : 1, 1);
-    ctx.drawImage(img, -sw / 2, -sh / 2);
-    ctx.restore();
-  }
-
-  function projectDrawing() {
-    if (!sourceImage) return;
-    renderCorrectedCanvas();
-    const box = detectContentBox(workCanvas);
-    if (drawingTexture) drawingTexture.dispose();
-    drawingTexture = new THREE.CanvasTexture(workCanvas);
-    mapDrawing(drawingTexture, box);
-    cleatMaterial.map = drawingTexture;
-    cleatMaterial.color.set(0xffffff); // let the drawing show its true colors
-    cleatMaterial.needsUpdate = true;
-    empty.classList.add('is-ready');
-    note.textContent = 'Drawing projected onto the cleat. Use Flip / Rotate / Straighten if it needs aligning.';
-    note.dataset.tone = 'success';
-  }
-
-  function clearDrawing() {
-    cleatMaterial.map = null;
-    cleatMaterial.color.set(0xeef1f5);
-    cleatMaterial.needsUpdate = true;
-    if (drawingTexture) { drawingTexture.dispose(); drawingTexture = null; }
-  }
-
-  function syncAdjustUI() {
-    if (straightenInput) straightenInput.value = String(adjust.fine);
-    if (straightenVal) straightenVal.textContent = `${adjust.fine}°`;
-  }
-  function showAdjustBar(show) { if (adjustBar) adjustBar.hidden = !show; }
-
-  function loadFromInput() {
-    const file = templateInput.files[0];
-    if (!file) return false;
-    if (!/^image\//.test(file.type)) {
-      note.textContent = `Staged “${file.name}”. For the 3D preview, upload a photo/scan (PNG or JPG) of the drawing.`;
-      note.dataset.tone = 'info';
-      return false;
-    }
-    if (sourceObjectUrl) URL.revokeObjectURL(sourceObjectUrl);
-    sourceObjectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      sourceImage = img;
-      adjust.flipH = false; adjust.rot = 0; adjust.fine = 0;
-      syncAdjustUI(); showAdjustBar(true);
-      projectDrawing();
-    };
-    img.onerror = () => {
-      note.textContent = 'That file could not be read as an image. Use a photo, PNG, or JPG of the worksheet.';
-      note.dataset.tone = 'info';
-    };
-    img.src = sourceObjectUrl;
-    return true;
-  }
-  templateInput.addEventListener('change', loadFromInput);
-
-  // Adjust controls (only meaningful once a photo is loaded).
-  let straightenRaf = 0;
-  document.getElementById('cleat-flip')?.addEventListener('click', () => { adjust.flipH = !adjust.flipH; projectDrawing(); });
-  document.getElementById('cleat-rotate')?.addEventListener('click', () => { adjust.rot = (adjust.rot + 1) % 4; projectDrawing(); });
-  document.getElementById('cleat-adjust-reset')?.addEventListener('click', () => { adjust.flipH = false; adjust.rot = 0; adjust.fine = 0; syncAdjustUI(); projectDrawing(); });
-  straightenInput?.addEventListener('input', () => {
-    adjust.fine = Number(straightenInput.value) || 0;
-    if (straightenVal) straightenVal.textContent = `${adjust.fine}°`;
-    if (straightenRaf) cancelAnimationFrame(straightenRaf);
-    straightenRaf = requestAnimationFrame(projectDrawing);
-  });
-
-  /* ---------- Color controls (base cleat color + edge accent) ---------- */
-  const namedColor = value => {
-    if (!value) return null;
-    const probe = new THREE.Color();
-    try { probe.set(value.trim().toLowerCase().replace(/\s+/g, '')); return probe; }
-    catch (e) { return null; }
-  };
-  function applyColors() {
-    const primary = namedColor(document.getElementById('cleat-primary').value);
-    if (primary && !cleatMaterial.map) cleatMaterial.color.copy(primary);
-  }
-
-  /* ---------- Interaction ---------- */
-  let dragging = false, lastX = 0, rotation = 0;
   function resize() {
-    const box = host.getBoundingClientRect();
-    const width = Math.max(1, box.width), height = Math.max(1, box.height);
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+    const width = Math.max(host.clientWidth, 1);
+    const height = Math.max(host.clientHeight, 1);
     renderer.setSize(width, height, false);
+    camera.aspect = width / height;
+    frameCamera();
   }
+
   function updateAngle() {
-    const degrees = Math.round(((rotation * 180 / Math.PI) % 360 + 360) % 360);
-    angleLabel.textContent = `Angle ${degrees}°`;
+    const degrees = ((THREE.MathUtils.radToDeg(rotation) % 360) + 360) % 360;
+    angleLabel.textContent = `Angle ${Math.round(degrees)}\u00b0`;
   }
+
   host.addEventListener('pointerdown', event => {
-    dragging = true; lastX = event.clientX;
-    host.setPointerCapture(event.pointerId); host.classList.add('is-dragging');
+    dragging = true;
+    lastPointerX = event.clientX;
+    lastInteraction = performance.now();
+    host.classList.add('is-dragging');
+    host.setPointerCapture(event.pointerId);
   });
+
   host.addEventListener('pointermove', event => {
     if (!dragging) return;
-    rotation += (event.clientX - lastX) * 0.012; lastX = event.clientX;
-    stage.rotation.y = rotation; updateAngle();
+    rotation += (event.clientX - lastPointerX) * 0.009;
+    lastPointerX = event.clientX;
+    lastInteraction = performance.now();
   });
-  host.addEventListener('pointerup', event => {
-    dragging = false; host.releasePointerCapture(event.pointerId); host.classList.remove('is-dragging');
+
+  function stopDragging(event) {
+    dragging = false;
+    host.classList.remove('is-dragging');
+    if (event.pointerId !== undefined && host.hasPointerCapture(event.pointerId)) {
+      host.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  host.addEventListener('pointerup', stopDragging);
+  host.addEventListener('pointercancel', stopDragging);
+
+  host.addEventListener('wheel', event => {
+    event.preventDefault();
+    zoom = THREE.MathUtils.clamp(zoom + event.deltaY * 0.0008, 0.72, 1.65);
+    frameCamera();
+    lastInteraction = performance.now();
+  }, { passive: false });
+
+  modelInput.addEventListener('change', () => {
+    const file = modelInput.files[0];
+    if (!file) return;
+    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = URL.createObjectURL(file);
+    loadModel(currentObjectUrl, file.name.replace(/\.glb$/i, ''), false);
   });
-  host.addEventListener('pointercancel', () => { dragging = false; host.classList.remove('is-dragging'); });
-  new ResizeObserver(resize).observe(host);
-  resize(); updateAngle();
+
+  templateInput.addEventListener('change', async () => {
+    const file = templateInput.files[0];
+    if (!file) return;
+    await applyArtworkFile(file);
+  });
+
+  generateInsideButton.addEventListener('click', async () => {
+    if (!artworkReferenceCanvas || generatingInside) return;
+    generatingInside = true;
+    insideApproved = false;
+    updateInsideControls('generating');
+    setStatus('Creating a coordinated inside design. This can take about a minute...', 'info');
+
+    try {
+      const response = await fetch('/api/teacher/cleats/generate-inside', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageDataUrl: artworkReferenceCanvas.toDataURL('image/png'),
+          cause: document.getElementById('cleat-cause').value,
+          primaryColor: document.getElementById('cleat-primary').value,
+          secondaryColor: document.getElementById('cleat-secondary').value,
+          notes: document.getElementById('cleat-notes').value
+        })
+      });
+      const result = await response.json();
+      if (response.status === 401) location.href = '/login';
+      if (!response.ok) throw new Error(result.error || 'Inside artwork generation failed.');
+
+      const generatedSource = await imageDataUrlToCanvas(result.imageDataUrl);
+      const generatedArtwork = prepareGeneratedArtwork(generatedSource);
+      insideArtworkTexture?.dispose();
+      insideArtworkTexture = new THREE.CanvasTexture(generatedArtwork);
+      insideArtworkTexture.colorSpace = THREE.SRGBColorSpace;
+      insideArtworkTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      insideArtworkAspect = generatedArtwork.width / generatedArtwork.height;
+      rebuildDecals();
+      rotation = Math.PI;
+      lastInteraction = performance.now();
+      setStatus('Inside design generated. Review it on the cleat, then approve or regenerate.', 'success');
+    } catch (error) {
+      console.error('Unable to generate inside cleat artwork', error);
+      setStatus(error.message || 'The inside artwork could not be generated.', 'error');
+    } finally {
+      generatingInside = false;
+      updateInsideControls();
+    }
+  });
+
+  viewInsideButton.addEventListener('click', () => {
+    rotation = Math.PI;
+    lastInteraction = performance.now();
+    setStatus('Showing the generated inside design.', 'info');
+  });
+
+  approveInsideButton.addEventListener('click', () => {
+    insideApproved = true;
+    updateInsideControls('approved');
+    setStatus('Inside design approved for this private preview.', 'success');
+  });
+
+  removeInsideButton.addEventListener('click', () => {
+    insideArtworkTexture?.dispose();
+    insideArtworkTexture = null;
+    insideApproved = false;
+    mirrorInput.disabled = false;
+    rebuildDecals();
+    updateInsideControls();
+    setStatus('Generated inside removed. The mirrored outside is showing again.', 'info');
+  });
+
+  artworkControls.querySelectorAll('[data-cleat-placement]').forEach(input => {
+    input.addEventListener('input', () => {
+      const key = input.dataset.cleatPlacement;
+      const value = Number(input.value);
+      placement[key] = key === 'scale' ? value / 100 : key === 'rotation' ? value : value / 100;
+      scheduleDecals();
+    });
+  });
+
+  mirrorInput.addEventListener('change', () => {
+    placement.mirror = mirrorInput.checked;
+    scheduleDecals();
+  });
+
+  document.getElementById('cleat-artwork-rotate').addEventListener('click', () => {
+    placement.orientation = placement.orientation ? 0 : 180;
+    rebuildDecals();
+    setStatus('Artwork rotated 180 degrees.', 'info');
+  });
+
+  document.getElementById('cleat-artwork-remove').addEventListener('click', () => {
+    clearDecals();
+    artworkTexture?.dispose();
+    artworkTexture = null;
+    insideArtworkTexture?.dispose();
+    insideArtworkTexture = null;
+    artworkReferenceCanvas = null;
+    insideApproved = false;
+    setModelNeutral(false);
+    templateInput.value = '';
+    artworkControls.hidden = true;
+    updateInsideControls();
+    setStatus('Worksheet artwork removed.', 'info');
+  });
 
   document.getElementById('cleat-preview').addEventListener('click', () => {
     const student = document.getElementById('cleat-student-name').value.trim();
     const team = document.getElementById('cleat-team').value.trim();
     const cause = document.getElementById('cleat-cause').value.trim();
-    name.textContent = student ? `${student}'s cleat` : 'Generic football cleat';
-    meta.textContent = [team, cause].filter(Boolean).join(' · ') || 'Drag the cleat to rotate it.';
-    applyColors();
-    if (sourceImage) {
-      projectDrawing();
-    } else {
-      empty.classList.add('is-ready');
-      note.textContent = 'Preview staged privately with your colors. Add a worksheet photo to project the drawing.';
-      note.dataset.tone = 'success';
-    }
+    previewName.textContent = student ? `${student}'s cleat` : 'Red Chaos cleat';
+    previewMeta.textContent = [team, cause].filter(Boolean).join(' \u2022 ') || 'Drag to rotate. Scroll to zoom.';
   });
 
   document.getElementById('cleat-reset').addEventListener('click', () => {
-    ['cleat-student-name', 'cleat-team', 'cleat-cause', 'cleat-primary', 'cleat-secondary', 'cleat-notes'].forEach(id => { document.getElementById(id).value = ''; });
-    templateInput.value = ''; modelInput.value = '';
-    if (sourceObjectUrl) { URL.revokeObjectURL(sourceObjectUrl); sourceObjectUrl = null; }
-    sourceImage = null;
-    adjust.flipH = false; adjust.rot = 0; adjust.fine = 0;
-    syncAdjustUI(); showAdjustBar(false);
-    clearDrawing();
-    cleatMaterial.color.set(0xeef1f5);
-    rotation = 0; stage.rotation.y = 0;
-    name.textContent = 'Generic football cleat';
-    meta.textContent = 'Drag the cleat to rotate it.';
-    empty.classList.remove('is-ready');
-    note.textContent = ''; updateAngle();
-  });
-
-  modelInput.addEventListener('change', () => {
-    if (modelInput.files[0]) {
-      note.textContent = `Model selected: ${modelInput.files[0].name}. GLB loading will be connected when the final model is ready.`;
-      note.dataset.tone = 'info';
+    ['cleat-student-name', 'cleat-team', 'cleat-cause', 'cleat-primary', 'cleat-secondary', 'cleat-notes']
+      .forEach(id => { document.getElementById(id).value = ''; });
+    templateInput.value = '';
+    modelInput.value = '';
+    rotation = -0.18;
+    clearDecals();
+    artworkTexture?.dispose();
+    artworkTexture = null;
+    insideArtworkTexture?.dispose();
+    insideArtworkTexture = null;
+    artworkReferenceCanvas = null;
+    insideApproved = false;
+    setModelNeutral(false);
+    artworkControls.hidden = true;
+    placement.x = 0;
+    placement.y = 0;
+    placement.scale = 1;
+    placement.rotation = 0;
+    placement.orientation = 0;
+    placement.mirror = true;
+    mirrorInput.checked = true;
+    mirrorInput.disabled = false;
+    updateInsideControls();
+    artworkControls.querySelectorAll('[data-cleat-placement]').forEach(input => {
+      input.value = input.dataset.cleatPlacement === 'scale' ? '100' : '0';
+    });
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
     }
+    loadModel(defaultModelUrl, 'Red Chaos cleat');
   });
 
-  function animate() {
+  const resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(host);
+  resize();
+
+  function animate(time) {
     requestAnimationFrame(animate);
-    if (!dragging) { rotation += 0.0016; stage.rotation.y = rotation; }
+    if (!dragging && currentModel && time - lastInteraction > 2600) rotation += 0.0012;
+    stage.rotation.y = rotation;
     updateAngle();
     renderer.render(scene, camera);
   }
-  animate();
-})();
+
+  updateInsideControls();
+  loadModel(defaultModelUrl, 'Red Chaos cleat');
+  requestAnimationFrame(animate);
+}

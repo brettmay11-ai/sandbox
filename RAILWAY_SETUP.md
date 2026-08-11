@@ -16,6 +16,7 @@ Add these variables to the NFL web service:
 - `TEACHER_PIN`: a private 4-8 digit PIN
 - `TEACHER_DISPLAY_NAME`: optional teacher display name
 - `NODE_ENV`: `production`
+- `OPENAI_API_KEY`: enables teacher-only inside-cleat artwork generation
 
 Do not share the teacher PIN with students.
 

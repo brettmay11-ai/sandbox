@@ -3,7 +3,8 @@
   "version": "2.1.0",
   "private": true,
   "scripts": {
-    "start": "node game-bootstrap.js"
+    "start": "node game-bootstrap.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"
