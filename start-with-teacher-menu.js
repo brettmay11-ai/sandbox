@@ -43,16 +43,12 @@ function redirect(response, location) {
   response.end();
 }
 
-function teacherMenuMarkup() {
-  return `
-<nav class="teacher-top-menu" aria-label="Teacher tools">
-  <a href="/teacher" class="teacher-top-menu-link">Dashboard</a>
-  <a href="#student-management" class="teacher-top-menu-link teacher-top-menu-primary" onclick="return openTeacherStudentManagement(event)">Student Management</a>
-  <a href="/teacher?page=writing" class="teacher-top-menu-link">Writing Review</a>
-  <a href="/teacher?page=coach" class="teacher-top-menu-link">Coach Flags</a>
-  <a href="/teacher?page=cleats" class="teacher-top-menu-link">Cleats</a>
-</nav>
-<script>
+function headerStudentManagementButton() {
+  return '<button type="button" onclick="return openTeacherStudentManagement(event)" class="px-3 py-2 text-xs bg-blue-500/15 text-blue-200 border border-blue-400/20 rounded-lg">Manage Students</button>';
+}
+
+function studentManagementScript() {
+  return `<script>
 function openTeacherStudentManagement(event){
   if(event) event.preventDefault();
   const panel=document.getElementById('student-management')||document.querySelector('.teacher-secondary-panel');
@@ -69,22 +65,11 @@ window.addEventListener('DOMContentLoaded',()=>{
 </script>`;
 }
 
-function teacherMenuStyles() {
-  return `<style>
-.teacher-top-menu{position:sticky;top:4rem;z-index:9;display:flex;gap:.5rem;align-items:center;overflow-x:auto;padding:.75rem 1.25rem;background:rgba(10,10,10,.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.1)}
-.teacher-top-menu-link{white-space:nowrap;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);border-radius:999px;padding:.6rem .9rem;font-size:.75rem;font-weight:800;color:rgba(255,255,255,.82);text-decoration:none;transition:.18s ease}
-.teacher-top-menu-link:hover{background:rgba(255,255,255,.1);color:#fff}
-.teacher-top-menu-primary{background:rgba(37,99,235,.26);border-color:rgba(96,165,250,.52);color:#bfdbfe}
-#student-management{scroll-margin-top:8.5rem}
-@media(max-width:720px){.teacher-top-menu{top:4rem;padding:.65rem .8rem}.teacher-top-menu-link{font-size:.68rem;padding:.55rem .75rem}}
-</style>`;
-}
-
 function transformTeacherHtml(html) {
   let output = html;
-  output = output.replace('</style><link rel="stylesheet" href="visual-system.css">', `${teacherMenuStyles()}</style><link rel="stylesheet" href="visual-system.css">`);
   output = output.replace('<details class="teacher-secondary-panel" data-teacher-page="students">', '<details id="student-management" class="teacher-secondary-panel" data-teacher-page="students">');
-  output = output.replace('</header>\n<main', `</header>${teacherMenuMarkup()}\n<main`);
+  output = output.replace('<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>', `${headerStudentManagementButton()}<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>`);
+  output = output.replace('</body></html>', `${studentManagementScript()}</body></html>`);
   return output;
 }
 
@@ -96,7 +81,7 @@ function serveTeacherPortal(response) {
 }
 
 const originalCreateServer = http.createServer.bind(http);
-http.createServer = function createServerWithTeacherTopMenu(listener) {
+http.createServer = function createServerWithTeacherHeaderLink(listener) {
   return originalCreateServer(async (request, response) => {
     try {
       const pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname);
@@ -108,7 +93,7 @@ http.createServer = function createServerWithTeacherTopMenu(listener) {
       }
       return listener(request, response);
     } catch (error) {
-      console.error('Teacher menu wrapper failed.', error);
+      console.error('Teacher header link wrapper failed.', error);
       return listener(request, response);
     }
   });
