@@ -73,6 +73,56 @@ function transformTeacherHtml(html) {
   return output;
 }
 
+function adminDashboardScript() {
+  return `<script>
+(function(){
+  function selectedClassName(){
+    const filter=document.getElementById('filter-class');
+    if(!filter) return 'All Classes';
+    const option=filter.options[filter.selectedIndex];
+    return option && option.value ? option.textContent : 'All Classes';
+  }
+  function updateClassDashboardLabel(){
+    const label=document.getElementById('class-dashboard-class-name');
+    if(label) label.textContent=selectedClassName();
+  }
+  window.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('[data-tab="students"]').forEach(button=>{button.textContent='Dashboard'});
+    const heading=[...document.querySelectorAll('h2')].find(node=>node.textContent.trim()==='Manage Students');
+    if(heading){
+      heading.innerHTML='Class Dashboard <span id="class-dashboard-class-name" class="badge ml-2 align-middle">All Classes</span>';
+    }
+    const originalRenderStudents=window.renderStudents;
+    if(typeof originalRenderStudents==='function'){
+      window.renderStudents=function(){
+        const result=originalRenderStudents.apply(this,arguments);
+        updateClassDashboardLabel();
+        return result;
+      };
+    }
+    document.addEventListener('change',event=>{
+      if(event.target && event.target.id==='filter-class') updateClassDashboardLabel();
+    });
+    let attempts=0;
+    const timer=setInterval(()=>{
+      updateClassDashboardLabel();
+      attempts+=1;
+      if(attempts>12) clearInterval(timer);
+    },250);
+  });
+})();
+</script>`;
+}
+
+function transformAdminHtml(html) {
+  let output = html;
+  output = output.replace(/(<button class="tab btn btn-ghost" data-tab="students">)Students(<\/button>)/g, '$1Dashboard$2');
+  output = output.replace('Manage Students</h2>', 'Class Dashboard <span id="class-dashboard-class-name" class="badge ml-2 align-middle">All Classes</span></h2>');
+  output = output.replace('</body>\n</html>', `${adminDashboardScript()}</body>\n</html>`);
+  output = output.replace('</body></html>', `${adminDashboardScript()}</body></html>`);
+  return output;
+}
+
 function serveTeacherPortal(response) {
   const file = path.join(__dirname, 'teacher.html');
   const html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
@@ -80,8 +130,15 @@ function serveTeacherPortal(response) {
   response.end(html);
 }
 
+function serveAdminPortal(response) {
+  const file = path.join(__dirname, 'admin.html');
+  const html = transformAdminHtml(fs.readFileSync(file, 'utf8'));
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.end(html);
+}
+
 const originalCreateServer = http.createServer.bind(http);
-http.createServer = function createServerWithTeacherHeaderLink(listener) {
+http.createServer = function createServerWithHeaderTweaks(listener) {
   return originalCreateServer(async (request, response) => {
     try {
       const pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname);
@@ -91,9 +148,15 @@ http.createServer = function createServerWithTeacherHeaderLink(listener) {
         if (user.role !== 'teacher' && user.role !== 'super_admin') return redirect(response, '/');
         return serveTeacherPortal(response);
       }
+      if ((pathname === '/admin' || pathname === '/admin.html') && request.method === 'GET') {
+        const user = await getSessionUser(request);
+        if (!user) return redirect(response, '/login');
+        if (user.role !== 'super_admin') return redirect(response, '/');
+        return serveAdminPortal(response);
+      }
       return listener(request, response);
     } catch (error) {
-      console.error('Teacher header link wrapper failed.', error);
+      console.error('Header tweak wrapper failed.', error);
       return listener(request, response);
     }
   });
