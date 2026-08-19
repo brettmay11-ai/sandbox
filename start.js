@@ -16,6 +16,10 @@ function validPin(value) {
   return /^\d{4,8}$/.test(String(value || ''));
 }
 
+function tokenHash(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 function hashPin(pin, salt = crypto.randomBytes(16).toString('hex')) {
   return new Promise((resolve, reject) => {
     crypto.scrypt(String(pin), salt, 64, (error, key) => {
@@ -23,6 +27,39 @@ function hashPin(pin, salt = crypto.randomBytes(16).toString('hex')) {
       else resolve(`${salt}:${key.toString('hex')}`);
     });
   });
+}
+
+function parseCookies(request) {
+  return Object.fromEntries(
+    String(request.headers.cookie || '')
+      .split(';')
+      .map(value => value.trim().split('=').map(decodeURIComponent))
+      .filter(parts => parts.length === 2)
+  );
+}
+
+function sendJson(response, status, data) {
+  response.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' });
+  response.end(JSON.stringify(data));
+}
+
+function readJson(request) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    request.on('data', chunk => {
+      body += chunk;
+      if (body.length > 100000) request.destroy();
+    });
+    request.on('end', () => {
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch (error) { reject(error); }
+    });
+    request.on('error', reject);
+  });
+}
+
+function safeText(value, max = 80) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, max);
 }
 
 async function ensureClass(pool, slug, name, targetStudentCount) {
@@ -137,8 +174,145 @@ async function bootstrapRoles() {
   }
 }
 
+function installAdminTeacherApi() {
+  const http = require('http');
+  const createServer = http.createServer.bind(http);
+  const apiPool = new Pool({ connectionString:databaseUrl, ...(process.env.PGSSL === 'true' ? { ssl:{ rejectUnauthorized:false } } : {}) });
+
+  async function getSessionUser(request) {
+    const token = parseCookies(request).nfl_session;
+    if (!token) return null;
+    const result = await apiPool.query(
+      `SELECT u.id,u.username,u.display_name,u.role,u.class_id
+       FROM sessions s
+       JOIN users u ON u.id=s.user_id
+       WHERE s.token_hash=$1 AND s.expires_at>NOW() AND u.active=TRUE`,
+      [tokenHash(token)]
+    );
+    return result.rows[0] || null;
+  }
+
+  async function requireSuperAdmin(request, response) {
+    const user = await getSessionUser(request);
+    if (!user) {
+      sendJson(response, 401, { error:'Please sign in.' });
+      return null;
+    }
+    if (user.role !== 'super_admin') {
+      sendJson(response, 403, { error:'Super admin access required.' });
+      return null;
+    }
+    return user;
+  }
+
+  async function handleTeacherApi(request, response, pathname) {
+    if (!pathname.startsWith('/api/admin/teachers')) return false;
+    const admin = await requireSuperAdmin(request, response);
+    if (!admin) return true;
+
+    if (pathname === '/api/admin/teachers' && request.method === 'GET') {
+      const result = await apiPool.query(
+        `SELECT u.id,u.username,u.display_name,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at,
+                COUNT(s.id) FILTER (WHERE s.role='student')::int AS student_count
+         FROM users u
+         LEFT JOIN classes c ON c.id=u.class_id
+         LEFT JOIN users s ON s.class_id=u.class_id AND s.role='student' AND s.active=TRUE
+         WHERE u.role='teacher'
+         GROUP BY u.id,c.name
+         ORDER BY u.display_name`
+      );
+      sendJson(response, 200, { teachers:result.rows });
+      return true;
+    }
+
+    if (pathname === '/api/admin/teachers' && request.method === 'POST') {
+      const body = await readJson(request);
+      const username = normalizeUsername(body.username);
+      const displayName = safeText(body.displayName || username, 80);
+      const classId = Number(body.classId) || null;
+      if (username.length < 2 || !validPin(body.pin) || !displayName || !classId) {
+        sendJson(response, 400, { error:'Enter class, username, display name, and 4-8 digit PIN.' });
+        return true;
+      }
+      const classCheck = await apiPool.query('SELECT id FROM classes WHERE id=$1 AND active=TRUE', [classId]);
+      if (!classCheck.rowCount) {
+        sendJson(response, 400, { error:'Choose an active class.' });
+        return true;
+      }
+      try {
+        const result = await apiPool.query(
+          'INSERT INTO users(username,display_name,pin_hash,role,class_id,active) VALUES($1,$2,$3,$4,$5,TRUE) RETURNING id,username,display_name,class_id,active',
+          [username, displayName, await hashPin(body.pin), 'teacher', classId]
+        );
+        sendJson(response, 201, { teacher:result.rows[0] });
+        return true;
+      } catch (error) {
+        if (error.code === '23505') {
+          sendJson(response, 409, { error:'That username already exists.' });
+          return true;
+        }
+        throw error;
+      }
+    }
+
+    const teacherMatch = pathname.match(/^\/api\/admin\/teachers\/(\d+)$/);
+    if (teacherMatch && request.method === 'PATCH') {
+      const body = await readJson(request);
+      const displayName = body.displayName ? safeText(body.displayName, 80) : null;
+      const classId = body.classId === undefined ? null : Number(body.classId) || null;
+      const active = body.active === undefined ? null : Boolean(body.active);
+      const result = await apiPool.query(
+        `UPDATE users
+         SET display_name=COALESCE($2,display_name),
+             class_id=COALESCE($3,class_id),
+             active=COALESCE($4,active)
+         WHERE id=$1 AND role='teacher'
+         RETURNING id,username,display_name,class_id,active`,
+        [teacherMatch[1], displayName, classId, active]
+      );
+      if (!result.rowCount) {
+        sendJson(response, 404, { error:'Teacher not found.' });
+        return true;
+      }
+      sendJson(response, 200, { teacher:result.rows[0] });
+      return true;
+    }
+
+    const pinMatch = pathname.match(/^\/api\/admin\/teachers\/(\d+)\/pin$/);
+    if (pinMatch && request.method === 'PATCH') {
+      const body = await readJson(request);
+      if (!validPin(body.pin)) {
+        sendJson(response, 400, { error:'PIN must contain 4-8 digits.' });
+        return true;
+      }
+      await apiPool.query("UPDATE users SET pin_hash=$1 WHERE id=$2 AND role='teacher'", [await hashPin(body.pin), pinMatch[1]]);
+      await apiPool.query('DELETE FROM sessions WHERE user_id=$1', [pinMatch[1]]);
+      sendJson(response, 200, { ok:true });
+      return true;
+    }
+
+    sendJson(response, 404, { error:'Not found.' });
+    return true;
+  }
+
+  http.createServer = function createServerWithAdminTeachers(originalListener) {
+    return createServer(async (request, response) => {
+      try {
+        const pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname);
+        if (await handleTeacherApi(request, response, pathname)) return;
+        originalListener(request, response);
+      } catch (error) {
+        console.error('Admin teacher API failed.', error);
+        if (!response.headersSent) sendJson(response, 500, { error:'Server error.' });
+        else response.end();
+      }
+    });
+  };
+}
+
 bootstrapRoles()
   .then(() => {
+    installAdminTeacherApi();
     // Prevent the legacy server bootstrap from promoting TEACHER_USERNAME to super_admin.
     delete process.env.TEACHER_USERNAME;
     delete process.env.TEACHER_PIN;
