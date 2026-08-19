@@ -9,7 +9,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 <style>
-*{box-sizing:border-box}body{font-family:'Inter',system-ui,sans-serif;background:#07111d;color:#fff}h1,h2{font-family:'Anton','Inter',sans-serif;font-weight:400;letter-spacing:.02em}.glass{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);box-shadow:0 20px 70px rgba(0,0,0,.28)}.field-bg{background:radial-gradient(circle at top left,rgba(1,51,105,.42),transparent 38%),radial-gradient(circle at bottom right,rgba(213,10,10,.2),transparent 34%),#07111d}.tab[aria-selected="true"]{background:#013369;border-color:#5b9bd5;color:#fff}.input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.7rem .85rem;width:100%;outline:none}.input:focus{border-color:#5b9bd5;background:rgba(91,155,213,.08)}.btn{border-radius:14px;padding:.7rem 1rem;font-weight:800;transition:.18s}.btn-primary{background:#013369;border:1px solid rgba(91,155,213,.6)}.btn-primary:hover{background:#084b8a}.btn-ghost{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}.btn-danger{background:rgba(213,10,10,.18);border:1px solid rgba(213,10,10,.38);color:#fecaca}th{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.45);font-weight:800;text-align:left;padding:12px}td{padding:12px;border-top:1px solid rgba(255,255,255,.08);font-size:14px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .6rem;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06)}
+*{box-sizing:border-box}body{font-family:'Inter',system-ui,sans-serif;background:#07111d;color:#fff}h1,h2{font-family:'Anton','Inter',sans-serif;font-weight:400;letter-spacing:.02em}.field-bg{background:radial-gradient(circle at top left,rgba(1,51,105,.42),transparent 38%),radial-gradient(circle at bottom right,rgba(213,10,10,.2),transparent 34%),#07111d}.glass{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);box-shadow:0 20px 70px rgba(0,0,0,.28)}.tab[aria-selected="true"]{background:#013369;border-color:#5b9bd5;color:#fff}.input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.7rem .85rem;width:100%;outline:none;color:#fff}.input:focus{border-color:#5b9bd5;background:rgba(91,155,213,.08)}.btn{border-radius:14px;padding:.7rem 1rem;font-weight:800;transition:.18s;display:inline-flex;align-items:center;justify-content:center;gap:.4rem}.btn-primary{background:#013369;border:1px solid rgba(91,155,213,.6)}.btn-primary:hover{background:#084b8a}.btn-ghost{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}.btn-danger{background:rgba(213,10,10,.18);border:1px solid rgba(213,10,10,.38);color:#fecaca}th{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.45);font-weight:800;text-align:left;padding:12px}td{padding:12px;border-top:1px solid rgba(255,255,255,.08);font-size:14px;vertical-align:middle}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .6rem;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06)}.hidden{display:none!important}
 </style>
 </head>
 <body class="field-bg min-h-screen">
@@ -19,9 +19,10 @@
       <span class="w-11 h-11 rounded-2xl bg-white grid place-items-center border-4 border-[#d50a0a]"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="NFL" class="w-7 h-8 object-contain"></span>
       <span><span class="block text-xl font-black">NFL Classroom</span><span class="block text-xs uppercase tracking-[.2em] text-blue-300">Super Admin</span></span>
     </a>
-    <nav class="hidden md:flex items-center gap-2" aria-label="Admin sections">
+    <nav class="hidden lg:flex items-center gap-2" aria-label="Admin sections">
       <button class="tab btn btn-ghost" data-tab="overview" aria-selected="true">Overview</button>
       <button class="tab btn btn-ghost" data-tab="classes">Classes</button>
+      <button class="tab btn btn-ghost" data-tab="teachers">Teachers</button>
       <button class="tab btn btn-ghost" data-tab="students">Students</button>
     </nav>
     <div class="flex items-center gap-2">
@@ -29,6 +30,12 @@
       <button id="logout" class="btn btn-danger">Sign Out</button>
     </div>
   </div>
+  <nav class="lg:hidden px-5 pb-4 grid grid-cols-4 gap-2" aria-label="Mobile admin sections">
+    <button class="tab btn btn-ghost text-xs" data-tab="overview" aria-selected="true">Overview</button>
+    <button class="tab btn btn-ghost text-xs" data-tab="classes">Classes</button>
+    <button class="tab btn btn-ghost text-xs" data-tab="teachers">Teachers</button>
+    <button class="tab btn btn-ghost text-xs" data-tab="students">Students</button>
+  </nav>
 </header>
 
 <main class="max-w-7xl mx-auto px-5 py-8 space-y-8">
@@ -37,9 +44,9 @@
       <div>
         <p class="text-xs uppercase tracking-[.24em] text-blue-300 font-black">Back End Control Center</p>
         <h1 class="text-4xl md:text-6xl mt-2">Super Admin Portal</h1>
-        <p id="welcome" class="text-white/55 mt-3 max-w-2xl">Manage classes, student routing, and roster setup for the NFL Project Hub.</p>
+        <p id="welcome" class="text-white/55 mt-3 max-w-2xl">Manage classes, teachers, student routing, and roster setup for the NFL Project Hub.</p>
       </div>
-      <button id="refresh" class="btn btn-primary inline-flex items-center justify-center gap-2"><iconify-icon icon="lucide:refresh-cw"></iconify-icon>Refresh Data</button>
+      <button id="refresh" class="btn btn-primary"><iconify-icon icon="lucide:refresh-cw"></iconify-icon>Refresh Data</button>
     </div>
   </section>
 
@@ -72,6 +79,23 @@
     </div>
   </section>
 
+  <section id="teachers-panel" class="panel hidden space-y-8">
+    <div class="glass rounded-[28px] p-6">
+      <h2 class="text-3xl mb-5">Add Teacher</h2>
+      <form id="teacher-form" class="grid md:grid-cols-6 gap-4 items-end">
+        <label><span class="text-sm text-white/50">Class</span><select id="teacher-class" class="input mt-2" required></select></label>
+        <label><span class="text-sm text-white/50">Username</span><input id="teacher-username" class="input mt-2" placeholder="jenkins" required></label>
+        <label class="md:col-span-2"><span class="text-sm text-white/50">Display Name</span><input id="teacher-name" class="input mt-2" placeholder="Ms. Jenkins" required></label>
+        <label><span class="text-sm text-white/50">PIN</span><input id="teacher-pin" class="input mt-2" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="1234" required></label>
+        <button class="btn btn-primary" type="submit">Add Teacher</button>
+      </form>
+    </div>
+    <div class="glass rounded-[28px] p-6 overflow-x-auto">
+      <h2 class="text-3xl mb-5">Manage Teachers</h2>
+      <table class="w-full min-w-[880px]"><thead><tr><th>Name</th><th>Username</th><th>Assigned Class</th><th>Students</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="teachers-table"></tbody></table>
+    </div>
+  </section>
+
   <section id="students-panel" class="panel hidden space-y-8">
     <div class="glass rounded-[28px] p-6">
       <h2 class="text-3xl mb-5">Add Student</h2>
@@ -97,46 +121,54 @@
 </main>
 
 <script>
-let state={user:null,classes:[],students:[]};
+let state={user:null,classes:[],teachers:[],students:[]};
 const $=id=>document.getElementById(id);
+const activeClasses=()=>state.classes.filter(c=>c.active);
+function escapeHtml(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function toast(message,isError=false){const node=$('toast');node.textContent=message;node.className=`fixed bottom-5 left-1/2 -translate-x-1/2 rounded-2xl border px-4 py-3 shadow-2xl text-sm ${isError?'border-red-500/30 bg-red-950 text-red-100':'border-white/15 bg-slate-950 text-white'}`;setTimeout(()=>node.classList.add('hidden'),3200)}
 async function api(url,options={}){const response=await fetch(url,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});let data={};try{data=await response.json()}catch(error){}if(response.status===401){window.location.href='/login';throw new Error('Please sign in.')}if(!response.ok)throw new Error(data.error||'Request failed.');return data}
 function setTab(name){document.querySelectorAll('.tab').forEach(btn=>btn.setAttribute('aria-selected',String(btn.dataset.tab===name)));document.querySelectorAll('.panel').forEach(panel=>panel.classList.add('hidden'));$(name+'-panel').classList.remove('hidden')}
 function formatDate(value){return value?new Date(value).toLocaleDateString(): '—'}
+function classOptions(selected=''){return activeClasses().map(c=>`<option value="${c.id}" ${String(c.id)===String(selected)?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
 function renderClasses(){
-  $('metric-classes').textContent=state.classes.filter(c=>c.active).length;
+  $('metric-classes').textContent=activeClasses().length;
   $('metric-students').textContent=state.classes.reduce((sum,c)=>sum+(Number(c.active_student_count)||0),0);
-  $('class-cards').innerHTML=state.classes.map(c=>`<article class="rounded-3xl border border-white/10 bg-white/[.035] p-5"><div class="flex items-start justify-between gap-3"><div><h3 class="text-xl font-black">${c.name}</h3><p class="text-sm text-white/45 mt-1">${c.school_year}</p></div><span class="badge">${c.active?'Active':'Archived'}</span></div><div class="mt-5 flex items-end justify-between"><span class="text-white/45">Students</span><strong class="text-4xl">${c.active_student_count}/${c.target_student_count}</strong></div><button class="btn btn-ghost mt-5 w-full" data-open-students="${c.id}">View Students</button></article>`).join('');
-  $('classes-table').innerHTML=state.classes.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.slug}</td><td>${c.active_student_count}/${c.target_student_count}</td><td>${c.school_year}</td><td><span class="badge">${c.active?'Active':'Archived'}</span></td><td><button class="btn ${c.active?'btn-danger':'btn-primary'}" data-toggle-class="${c.id}" data-active="${c.active}">${c.active?'Archive':'Reactivate'}</button></td></tr>`).join('');
-  const classOptions=state.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  $('student-class').innerHTML=classOptions;
-  $('filter-class').innerHTML='<option value="">All Classes</option>'+classOptions;
+  $('class-cards').innerHTML=state.classes.map(c=>`<article class="rounded-3xl border border-white/10 bg-white/[.035] p-5"><div class="flex items-start justify-between gap-3"><div><h3 class="text-xl font-black">${escapeHtml(c.name)}</h3><p class="text-sm text-white/45 mt-1">${escapeHtml(c.school_year)}</p></div><span class="badge">${c.active?'Active':'Archived'}</span></div><div class="mt-5 flex items-end justify-between"><span class="text-white/45">Students</span><strong class="text-4xl">${c.active_student_count}/${c.target_student_count}</strong></div><button class="btn btn-ghost mt-5 w-full" data-open-students="${c.id}">View Students</button></article>`).join('');
+  $('classes-table').innerHTML=state.classes.map(c=>`<tr><td><strong>${escapeHtml(c.name)}</strong></td><td>${escapeHtml(c.slug)}</td><td>${c.active_student_count}/${c.target_student_count}</td><td>${escapeHtml(c.school_year)}</td><td><span class="badge">${c.active?'Active':'Archived'}</span></td><td><button class="btn ${c.active?'btn-danger':'btn-primary'}" data-toggle-class="${c.id}" data-active="${c.active}">${c.active?'Archive':'Reactivate'}</button></td></tr>`).join('');
+  const options=classOptions();
+  $('student-class').innerHTML=options;
+  $('teacher-class').innerHTML=options;
+  $('filter-class').innerHTML='<option value="">All Classes</option>'+options;
+}
+function renderTeachers(){
+  $('teachers-table').innerHTML=state.teachers.map(t=>`<tr><td><input class="input !py-2" value="${escapeHtml(t.display_name)}" data-teacher-name="${t.id}"></td><td>${escapeHtml(t.username)}</td><td><select class="input !py-2" data-teacher-class="${t.id}">${classOptions(t.class_id)}</select></td><td>${t.student_count||0}</td><td><span class="badge">${t.active?'Active':'Inactive'}</span></td><td>${formatDate(t.last_login_at)}</td><td class="flex flex-wrap gap-2"><button class="btn btn-primary" data-save-teacher="${t.id}">Save</button><button class="btn btn-ghost" data-pin-teacher="${t.id}">Reset PIN</button><button class="btn ${t.active?'btn-danger':'btn-primary'}" data-toggle-teacher="${t.id}" data-active="${t.active}">${t.active?'Deactivate':'Activate'}</button></td></tr>`).join('') || '<tr><td colspan="7" class="text-white/45">No teachers found.</td></tr>';
 }
 function renderStudents(){
   const classId=$('filter-class')?.value||'';
   const rows=state.students.filter(s=>!classId||String(s.class_id)===String(classId));
-  $('students-table').innerHTML=rows.map(s=>`<tr><td><strong>${s.display_name}</strong></td><td>${s.username}</td><td>${s.class_name||'—'}</td><td><input class="input !py-2 uppercase" maxlength="3" value="${s.selected_team||''}" data-team-for="${s.id}"></td><td><span class="badge">${s.active?'Active':'Inactive'}</span></td><td>${formatDate(s.last_login_at)}</td><td class="flex gap-2"><button class="btn btn-primary" data-save-student="${s.id}">Save</button><button class="btn ${s.active?'btn-danger':'btn-primary'}" data-toggle-student="${s.id}" data-active="${s.active}">${s.active?'Deactivate':'Activate'}</button></td></tr>`).join('') || '<tr><td colspan="7" class="text-white/45">No students found.</td></tr>';
+  $('students-table').innerHTML=rows.map(s=>`<tr><td><strong>${escapeHtml(s.display_name)}</strong></td><td>${escapeHtml(s.username)}</td><td>${escapeHtml(s.class_name||'—')}</td><td><input class="input !py-2 uppercase" maxlength="3" value="${escapeHtml(s.selected_team||'')}" data-team-for="${s.id}"></td><td><span class="badge">${s.active?'Active':'Inactive'}</span></td><td>${formatDate(s.last_login_at)}</td><td class="flex gap-2"><button class="btn btn-primary" data-save-student="${s.id}">Save</button><button class="btn ${s.active?'btn-danger':'btn-primary'}" data-toggle-student="${s.id}" data-active="${s.active}">${s.active?'Deactivate':'Activate'}</button></td></tr>`).join('') || '<tr><td colspan="7" class="text-white/45">No students found.</td></tr>';
 }
 async function loadAll(){
-  const me=await api('/api/me');state.user=me.user;$('welcome').textContent=`Signed in as ${state.user.displayName}. Students will automatically route to their assigned class after login.`;
+  const me=await api('/api/me');state.user=me.user;$('welcome').textContent=`Signed in as ${state.user.displayName}. Teachers only see students from their assigned class.`;
   const summary=await api('/api/admin/summary');state.classes=summary.classes;$('metric-teachers').textContent=summary.totals.teachers;$('metric-admins').textContent=summary.totals.superAdmins;renderClasses();
+  const teachers=await api('/api/admin/teachers');state.teachers=teachers.teachers;renderTeachers();
   const students=await api('/api/admin/students');state.students=students.students;renderStudents();
 }
 document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
 $('refresh').addEventListener('click',()=>loadAll().then(()=>toast('Admin data refreshed.')).catch(error=>toast(error.message,true)));
 $('logout').addEventListener('click',async()=>{await api('/api/logout',{method:'POST'});window.location.href='/login'});
 $('class-form').addEventListener('submit',async event=>{event.preventDefault();try{await api('/api/admin/classes',{method:'POST',body:JSON.stringify({name:$('class-name').value,schoolYear:$('class-year').value,targetStudentCount:$('class-target').value})});event.target.reset();$('class-year').value='2026-27';$('class-target').value='20';await loadAll();toast('Class added.')}catch(error){toast(error.message,true)}});
+$('teacher-form').addEventListener('submit',async event=>{event.preventDefault();try{await api('/api/admin/teachers',{method:'POST',body:JSON.stringify({classId:$('teacher-class').value,username:$('teacher-username').value,displayName:$('teacher-name').value,pin:$('teacher-pin').value})});event.target.reset();await loadAll();setTab('teachers');toast('Teacher added.')}catch(error){toast(error.message,true)}});
 $('student-form').addEventListener('submit',async event=>{event.preventDefault();try{await api('/api/admin/students',{method:'POST',body:JSON.stringify({classId:$('student-class').value,username:$('student-username').value,displayName:$('student-name').value,pin:$('student-pin').value,selectedTeam:$('student-team').value})});event.target.reset();await loadAll();setTab('students');toast('Student added.')}catch(error){toast(error.message,true)}});
 $('filter-class').addEventListener('change',renderStudents);
 document.addEventListener('click',async event=>{
-  const classToggle=event.target.closest('[data-toggle-class]');
-  if(classToggle){const id=classToggle.dataset.toggleClass,active=classToggle.dataset.active!=='true';try{await api(`/api/admin/classes/${id}`,{method:'PATCH',body:JSON.stringify({active})});await loadAll();toast(active?'Class reactivated.':'Class archived.')}catch(error){toast(error.message,true)}return;}
-  const openStudents=event.target.closest('[data-open-students]');
-  if(openStudents){$('filter-class').value=openStudents.dataset.openStudents;setTab('students');renderStudents();return;}
-  const studentToggle=event.target.closest('[data-toggle-student]');
-  if(studentToggle){const id=studentToggle.dataset.toggleStudent,active=studentToggle.dataset.active!=='true';try{await api(`/api/admin/students/${id}`,{method:'PATCH',body:JSON.stringify({active})});await loadAll();toast(active?'Student activated.':'Student deactivated.')}catch(error){toast(error.message,true)}return;}
-  const saveStudent=event.target.closest('[data-save-student]');
-  if(saveStudent){const id=saveStudent.dataset.saveStudent;const team=document.querySelector(`[data-team-for="${id}"]`)?.value||'';try{await api(`/api/admin/students/${id}`,{method:'PATCH',body:JSON.stringify({selectedTeam:team})});await loadAll();toast('Student updated.')}catch(error){toast(error.message,true)}return;}
+  const open=event.target.closest('[data-open-students]');if(open){$('filter-class').value=open.dataset.openStudents;renderStudents();setTab('students');return}
+  const classToggle=event.target.closest('[data-toggle-class]');if(classToggle){try{await api(`/api/admin/classes/${classToggle.dataset.toggleClass}`,{method:'PATCH',body:JSON.stringify({active:classToggle.dataset.active!=='true'})});await loadAll();toast('Class updated.')}catch(error){toast(error.message,true)}return}
+  const saveTeacher=event.target.closest('[data-save-teacher]');if(saveTeacher){const id=saveTeacher.dataset.saveTeacher;try{await api(`/api/admin/teachers/${id}`,{method:'PATCH',body:JSON.stringify({displayName:document.querySelector(`[data-teacher-name="${id}"]`).value,classId:document.querySelector(`[data-teacher-class="${id}"]`).value})});await loadAll();toast('Teacher saved.')}catch(error){toast(error.message,true)}return}
+  const pinTeacher=event.target.closest('[data-pin-teacher]');if(pinTeacher){const pin=prompt('Enter a new 4-8 digit PIN for this teacher.');if(!pin)return;try{await api(`/api/admin/teachers/${pinTeacher.dataset.pinTeacher}/pin`,{method:'PATCH',body:JSON.stringify({pin})});toast('Teacher PIN reset.')}catch(error){toast(error.message,true)}return}
+  const teacherToggle=event.target.closest('[data-toggle-teacher]');if(teacherToggle){try{await api(`/api/admin/teachers/${teacherToggle.dataset.toggleTeacher}`,{method:'PATCH',body:JSON.stringify({active:teacherToggle.dataset.active!=='true'})});await loadAll();toast('Teacher updated.')}catch(error){toast(error.message,true)}return}
+  const saveStudent=event.target.closest('[data-save-student]');if(saveStudent){const id=saveStudent.dataset.saveStudent;try{await api(`/api/admin/students/${id}`,{method:'PATCH',body:JSON.stringify({selectedTeam:document.querySelector(`[data-team-for="${id}"]`).value})});await loadAll();toast('Student saved.')}catch(error){toast(error.message,true)}return}
+  const studentToggle=event.target.closest('[data-toggle-student]');if(studentToggle){try{await api(`/api/admin/students/${studentToggle.dataset.toggleStudent}`,{method:'PATCH',body:JSON.stringify({active:studentToggle.dataset.active!=='true'})});await loadAll();toast('Student updated.')}catch(error){toast(error.message,true)}return}
 });
 loadAll().catch(error=>toast(error.message,true));
 </script>
