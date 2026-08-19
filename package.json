@@ -3,7 +3,7 @@
   "version": "2.1.0",
   "private": true,
   "scripts": {
-    "start": "node start.js",
+    "start": "node cleanup-placeholders.js && SEED_CLASS_STUDENTS=false node start.js",
     "test": "node --test"
   },
   "engines": {
