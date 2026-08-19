@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Super Admin | NFL Classroom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+*{box-sizing:border-box}body{font-family:'Inter',system-ui,sans-serif;background:#07111d;color:#fff}h1,h2{font-family:'Anton','Inter',sans-serif;font-weight:400;letter-spacing:.02em}.glass{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);box-shadow:0 20px 70px rgba(0,0,0,.28)}.field-bg{background:radial-gradient(circle at top left,rgba(1,51,105,.42),transparent 38%),radial-gradient(circle at bottom right,rgba(213,10,10,.2),transparent 34%),#07111d}.tab[aria-selected="true"]{background:#013369;border-color:#5b9bd5;color:#fff}.input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:.7rem .85rem;width:100%;outline:none}.input:focus{border-color:#5b9bd5;background:rgba(91,155,213,.08)}.btn{border-radius:14px;padding:.7rem 1rem;font-weight:800;transition:.18s}.btn-primary{background:#013369;border:1px solid rgba(91,155,213,.6)}.btn-primary:hover{background:#084b8a}.btn-ghost{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}.btn-danger{background:rgba(213,10,10,.18);border:1px solid rgba(213,10,10,.38);color:#fecaca}th{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.45);font-weight:800;text-align:left;padding:12px}td{padding:12px;border-top:1px solid rgba(255,255,255,.08);font-size:14px}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .6rem;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06)}
+</style>
+</head>
+<body class="field-bg min-h-screen">
+<header class="sticky top-0 z-40 backdrop-blur-xl bg-[#07111d]/85 border-b border-white/10">
+  <div class="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
+    <a href="/admin" class="flex items-center gap-3">
+      <span class="w-11 h-11 rounded-2xl bg-white grid place-items-center border-4 border-[#d50a0a]"><img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="NFL" class="w-7 h-8 object-contain"></span>
+      <span><span class="block text-xl font-black">NFL Classroom</span><span class="block text-xs uppercase tracking-[.2em] text-blue-300">Super Admin</span></span>
+    </a>
+    <nav class="hidden md:flex items-center gap-2" aria-label="Admin sections">
+      <button class="tab btn btn-ghost" data-tab="overview" aria-selected="true">Overview</button>
+      <button class="tab btn btn-ghost" data-tab="classes">Classes</button>
+      <button class="tab btn btn-ghost" data-tab="students">Students</button>
+    </nav>
+    <div class="flex items-center gap-2">
+      <a href="/teacher" class="btn btn-ghost hidden sm:inline-flex">Teacher View</a>
+      <button id="logout" class="btn btn-danger">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-5 py-8 space-y-8">
+  <section class="glass rounded-[28px] p-6 md:p-8">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+      <div>
+        <p class="text-xs uppercase tracking-[.24em] text-blue-300 font-black">Back End Control Center</p>
+        <h1 class="text-4xl md:text-6xl mt-2">Super Admin Portal</h1>
+        <p id="welcome" class="text-white/55 mt-3 max-w-2xl">Manage classes, student routing, and roster setup for the NFL Project Hub.</p>
+      </div>
+      <button id="refresh" class="btn btn-primary inline-flex items-center justify-center gap-2"><iconify-icon icon="lucide:refresh-cw"></iconify-icon>Refresh Data</button>
+    </div>
+  </section>
+
+  <section id="overview-panel" class="panel space-y-8">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <article class="glass rounded-3xl p-6"><p class="text-white/45 text-sm">Active Classes</p><div id="metric-classes" class="text-5xl font-black mt-2 text-blue-300">—</div></article>
+      <article class="glass rounded-3xl p-6"><p class="text-white/45 text-sm">Students</p><div id="metric-students" class="text-5xl font-black mt-2 text-green-300">—</div></article>
+      <article class="glass rounded-3xl p-6"><p class="text-white/45 text-sm">Teachers</p><div id="metric-teachers" class="text-5xl font-black mt-2 text-yellow-300">—</div></article>
+      <article class="glass rounded-3xl p-6"><p class="text-white/45 text-sm">Super Admins</p><div id="metric-admins" class="text-5xl font-black mt-2 text-red-300">—</div></article>
+    </div>
+    <div class="glass rounded-[28px] p-6">
+      <div class="flex items-center justify-between gap-4 mb-5"><h2 class="text-3xl">Class Snapshot</h2><span class="badge">Seeded Classes</span></div>
+      <div id="class-cards" class="grid md:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+    </div>
+  </section>
+
+  <section id="classes-panel" class="panel hidden space-y-8">
+    <div class="glass rounded-[28px] p-6">
+      <h2 class="text-3xl mb-5">Create New Class</h2>
+      <form id="class-form" class="grid md:grid-cols-5 gap-4 items-end">
+        <label class="md:col-span-2"><span class="text-sm text-white/50">Class Name</span><input id="class-name" class="input mt-2" placeholder="Example: Smith Class" required></label>
+        <label><span class="text-sm text-white/50">School Year</span><input id="class-year" class="input mt-2" value="2026-27"></label>
+        <label><span class="text-sm text-white/50">Target Students</span><input id="class-target" class="input mt-2" type="number" min="0" max="40" value="20"></label>
+        <button class="btn btn-primary" type="submit">Add Class</button>
+      </form>
+    </div>
+    <div class="glass rounded-[28px] p-6 overflow-x-auto">
+      <h2 class="text-3xl mb-5">Manage Classes</h2>
+      <table class="w-full min-w-[760px]"><thead><tr><th>Class</th><th>Slug</th><th>Students</th><th>School Year</th><th>Status</th><th>Actions</th></tr></thead><tbody id="classes-table"></tbody></table>
+    </div>
+  </section>
+
+  <section id="students-panel" class="panel hidden space-y-8">
+    <div class="glass rounded-[28px] p-6">
+      <h2 class="text-3xl mb-5">Add Student</h2>
+      <form id="student-form" class="grid md:grid-cols-6 gap-4 items-end">
+        <label><span class="text-sm text-white/50">Class</span><select id="student-class" class="input mt-2" required></select></label>
+        <label><span class="text-sm text-white/50">Username</span><input id="student-username" class="input mt-2" placeholder="may21" required></label>
+        <label class="md:col-span-2"><span class="text-sm text-white/50">Display Name</span><input id="student-name" class="input mt-2" placeholder="Student Name" required></label>
+        <label><span class="text-sm text-white/50">PIN</span><input id="student-pin" class="input mt-2" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="1234" required></label>
+        <label><span class="text-sm text-white/50">NFL Team</span><input id="student-team" class="input mt-2 uppercase" maxlength="3" placeholder="DAL"></label>
+        <button class="btn btn-primary md:col-span-6" type="submit">Add Student</button>
+      </form>
+    </div>
+    <div class="glass rounded-[28px] p-6 overflow-x-auto">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+        <h2 class="text-3xl">Manage Students</h2>
+        <label class="w-full md:w-72"><span class="sr-only">Filter by class</span><select id="filter-class" class="input"></select></label>
+      </div>
+      <table class="w-full min-w-[900px]"><thead><tr><th>Name</th><th>Username</th><th>Class</th><th>NFL Team</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="students-table"></tbody></table>
+    </div>
+  </section>
+
+  <div id="toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 rounded-2xl border border-white/15 bg-slate-950 px-4 py-3 shadow-2xl text-sm"></div>
+</main>
+
+<script>
+let state={user:null,classes:[],students:[]};
+const $=id=>document.getElementById(id);
+function toast(message,isError=false){const node=$('toast');node.textContent=message;node.className=`fixed bottom-5 left-1/2 -translate-x-1/2 rounded-2xl border px-4 py-3 shadow-2xl text-sm ${isError?'border-red-500/30 bg-red-950 text-red-100':'border-white/15 bg-slate-950 text-white'}`;setTimeout(()=>node.classList.add('hidden'),3200)}
+async function api(url,options={}){const response=await fetch(url,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});let data={};try{data=await response.json()}catch(error){}if(response.status===401){window.location.href='/login';throw new Error('Please sign in.')}if(!response.ok)throw new Error(data.error||'Request failed.');return data}
+function setTab(name){document.querySelectorAll('.tab').forEach(btn=>btn.setAttribute('aria-selected',String(btn.dataset.tab===name)));document.querySelectorAll('.panel').forEach(panel=>panel.classList.add('hidden'));$(name+'-panel').classList.remove('hidden')}
+function formatDate(value){return value?new Date(value).toLocaleDateString(): '—'}
+function renderClasses(){
+  $('metric-classes').textContent=state.classes.filter(c=>c.active).length;
+  $('metric-students').textContent=state.classes.reduce((sum,c)=>sum+(Number(c.active_student_count)||0),0);
+  $('class-cards').innerHTML=state.classes.map(c=>`<article class="rounded-3xl border border-white/10 bg-white/[.035] p-5"><div class="flex items-start justify-between gap-3"><div><h3 class="text-xl font-black">${c.name}</h3><p class="text-sm text-white/45 mt-1">${c.school_year}</p></div><span class="badge">${c.active?'Active':'Archived'}</span></div><div class="mt-5 flex items-end justify-between"><span class="text-white/45">Students</span><strong class="text-4xl">${c.active_student_count}/${c.target_student_count}</strong></div><button class="btn btn-ghost mt-5 w-full" data-open-students="${c.id}">View Students</button></article>`).join('');
+  $('classes-table').innerHTML=state.classes.map(c=>`<tr><td><strong>${c.name}</strong></td><td>${c.slug}</td><td>${c.active_student_count}/${c.target_student_count}</td><td>${c.school_year}</td><td><span class="badge">${c.active?'Active':'Archived'}</span></td><td><button class="btn ${c.active?'btn-danger':'btn-primary'}" data-toggle-class="${c.id}" data-active="${c.active}">${c.active?'Archive':'Reactivate'}</button></td></tr>`).join('');
+  const classOptions=state.classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  $('student-class').innerHTML=classOptions;
+  $('filter-class').innerHTML='<option value="">All Classes</option>'+classOptions;
+}
+function renderStudents(){
+  const classId=$('filter-class')?.value||'';
+  const rows=state.students.filter(s=>!classId||String(s.class_id)===String(classId));
+  $('students-table').innerHTML=rows.map(s=>`<tr><td><strong>${s.display_name}</strong></td><td>${s.username}</td><td>${s.class_name||'—'}</td><td><input class="input !py-2 uppercase" maxlength="3" value="${s.selected_team||''}" data-team-for="${s.id}"></td><td><span class="badge">${s.active?'Active':'Inactive'}</span></td><td>${formatDate(s.last_login_at)}</td><td class="flex gap-2"><button class="btn btn-primary" data-save-student="${s.id}">Save</button><button class="btn ${s.active?'btn-danger':'btn-primary'}" data-toggle-student="${s.id}" data-active="${s.active}">${s.active?'Deactivate':'Activate'}</button></td></tr>`).join('') || '<tr><td colspan="7" class="text-white/45">No students found.</td></tr>';
+}
+async function loadAll(){
+  const me=await api('/api/me');state.user=me.user;$('welcome').textContent=`Signed in as ${state.user.displayName}. Students will automatically route to their assigned class after login.`;
+  const summary=await api('/api/admin/summary');state.classes=summary.classes;$('metric-teachers').textContent=summary.totals.teachers;$('metric-admins').textContent=summary.totals.superAdmins;renderClasses();
+  const students=await api('/api/admin/students');state.students=students.students;renderStudents();
+}
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
+$('refresh').addEventListener('click',()=>loadAll().then(()=>toast('Admin data refreshed.')).catch(error=>toast(error.message,true)));
+$('logout').addEventListener('click',async()=>{await api('/api/logout',{method:'POST'});window.location.href='/login'});
+$('class-form').addEventListener('submit',async event=>{event.preventDefault();try{await api('/api/admin/classes',{method:'POST',body:JSON.stringify({name:$('class-name').value,schoolYear:$('class-year').value,targetStudentCount:$('class-target').value})});event.target.reset();$('class-year').value='2026-27';$('class-target').value='20';await loadAll();toast('Class added.')}catch(error){toast(error.message,true)}});
+$('student-form').addEventListener('submit',async event=>{event.preventDefault();try{await api('/api/admin/students',{method:'POST',body:JSON.stringify({classId:$('student-class').value,username:$('student-username').value,displayName:$('student-name').value,pin:$('student-pin').value,selectedTeam:$('student-team').value})});event.target.reset();await loadAll();setTab('students');toast('Student added.')}catch(error){toast(error.message,true)}});
+$('filter-class').addEventListener('change',renderStudents);
+document.addEventListener('click',async event=>{
+  const classToggle=event.target.closest('[data-toggle-class]');
+  if(classToggle){const id=classToggle.dataset.toggleClass,active=classToggle.dataset.active!=='true';try{await api(`/api/admin/classes/${id}`,{method:'PATCH',body:JSON.stringify({active})});await loadAll();toast(active?'Class reactivated.':'Class archived.')}catch(error){toast(error.message,true)}return;}
+  const openStudents=event.target.closest('[data-open-students]');
+  if(openStudents){$('filter-class').value=openStudents.dataset.openStudents;setTab('students');renderStudents();return;}
+  const studentToggle=event.target.closest('[data-toggle-student]');
+  if(studentToggle){const id=studentToggle.dataset.toggleStudent,active=studentToggle.dataset.active!=='true';try{await api(`/api/admin/students/${id}`,{method:'PATCH',body:JSON.stringify({active})});await loadAll();toast(active?'Student activated.':'Student deactivated.')}catch(error){toast(error.message,true)}return;}
+  const saveStudent=event.target.closest('[data-save-student]');
+  if(saveStudent){const id=saveStudent.dataset.saveStudent;const team=document.querySelector(`[data-team-for="${id}"]`)?.value||'';try{await api(`/api/admin/students/${id}`,{method:'PATCH',body:JSON.stringify({selectedTeam:team})});await loadAll();toast('Student updated.')}catch(error){toast(error.message,true)}return;}
+});
+loadAll().catch(error=>toast(error.message,true));
+</script>
+</body>
+</html>
