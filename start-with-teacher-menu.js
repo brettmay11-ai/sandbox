@@ -43,11 +43,11 @@ function redirect(response, location) {
   response.end();
 }
 
-function headerStudentManagementButton() {
-  return '<button type="button" onclick="return openTeacherStudentManagement(event)" class="px-3 py-2 text-xs bg-blue-500/15 text-blue-200 border border-blue-400/20 rounded-lg">Manage Students</button>';
+function headerDashboardButton() {
+  return '<button type="button" onclick="return openTeacherStudentManagement(event)" class="px-3 py-2 text-xs bg-blue-500/15 text-blue-200 border border-blue-400/20 rounded-lg">Dashboard <span id="teacher-dashboard-class-name" class="text-blue-100/70">—</span></button>';
 }
 
-function studentManagementScript() {
+function teacherDashboardScript() {
   return `<script>
 function openTeacherStudentManagement(event){
   if(event) event.preventDefault();
@@ -58,7 +58,22 @@ function openTeacherStudentManagement(event){
   }
   return false;
 }
+async function loadTeacherDashboardClassName(){
+  const label=document.getElementById('teacher-dashboard-class-name');
+  const title=document.getElementById('teacher-dashboard-panel-class-name');
+  try{
+    const response=await fetch('/api/me',{headers:{'Content-Type':'application/json'}});
+    const data=await response.json();
+    const className=data && data.user && data.user.className ? data.user.className : 'Class';
+    if(label) label.textContent='• '+className;
+    if(title) title.textContent=className;
+  }catch(error){
+    if(label) label.textContent='• Class';
+    if(title) title.textContent='Class';
+  }
+}
 window.addEventListener('DOMContentLoaded',()=>{
+  loadTeacherDashboardClassName();
   const params=new URLSearchParams(location.search);
   if(params.get('page')==='students') openTeacherStudentManagement();
 });
@@ -68,58 +83,9 @@ window.addEventListener('DOMContentLoaded',()=>{
 function transformTeacherHtml(html) {
   let output = html;
   output = output.replace('<details class="teacher-secondary-panel" data-teacher-page="students">', '<details id="student-management" class="teacher-secondary-panel" data-teacher-page="students">');
-  output = output.replace('<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>', `${headerStudentManagementButton()}<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>`);
-  output = output.replace('</body></html>', `${studentManagementScript()}</body></html>`);
-  return output;
-}
-
-function adminDashboardScript() {
-  return `<script>
-(function(){
-  function selectedClassName(){
-    const filter=document.getElementById('filter-class');
-    if(!filter) return 'All Classes';
-    const option=filter.options[filter.selectedIndex];
-    return option && option.value ? option.textContent : 'All Classes';
-  }
-  function updateClassDashboardLabel(){
-    const label=document.getElementById('class-dashboard-class-name');
-    if(label) label.textContent=selectedClassName();
-  }
-  window.addEventListener('DOMContentLoaded',()=>{
-    document.querySelectorAll('[data-tab="students"]').forEach(button=>{button.textContent='Dashboard'});
-    const heading=[...document.querySelectorAll('h2')].find(node=>node.textContent.trim()==='Manage Students');
-    if(heading){
-      heading.innerHTML='Class Dashboard <span id="class-dashboard-class-name" class="badge ml-2 align-middle">All Classes</span>';
-    }
-    const originalRenderStudents=window.renderStudents;
-    if(typeof originalRenderStudents==='function'){
-      window.renderStudents=function(){
-        const result=originalRenderStudents.apply(this,arguments);
-        updateClassDashboardLabel();
-        return result;
-      };
-    }
-    document.addEventListener('change',event=>{
-      if(event.target && event.target.id==='filter-class') updateClassDashboardLabel();
-    });
-    let attempts=0;
-    const timer=setInterval(()=>{
-      updateClassDashboardLabel();
-      attempts+=1;
-      if(attempts>12) clearInterval(timer);
-    },250);
-  });
-})();
-</script>`;
-}
-
-function transformAdminHtml(html) {
-  let output = html;
-  output = output.replace(/(<button class="tab btn btn-ghost" data-tab="students">)Students(<\/button>)/g, '$1Dashboard$2');
-  output = output.replace('Manage Students</h2>', 'Class Dashboard <span id="class-dashboard-class-name" class="badge ml-2 align-middle">All Classes</span></h2>');
-  output = output.replace('</body>\n</html>', `${adminDashboardScript()}</body>\n</html>`);
-  output = output.replace('</body></html>', `${adminDashboardScript()}</body></html>`);
+  output = output.replace('Manage students</span><small>Create accounts, assign teams, and update access</small>', 'Dashboard <span id="teacher-dashboard-panel-class-name" class="text-blue-300 text-sm ml-2">Class</span></span><small>Create accounts, assign teams, and update access</small>');
+  output = output.replace('<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>', `${headerDashboardButton()}<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>`);
+  output = output.replace('</body></html>', `${teacherDashboardScript()}</body></html>`);
   return output;
 }
 
@@ -130,15 +96,8 @@ function serveTeacherPortal(response) {
   response.end(html);
 }
 
-function serveAdminPortal(response) {
-  const file = path.join(__dirname, 'admin.html');
-  const html = transformAdminHtml(fs.readFileSync(file, 'utf8'));
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
-  response.end(html);
-}
-
 const originalCreateServer = http.createServer.bind(http);
-http.createServer = function createServerWithHeaderTweaks(listener) {
+http.createServer = function createServerWithTeacherDashboard(listener) {
   return originalCreateServer(async (request, response) => {
     try {
       const pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname);
@@ -148,15 +107,9 @@ http.createServer = function createServerWithHeaderTweaks(listener) {
         if (user.role !== 'teacher' && user.role !== 'super_admin') return redirect(response, '/');
         return serveTeacherPortal(response);
       }
-      if ((pathname === '/admin' || pathname === '/admin.html') && request.method === 'GET') {
-        const user = await getSessionUser(request);
-        if (!user) return redirect(response, '/login');
-        if (user.role !== 'super_admin') return redirect(response, '/');
-        return serveAdminPortal(response);
-      }
       return listener(request, response);
     } catch (error) {
-      console.error('Header tweak wrapper failed.', error);
+      console.error('Teacher dashboard wrapper failed.', error);
       return listener(request, response);
     }
   });
