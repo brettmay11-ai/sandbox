@@ -157,6 +157,8 @@ function transformTeacherHtml(html) {
 
 function transformAdminHtml(html) {
   let output = html;
+  const teacherTeamScript = '<script defer src="/admin-teacher-team.js?v=1"></script>';
+  if (!output.includes('admin-teacher-team.js')) output = output.replace('</head>', `${teacherTeamScript}</head>`);
   output = output.replace('</body></html>', `${adminRefreshScript()}</body></html>`);
   output = output.replace('</body>\n</html>', `${adminRefreshScript()}</body>\n</html>`);
   return output;
