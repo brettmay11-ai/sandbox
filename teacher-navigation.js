@@ -4,6 +4,7 @@
   if (!main || !header) return;
 
   const pages = [
+    ['dashboard', 'Class Dashboard', 'layout-dashboard'],
     ['students', 'Students', 'users'],
     ['progress', 'Progress & Rankings', 'chart-no-axes-combined'],
     ['featured', 'Featured Game', 'star'],
@@ -12,7 +13,7 @@
     ['cleats', 'Cleat Studio', 'footprints']
   ];
   const requested = new URLSearchParams(location.search).get('page');
-  const current = pages.some(([id]) => id === requested) ? requested : 'students';
+  const current = pages.some(([id]) => id === requested) ? requested : 'dashboard';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
@@ -44,7 +45,8 @@
       const copy = intro.querySelector('p:last-child');
       if (title) title.textContent = active?.[1] || 'Teacher Dashboard';
       if (copy) copy.textContent = {
-        students: 'See what needs your attention today, then jump into the right classroom workflow.',
+        dashboard: 'See your class pulse, recent achievements, support needs, and weekly classroom momentum.',
+        students: 'Create student accounts, assign teams, reset PINs, and manage class access.',
         progress: 'Review student XP, participation, and classroom rankings.',
         featured: 'Choose and publish the class Featured Game of the Week.',
         coach: 'Set the weekly research focus and review common student questions.',
