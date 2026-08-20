@@ -146,7 +146,7 @@ function featuredGameSizingPatch() {
 }
 
 function standingsAssets() {
-  return '<link rel="stylesheet" href="standings-integration.css?v=1"><script defer src="standings-integration.js?v=1"></script>';
+  return '<link rel="stylesheet" href="standings-integration.css?v=2"><script defer src="standings-integration.js?v=2"></script>';
 }
 
 function studentTcuCleanupAssets() {
@@ -192,6 +192,7 @@ function transformStudentHtml(html) {
   output = output.replace(/<a\b[^>]*(?:href=["'][^"']*page=tcu[^"']*["']|data-page=["']tcu["']|data-nav=["']tcu["'])[^>]*>[\s\S]*?<\/a>/gi, '');
   output = output.replace(/<button\b[^>]*(?:data-page=["']tcu["']|data-nav=["']tcu["'])[^>]*>[\s\S]*?<\/button>/gi, '');
   if (!output.includes('id="featured-game-sizing-patch"')) output = output.replace('</head>', `${featuredGameSizingPatch()}</head>`);
+  output = output.replace(/standings-integration\.css\?v=1/g, 'standings-integration.css?v=2').replace(/standings-integration\.js\?v=1/g, 'standings-integration.js?v=2');
   if (!output.includes('standings-integration.js')) output = output.replace('</head>', `${standingsAssets()}</head>`);
   if (!output.includes('id="remove-tcu-menu-script"')) output = output.replace('</body></html>', `${studentTcuCleanupAssets()}</body></html>`).replace('</body>\n</html>', `${studentTcuCleanupAssets()}</body>\n</html>`);
   return output;
