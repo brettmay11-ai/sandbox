@@ -149,6 +149,24 @@ function standingsAssets() {
   return '<link rel="stylesheet" href="standings-integration.css?v=1"><script defer src="standings-integration.js?v=1"></script>';
 }
 
+function studentTcuCleanupAssets() {
+  return `<style id="remove-tcu-menu-patch">
+a[href*="page=tcu"],button[data-page="tcu"],button[data-nav="tcu"],[data-page="tcu"],[data-nav="tcu"]{display:none!important}
+</style><script id="remove-tcu-menu-script">
+(function(){
+  function removeTcuMenuItems(){
+    document.querySelectorAll('a[href*="page=tcu"],button[data-page="tcu"],button[data-nav="tcu"],[data-page="tcu"],[data-nav="tcu"]').forEach(el=>el.remove());
+    document.querySelectorAll('nav a,nav button,header a,header button,[role="navigation"] a,[role="navigation"] button').forEach(el=>{
+      if((el.textContent||'').trim().toUpperCase()==='TCU')el.remove();
+    });
+  }
+  window.addEventListener('DOMContentLoaded',removeTcuMenuItems);
+  window.addEventListener('load',removeTcuMenuItems);
+  new MutationObserver(removeTcuMenuItems).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>`;
+}
+
 function transformTeacherHtml(html) {
   let output = html;
   output = output.replace('id="teacher-command-center" data-teacher-page="students"', 'id="teacher-command-center" data-teacher-page="dashboard"');
@@ -168,8 +186,14 @@ function transformAdminHtml(html) {
 
 function transformStudentHtml(html) {
   let output = html;
+  output = output.replace("'cities', 'tcu'", "'cities'");
+  output = output.replace(/,\s*'tcu'/g, '');
+  output = output.replace(/html\[data-portal-page="tcu"\]\s+body>#TCU\{display:block\}\n?/g, '');
+  output = output.replace(/<a\b[^>]*(?:href=["'][^"']*page=tcu[^"']*["']|data-page=["']tcu["']|data-nav=["']tcu["'])[^>]*>[\s\S]*?<\/a>/gi, '');
+  output = output.replace(/<button\b[^>]*(?:data-page=["']tcu["']|data-nav=["']tcu["'])[^>]*>[\s\S]*?<\/button>/gi, '');
   if (!output.includes('id="featured-game-sizing-patch"')) output = output.replace('</head>', `${featuredGameSizingPatch()}</head>`);
   if (!output.includes('standings-integration.js')) output = output.replace('</head>', `${standingsAssets()}</head>`);
+  if (!output.includes('id="remove-tcu-menu-script"')) output = output.replace('</body></html>', `${studentTcuCleanupAssets()}</body></html>`).replace('</body>\n</html>', `${studentTcuCleanupAssets()}</body>\n</html>`);
   return output;
 }
 
