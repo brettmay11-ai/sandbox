@@ -44,20 +44,11 @@ function redirect(response, location) {
 }
 
 function headerDashboardButton() {
-  return '<button type="button" onclick="return openTeacherStudentManagement(event)" class="px-3 py-2 text-xs bg-blue-500/15 text-blue-200 border border-blue-400/20 rounded-lg">Dashboard <span id="teacher-dashboard-class-name" class="text-blue-100/70">—</span></button>';
+  return '<a href="/teacher?page=dashboard" class="px-3 py-2 text-xs bg-blue-500/15 text-blue-200 border border-blue-400/20 rounded-lg">Class Dashboard <span id="teacher-dashboard-class-name" class="text-blue-100/70">—</span></a>';
 }
 
 function teacherDashboardScript() {
   return `<script>
-function openTeacherStudentManagement(event){
-  if(event) event.preventDefault();
-  const panel=document.getElementById('student-management')||document.querySelector('.teacher-secondary-panel');
-  if(panel){
-    panel.open=true;
-    panel.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  return false;
-}
 async function loadTeacherDashboardClassName(){
   const label=document.getElementById('teacher-dashboard-class-name');
   const title=document.getElementById('teacher-dashboard-panel-class-name');
@@ -72,18 +63,15 @@ async function loadTeacherDashboardClassName(){
     if(title) title.textContent='Class';
   }
 }
-window.addEventListener('DOMContentLoaded',()=>{
-  loadTeacherDashboardClassName();
-  const params=new URLSearchParams(location.search);
-  if(params.get('page')==='students') openTeacherStudentManagement();
-});
+window.addEventListener('DOMContentLoaded',loadTeacherDashboardClassName);
 </script>`;
 }
 
 function transformTeacherHtml(html) {
   let output = html;
-  output = output.replace('<details class="teacher-secondary-panel" data-teacher-page="students">', '<details id="student-management" class="teacher-secondary-panel" data-teacher-page="students">');
-  output = output.replace('Manage students</span><small>Create accounts, assign teams, and update access</small>', 'Dashboard <span id="teacher-dashboard-panel-class-name" class="text-blue-300 text-sm ml-2">Class</span></span><small>Create accounts, assign teams, and update access</small>');
+  output = output.replace('id="teacher-command-center" data-teacher-page="students"', 'id="teacher-command-center" data-teacher-page="dashboard"');
+  output = output.replace('<details class="teacher-secondary-panel" data-teacher-page="students">', '<details id="student-management" open class="teacher-secondary-panel" data-teacher-page="students">');
+  output = output.replace('Manage students</span><small>Create accounts, assign teams, and update access</small>', 'Students <span id="teacher-dashboard-panel-class-name" class="text-blue-300 text-sm ml-2">Class</span></span><small>Create accounts, assign teams, and update access</small>');
   output = output.replace('<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>', `${headerDashboardButton()}<a href="/" class="px-3 py-2 text-xs bg-white/5 rounded-lg">Open Student Site</a>`);
   output = output.replace('</body></html>', `${teacherDashboardScript()}</body></html>`);
   return output;
