@@ -9,7 +9,6 @@
     ['featured', 'Featured Game', 'star'],
     ['coach', 'Research Coach', 'graduation-cap'],
     ['writing', 'Writing Reviews', 'notebook-pen'],
-    ['teks', 'TEKS Alignment', 'book-check'],
     ['cleats', 'Cleat Studio', 'footprints']
   ];
   const requested = new URLSearchParams(location.search).get('page');
@@ -50,7 +49,7 @@
         featured: 'Choose and publish the class Featured Game of the Week.',
         coach: 'Set the weekly research focus and review common student questions.',
         writing: 'Read student writing and return helpful feedback.',
-        teks: 'Connect the Math, Writing, and Social Studies activities to Grade 4 Texas standards.'
+        cleats: 'Prepare and preview My Cause My Cleats designs.'
       }[current];
     }
   }
