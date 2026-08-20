@@ -117,7 +117,7 @@ function adminRefreshScript() {
     const button=document.getElementById('refresh');
     if(!button||button.dataset.siteRefreshInstalled)return;
     button.dataset.siteRefreshInstalled='true';
-    button.title='Clear cached sports data so stats, schedules, news, and featured-game data reload fresh.';
+    button.title='Clear cached sports data so stats, schedules, news, standings, and featured-game data reload fresh.';
     button.addEventListener('click',event=>{event.preventDefault();refreshSiteData();},{capture:true});
   });
 })();
@@ -145,6 +145,10 @@ function featuredGameSizingPatch() {
 </style>`;
 }
 
+function standingsAssets() {
+  return '<link rel="stylesheet" href="standings-integration.css?v=1"><script defer src="standings-integration.js?v=1"></script>';
+}
+
 function transformTeacherHtml(html) {
   let output = html;
   output = output.replace('id="teacher-command-center" data-teacher-page="students"', 'id="teacher-command-center" data-teacher-page="dashboard"');
@@ -163,8 +167,10 @@ function transformAdminHtml(html) {
 }
 
 function transformStudentHtml(html) {
-  if (html.includes('id="featured-game-sizing-patch"')) return html;
-  return html.replace('</head>', `${featuredGameSizingPatch()}</head>`);
+  let output = html;
+  if (!output.includes('id="featured-game-sizing-patch"')) output = output.replace('</head>', `${featuredGameSizingPatch()}</head>`);
+  if (!output.includes('standings-integration.js')) output = output.replace('</head>', `${standingsAssets()}</head>`);
+  return output;
 }
 
 function serveTeacherPortal(response) {
@@ -206,7 +212,7 @@ async function handleAdminRefreshData(request, response, pathname) {
     ok: true,
     refreshedAt: new Date().toISOString(),
     cacheEntriesCleared: deleted.rowCount || 0,
-    message: `Sports data cache cleared. Fresh stats, schedules, news, and featured-game details will reload on the next site requests.`
+    message: 'Sports data cache cleared. Fresh stats, standings, schedules, news, and featured-game details will reload on the next site requests.'
   });
   return true;
 }
