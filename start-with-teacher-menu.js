@@ -25,6 +25,11 @@ function tokenHash(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+function sendJson(response, status, data) {
+  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  response.end(JSON.stringify(data));
+}
+
 async function getSessionUser(request) {
   const token = parseCookies(request).nfl_session;
   if (!token) return null;
@@ -63,7 +68,59 @@ async function loadTeacherDashboardClassName(){
     if(title) title.textContent='Class';
   }
 }
-window.addEventListener('DOMContentLoaded',loadTeacherDashboardClassName);
+function installCleatProductionNotice(){
+  const page=document.querySelector('[data-teacher-page="cleats"]');
+  if(!page||document.getElementById('cleat-production-notice'))return;
+  const notice=document.createElement('div');
+  notice.id='cleat-production-notice';
+  notice.className='mb-5 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-5 py-4 text-amber-100 shadow-lg';
+  notice.innerHTML='<div class="flex items-start gap-3"><iconify-icon icon="lucide:construction" class="text-2xl text-amber-300"></iconify-icon><div><strong class="block text-sm uppercase tracking-[.18em] text-amber-200">Still in production</strong><p class="mt-1 text-sm text-amber-100/85">Cleat Studio is not live yet. This page is for internal previewing and testing only.</p></div></div>';
+  page.prepend(notice);
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  loadTeacherDashboardClassName();
+  installCleatProductionNotice();
+});
+</script>`;
+}
+
+function adminRefreshScript() {
+  return `<script>
+(function(){
+  function showAdminRefreshMessage(message,isError){
+    const toast=document.getElementById('toast');
+    if(toast){
+      toast.textContent=message;
+      toast.className='fixed bottom-5 left-1/2 -translate-x-1/2 rounded-2xl border px-4 py-3 shadow-2xl text-sm '+(isError?'border-red-500/30 bg-red-950 text-red-100':'border-white/15 bg-slate-950 text-white');
+      setTimeout(()=>toast.classList.add('panel-hidden'),3600);
+      return;
+    }
+    alert(message);
+  }
+  async function refreshSiteData(){
+    const button=document.getElementById('refresh');
+    const original=button?button.innerHTML:'';
+    if(button){button.disabled=true;button.innerHTML='<iconify-icon icon="lucide:loader-2"></iconify-icon>Refreshing Site Data...';}
+    try{
+      const response=await fetch('/api/admin/refresh-data',{method:'POST',headers:{'Content-Type':'application/json'}});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||'Refresh failed.');
+      showAdminRefreshMessage(data.message||'Site data refresh started. Fresh data will load on the next page views.');
+      if(typeof loadAll==='function') await loadAll();
+    }catch(error){
+      showAdminRefreshMessage(error.message||'Could not refresh site data.',true);
+    }finally{
+      if(button){button.disabled=false;button.innerHTML=original||'<iconify-icon icon="lucide:refresh-cw"></iconify-icon>Refresh Data';}
+    }
+  }
+  window.addEventListener('DOMContentLoaded',()=>{
+    const button=document.getElementById('refresh');
+    if(!button||button.dataset.siteRefreshInstalled)return;
+    button.dataset.siteRefreshInstalled='true';
+    button.title='Clear cached sports data so stats, schedules, news, and featured-game data reload fresh.';
+    button.addEventListener('click',event=>{event.preventDefault();refreshSiteData();},{capture:true});
+  });
+})();
 </script>`;
 }
 
@@ -77,11 +134,48 @@ function transformTeacherHtml(html) {
   return output;
 }
 
+function transformAdminHtml(html) {
+  let output = html;
+  output = output.replace('</body></html>', `${adminRefreshScript()}</body></html>`);
+  output = output.replace('</body>\n</html>', `${adminRefreshScript()}</body>\n</html>`);
+  return output;
+}
+
 function serveTeacherPortal(response) {
   const file = path.join(__dirname, 'teacher.html');
   const html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
   response.end(html);
+}
+
+function serveAdminPortal(response) {
+  const file = path.join(__dirname, 'admin.html');
+  const html = transformAdminHtml(fs.readFileSync(file, 'utf8'));
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.end(html);
+}
+
+async function handleAdminRefreshData(request, response, pathname) {
+  if (pathname !== '/api/admin/refresh-data') return false;
+  const user = await getSessionUser(request);
+  if (!user) { sendJson(response, 401, { error: 'Please sign in.' }); return true; }
+  if (user.role !== 'super_admin') { sendJson(response, 403, { error: 'Super admin access required.' }); return true; }
+  if (request.method !== 'POST') { sendJson(response, 405, { error: 'Method not allowed.' }); return true; }
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
+    cache_key TEXT PRIMARY KEY,
+    data JSONB NOT NULL,
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+  )`);
+  const deleted = await pool.query('DELETE FROM sportsdata_cache');
+  sendJson(response, 200, {
+    ok: true,
+    refreshedAt: new Date().toISOString(),
+    cacheEntriesCleared: deleted.rowCount || 0,
+    message: `Sports data cache cleared. Fresh stats, schedules, news, and featured-game details will reload on the next site requests.`
+  });
+  return true;
 }
 
 const originalCreateServer = http.createServer.bind(http);
@@ -90,18 +184,28 @@ http.createServer = function createServerWithTeacherDashboard(listener) {
     try {
       const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
       const pathname = decodeURIComponent(url.pathname);
+      if (await handleAdminRefreshData(request, response, pathname)) return;
       if ((pathname === '/teacher' || pathname === '/teacher.html') && request.method === 'GET') {
         const user = await getSessionUser(request);
         if (!user) return redirect(response, '/login');
         if (user.role !== 'teacher' && user.role !== 'super_admin') return redirect(response, '/');
         return serveTeacherPortal(response);
       }
+      if ((pathname === '/admin' || pathname === '/admin.html') && request.method === 'GET') {
+        const user = await getSessionUser(request);
+        if (!user) return redirect(response, '/login');
+        if (user.role !== 'super_admin') return redirect(response, '/');
+        return serveAdminPortal(response);
+      }
       if (url.searchParams.get('page') === 'tcu' && request.method === 'GET') {
         return redirect(response, '/');
       }
       return listener(request, response);
     } catch (error) {
-      console.error('Teacher dashboard wrapper failed.', error);
+      console.error('Teacher/admin wrapper failed.', error);
+      if (!response.headersSent && request.url && request.url.startsWith('/api/admin/refresh-data')) {
+        return sendJson(response, 500, { error: 'Could not refresh site data.' });
+      }
       return listener(request, response);
     }
   });
