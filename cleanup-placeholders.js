@@ -8,23 +8,24 @@ const pool = new Pool({
   ...(process.env.PGSSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {})
 });
 
-const PLACEHOLDER_PATTERNS = [
-  { username: '^may[0-9]{2}$', display: '^May Student [0-9]+$' },
-  { username: '^jenkins[0-9]{2}$', display: '^Jenkins Student [0-9]+$' },
-  { username: '^bolger[0-9]{2}$', display: '^Bolger Student [0-9]+$' },
-  { username: '^mccullough[0-9]{2}$', display: '^McCullough Student [0-9]+$' }
+// These are the generated demo usernames from the original class seeding logic.
+// Teachers creating real students should use actual names/usernames, not these generated prefixes.
+const PLACEHOLDER_USERNAME_PATTERNS = [
+  '^may[0-9]{2}$',
+  '^jenkins[0-9]{2}$',
+  '^bolger[0-9]{2}$',
+  '^mccullough[0-9]{2}$'
 ];
 
 async function cleanupPlaceholders() {
   try {
     await pool.query('BEGIN');
-    const conditions = PLACEHOLDER_PATTERNS.map((_, index) => `(username ~ $${index * 2 + 1} AND display_name ~ $${index * 2 + 2})`).join(' OR ');
-    const params = PLACEHOLDER_PATTERNS.flatMap(pattern => [pattern.username, pattern.display]);
+    const conditions = PLACEHOLDER_USERNAME_PATTERNS.map((_, index) => `username ~ $${index + 1}`).join(' OR ');
     const result = await pool.query(
       `DELETE FROM users
        WHERE role='student'
          AND (${conditions})`,
-      params
+      PLACEHOLDER_USERNAME_PATTERNS
     );
     await pool.query('COMMIT');
     if (result.rowCount > 0) {
