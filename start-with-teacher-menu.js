@@ -12,6 +12,27 @@ const pool = new Pool({
   ...(process.env.PGSSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {})
 });
 
+function installStudentPortalAssetInjection() {
+  if (fs.__studentPortalAssetInjectionInstalled) return;
+  fs.__studentPortalAssetInjectionInstalled = true;
+  const originalReadFile = fs.readFile.bind(fs);
+  const assetMarkup = '<link rel="stylesheet" href="/student-portal-fixes.css?v=1"><link rel="stylesheet" href="/standings-integration.css?v=2"><script defer src="/standings-integration.js?v=2"></script><script defer src="/student-portal-fixes.js?v=1"></script>';
+  fs.readFile = function readFileWithStudentAssets(file, options, callback) {
+    const done = typeof options === 'function' ? options : callback;
+    const opts = typeof options === 'function' ? undefined : options;
+    return originalReadFile(file, opts, (error, content) => {
+      if (error || typeof done !== 'function') return done && done(error, content);
+      const filePath = String(file || '');
+      if (!filePath.endsWith(`${path.sep}index.html`) && !filePath.endsWith('/index.html') && !filePath.endsWith('index.html')) return done(error, content);
+      const asString = Buffer.isBuffer(content) ? content.toString('utf8') : String(content);
+      if (asString.includes('student-portal-fixes.js')) return done(error, content);
+      const patched = asString.replace('</head>', `${assetMarkup}</head>`);
+      return done(error, Buffer.isBuffer(content) ? Buffer.from(patched, 'utf8') : patched);
+    });
+  };
+}
+installStudentPortalAssetInjection();
+
 function parseCookies(request) {
   return Object.fromEntries(
     String(request.headers.cookie || '')
