@@ -68,6 +68,18 @@
     const team = playerTeam(item.player);
     return `<article class="player-leader-card"><div class="player-leader-rank">#${index + 1}</div><div class="player-leader-name"><strong>${esc(playerName(item.player))}</strong><small>${esc(team || 'NFL')} · ${esc(playerPosition(item.player))}</small></div><div class="player-leader-stat">${Math.round(item.value).toLocaleString()}<span>${esc(category.statLabel)}</span></div></article>`;
   }
+  function hideDuplicateLeaderSections(page, panel) {
+    const duplicatePattern = /league\s+top\s*10|league\s+leaders|top\s+10\s+nfl|passing\s+leaders|rushing\s+leaders|receiving\s+leaders|touchdown\s+leaders|defensive\s+leaders|sack\s+leaders|interception\s+leaders/i;
+    [...page.children].forEach(child => {
+      if (child === panel || child.contains(panel)) return;
+      const text = (child.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text) return;
+      if (duplicatePattern.test(text)) {
+        child.dataset.hiddenDuplicatePlayerLeaders = 'true';
+        child.style.display = 'none';
+      }
+    });
+  }
   function installPanel() {
     const page = document.getElementById('players');
     if (!page || document.getElementById('player-leaders-toggle-panel')) return;
@@ -76,6 +88,9 @@
     panel.className = 'player-leaders-hero section-reveal visible';
     panel.innerHTML = `<div class="player-leaders-head"><div><p class="player-leaders-eyebrow">Player stat leaders</p><h2>League Top 10</h2><p id="player-leaders-subtitle">Compare the NFL leaders by category, then switch to your assigned team.</p></div><div class="player-leaders-scope" aria-label="Player leaderboard scope"><button type="button" data-player-scope="league" class="active">League Top 10</button><button type="button" data-player-scope="team">My Team</button></div></div><div class="player-leaders-cats" aria-label="Player stat categories">${CATEGORIES.map((cat, index) => `<button type="button" data-player-category="${cat.id}" class="${index === 0 ? 'active' : ''}">${cat.label}</button>`).join('')}</div><div id="player-leaders-status" class="player-leaders-status">Loading league leaders...</div><div id="player-leaders-grid" class="player-leaders-grid"></div>`;
     page.insertBefore(panel, page.firstElementChild?.nextSibling || page.firstChild);
+    hideDuplicateLeaderSections(page, panel);
+    setTimeout(() => hideDuplicateLeaderSections(page, panel), 600);
+    setTimeout(() => hideDuplicateLeaderSections(page, panel), 1800);
     let scope = 'league';
     let category = CATEGORIES[0];
     let myTeam = '';
