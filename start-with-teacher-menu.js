@@ -124,6 +124,27 @@ function adminRefreshScript() {
 </script>`;
 }
 
+function featuredGameSizingPatch() {
+  return `<style id="featured-game-sizing-patch">
+#featured .featured-content{overflow:visible!important}
+#featured .featured-content *{min-width:0}
+#featured [id^="featured-"]{max-width:100%;overflow-wrap:anywhere;word-break:normal;text-overflow:clip;white-space:normal}
+#featured-away-name,#featured-home-name{font-size:clamp(2.5rem,7vw,6.75rem)!important;line-height:.92!important;overflow-wrap:normal;word-break:keep-all}
+#featured-away-city,#featured-home-city,#featured-away-record,#featured-home-record{font-size:clamp(.75rem,1.45vw,1rem)!important;line-height:1.25!important;white-space:normal!important}
+#featured-venue,#featured-location{display:block;max-width:100%;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.25!important;overflow-wrap:anywhere}
+#featured .glass-panel,#featured .fun-fact-card,#featured [class*="glass"],#featured [class*="rounded"]{min-width:0;overflow:visible}
+#featured .grid,#featured [class*="grid"]{align-items:stretch}
+@media(max-width:900px){
+  #featured-away-name,#featured-home-name{font-size:clamp(2rem,13vw,4.25rem)!important;line-height:.96!important}
+  #featured .featured-content{padding-left:1rem!important;padding-right:1rem!important}
+}
+@media(max-width:560px){
+  #featured [class*="grid-cols"],#featured .grid{grid-template-columns:1fr!important}
+  #featured-away-city,#featured-home-city,#featured-away-record,#featured-home-record,#featured-venue,#featured-location{font-size:.78rem!important}
+}
+</style>`;
+}
+
 function transformTeacherHtml(html) {
   let output = html;
   output = output.replace('id="teacher-command-center" data-teacher-page="students"', 'id="teacher-command-center" data-teacher-page="dashboard"');
@@ -141,6 +162,11 @@ function transformAdminHtml(html) {
   return output;
 }
 
+function transformStudentHtml(html) {
+  if (html.includes('id="featured-game-sizing-patch"')) return html;
+  return html.replace('</head>', `${featuredGameSizingPatch()}</head>`);
+}
+
 function serveTeacherPortal(response) {
   const file = path.join(__dirname, 'teacher.html');
   const html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
@@ -151,6 +177,13 @@ function serveTeacherPortal(response) {
 function serveAdminPortal(response) {
   const file = path.join(__dirname, 'admin.html');
   const html = transformAdminHtml(fs.readFileSync(file, 'utf8'));
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.end(html);
+}
+
+function serveStudentPortal(response) {
+  const file = path.join(__dirname, 'index.html');
+  const html = transformStudentHtml(fs.readFileSync(file, 'utf8'));
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
   response.end(html);
 }
@@ -199,6 +232,11 @@ http.createServer = function createServerWithTeacherDashboard(listener) {
       }
       if (url.searchParams.get('page') === 'tcu' && request.method === 'GET') {
         return redirect(response, '/');
+      }
+      if ((pathname === '/' || pathname === '/index.html' || /^\/class\/\d+\/dashboard$/.test(pathname)) && request.method === 'GET') {
+        const user = await getSessionUser(request);
+        if (!user) return redirect(response, '/login');
+        return serveStudentPortal(response);
       }
       return listener(request, response);
     } catch (error) {
