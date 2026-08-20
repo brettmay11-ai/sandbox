@@ -11,6 +11,17 @@
     NYJ:{stadium:'MetLife Stadium',city:'East Rutherford, New Jersey'},PHI:{stadium:'Lincoln Financial Field',city:'Philadelphia'},PIT:{stadium:'Acrisure Stadium',city:'Pittsburgh'},SF:{stadium:"Levi's Stadium",city:'Santa Clara, California'},
     SEA:{stadium:'Lumen Field',city:'Seattle'},TB:{stadium:'Raymond James Stadium',city:'Tampa, Florida'},TEN:{stadium:'Nissan Stadium',city:'Nashville, Tennessee'},WAS:{stadium:'Northwest Stadium',city:'Landover, Maryland'}
   };
+  const INTERNATIONAL_VENUES_2026={
+    '1:SF:LAR':{stadium:'Melbourne Cricket Ground',city:'Melbourne, Australia',international:true},
+    '3:BAL:DAL':{stadium:'Maracanã Stadium',city:'Rio de Janeiro, Brazil',international:true},
+    '4:IND:WAS':{stadium:'Tottenham Hotspur Stadium',city:'London, United Kingdom',international:true},
+    '5:PHI:JAX':{stadium:'Tottenham Hotspur Stadium',city:'London, United Kingdom',international:true},
+    '6:HOU:JAX':{stadium:'Wembley Stadium',city:'London, United Kingdom',international:true},
+    '7:PIT:NO':{stadium:'Stade de France',city:'Paris, France',international:true},
+    '9:CIN:ATL':{stadium:'Bernabéu Stadium',city:'Madrid, Spain',international:true},
+    '10:NE:DET':{stadium:'FC Bayern Munich Stadium',city:'Munich, Germany',international:true},
+    '11:MIN:SF':{stadium:'Estadio Banorte',city:'Mexico City, Mexico',international:true}
+  };
   async function api(url){const response=await fetch(url);const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Could not load featured game.');return data}
   function easternKickoff(game){
     const source=game?.DateTimeUTC||game?.Date;
@@ -30,24 +41,39 @@
       time:`${displayHour}:${minute} ${period} ET`
     };
   }
-  async function scheduledKickoff(featuredGame){
-    if(!featuredGame?.away||!featuredGame?.home||!featuredGame?.week)return null;
+  function featuredVenueKey(featuredGame){return `${Number(featuredGame?.week)||''}:${featuredGame?.away||''}:${featuredGame?.home||''}`}
+  function venueFromSchedule(game){
+    const details=game?.StadiumDetails||game?.Stadium;
+    if(details&&typeof details==='object'){
+      const stadium=details.Name||details.StadiumName||details.stadium||details.name;
+      const cityParts=[details.City,details.State,details.Country].filter(Boolean);
+      if(stadium)return {stadium,city:cityParts.join(', '),international:details.Country&&details.Country!=='USA'&&details.Country!=='United States'};
+    }
+    if(typeof game?.Stadium==='string'&&game.Stadium.trim())return {stadium:game.Stadium.trim(),city:[game.City,game.State,game.Country].filter(Boolean).join(', ')};
+    return null;
+  }
+  async function scheduledGameDetails(featuredGame){
+    const details={kickoff:null,venue:INTERNATIONAL_VENUES_2026[featuredVenueKey(featuredGame)]||null};
+    if(!featuredGame?.away||!featuredGame?.home||!featuredGame?.week)return details;
     try{
       const games=await api('/api/sportsdata/nfl/schedule/2026');
       const game=Array.isArray(games)?games.find(item=>Number(item.Week)===Number(featuredGame.week)&&item.AwayTeam===featuredGame.away&&item.HomeTeam===featuredGame.home):null;
-      return easternKickoff(game);
+      if(game){
+        details.kickoff=easternKickoff(game);
+        details.venue=details.venue||venueFromSchedule(game);
+      }
     }catch(error){
-      console.warn('Could not verify featured game kickoff.',error);
-      return null;
+      console.warn('Could not verify featured game schedule details.',error);
     }
+    return details;
   }
   async function exactWikipediaPhoto(title){
     const url=`https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&titles=${encodeURIComponent(title)}&prop=pageimages&piprop=original|thumbnail&pithumbsize=1800`;
     const data=await fetch(url).then(response=>response.json()),page=Object.values(data.query?.pages||{})[0],source=page?.original?.source||page?.thumbnail?.source;
     return source?{url:source,title:page.title}:null;
   }
-  async function verifiedLocationPhoto(home){
-    const venue=VENUES[home.abbr];if(!venue)return {url:fallback,title:'Football field',kind:'fallback'};
+  async function verifiedLocationPhoto(home,overrideVenue=null){
+    const venue=overrideVenue||VENUES[home.abbr];if(!venue)return {url:fallback,title:'Football field',kind:'fallback'};
     try{const stadiumPhoto=await exactWikipediaPhoto(venue.stadium);if(stadiumPhoto)return {...stadiumPhoto,kind:'stadium',venue}}catch(error){console.warn(`Could not load verified photo for ${venue.stadium}.`,error)}
     try{const cityPhoto=await exactWikipediaPhoto(venue.city);if(cityPhoto)return {...cityPhoto,kind:'city',venue}}catch(error){console.warn(`Could not load verified photo for ${venue.city}.`,error)}
     return {url:fallback,title:'Football field',kind:'fallback',venue};
@@ -59,12 +85,21 @@
     try{
       const {featuredGame}=await api('/api/featured-game');
       if(featuredGame)Object.assign(FEATURED_GAME,featuredGame);
-      const kickoff=await scheduledKickoff(FEATURED_GAME);if(kickoff)Object.assign(FEATURED_GAME,kickoff);
+      const scheduleDetails=await scheduledGameDetails(FEATURED_GAME);
+      if(scheduleDetails.kickoff)Object.assign(FEATURED_GAME,scheduleDetails.kickoff);
       FEATURED_GAME.bgImage=fallback;renderFeaturedGame();
       const home=getTeam(FEATURED_GAME.home);if(!home)return;
-      const photo=await verifiedLocationPhoto(home),venue=photo.venue||VENUES[home.abbr];if(image){image.onerror=()=>{image.onerror=null;image.src=fallback};image.src=photo.url;image.alt=photo.kind==='stadium'?`${venue?.label||venue?.stadium||home.stadium}, home of the ${fullName(home)}`:`${home.city}, ${home.state}`;try{await image.decode()}catch(decodeError){try{await image.decode()}catch(secondDecodeError){}}image.style.background='';image.style.opacity='1'}
+      const overrideVenue=scheduleDetails.venue;
+      const photo=await verifiedLocationPhoto(home,overrideVenue),venue=photo.venue||overrideVenue||VENUES[home.abbr];
+      if(image){
+        image.onerror=()=>{image.onerror=null;image.src=fallback};
+        image.src=photo.url;
+        image.alt=photo.kind==='stadium'?`${venue?.label||venue?.stadium||home.stadium}`:`${venue?.city||`${home.city}, ${home.state}`}`;
+        try{await image.decode()}catch(decodeError){try{await image.decode()}catch(secondDecodeError){}}
+        image.style.background='';image.style.opacity='1';
+      }
       const venueLabel=document.getElementById('featured-venue');if(venueLabel&&venue)venueLabel.textContent=venue.label||venue.stadium;
-      const location=document.getElementById('featured-location');if(location){location.title=`Photo: ${photo.title} via Wikimedia`;location.textContent=`${home.city}, ${home.state}`}
+      const location=document.getElementById('featured-location');if(location){location.title=`Photo: ${photo.title} via Wikimedia`;location.textContent=venue?.city||`${home.city}, ${home.state}`}
     }catch(error){if(image)image.style.opacity='1';console.warn('Teacher-selected featured game could not load.',error)}
   }
   installFeaturedGame();
