@@ -34,6 +34,11 @@ function routeToSportsData(pathname) {
       if (!season) return { error:'Choose a valid NFL season.' };
       return { sport, apiPath:`scores/json/Schedules/${season}`, ttlSeconds:24 * 60 * 60 };
     }
+    if (parts[3] === 'standings') {
+      const season = seasonValue(parts[4]);
+      if (!season) return { error:'Choose a valid NFL season.' };
+      return { sport, apiPath:`scores/json/Standings/${season}`, ttlSeconds:60 * 60 };
+    }
     if (parts[3] === 'current-season') {
       return { sport, apiPath:'scores/json/CurrentSeason', ttlSeconds:24 * 60 * 60 };
     }
