@@ -1,6 +1,7 @@
 (() => {
   const SEASON = 2026;
   const TEAMS = ['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS'];
+  const TEAM_NAMES = { ARI:'Arizona Cardinals', ATL:'Atlanta Falcons', BAL:'Baltimore Ravens', BUF:'Buffalo Bills', CAR:'Carolina Panthers', CHI:'Chicago Bears', CIN:'Cincinnati Bengals', CLE:'Cleveland Browns', DAL:'Dallas Cowboys', DEN:'Denver Broncos', DET:'Detroit Lions', GB:'Green Bay Packers', HOU:'Houston Texans', IND:'Indianapolis Colts', JAX:'Jacksonville Jaguars', KC:'Kansas City Chiefs', LV:'Las Vegas Raiders', LAC:'Los Angeles Chargers', LAR:'Los Angeles Rams', MIA:'Miami Dolphins', MIN:'Minnesota Vikings', NE:'New England Patriots', NO:'New Orleans Saints', NYG:'New York Giants', NYJ:'New York Jets', PHI:'Philadelphia Eagles', PIT:'Pittsburgh Steelers', SF:'San Francisco 49ers', SEA:'Seattle Seahawks', TB:'Tampa Bay Buccaneers', TEN:'Tennessee Titans', WAS:'Washington Commanders' };
   const aliases = { JAC:'JAX', LA:'LAR', WSH:'WAS' };
   const CATEGORIES = [
     { id:'passing', label:'Passing', statLabel:'Pass yds', fields:['PassingYards','PassYards','passing_yards'] },
@@ -13,6 +14,7 @@
   ];
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   const teamCode = value => aliases[String(value || '').toUpperCase()] || String(value || '').toUpperCase();
+  const teamName = team => TEAM_NAMES[teamCode(team)] || teamCode(team) || 'My team';
   const numberValue = (player, fields) => {
     if (fields.includes('Touchdowns')) {
       const explicit = Number(player.Touchdowns ?? player.TotalTouchdowns);
@@ -44,9 +46,11 @@
     }
   }
   async function teamStats(team) {
-    const key = `NFL_PLAYER_STATS_${SEASON}_${team}`;
+    const normalizedTeam = teamCode(team);
+    if (!normalizedTeam) return [];
+    const key = `NFL_PLAYER_STATS_${SEASON}_${normalizedTeam}`;
     if (window[key]) return window[key];
-    const rows = await api(`/api/sportsdata/nfl/player-season-stats-by-team/${SEASON}/${team}`);
+    const rows = await api(`/api/sportsdata/nfl/player-season-stats-by-team/${SEASON}/${normalizedTeam}`);
     window[key] = Array.isArray(rows) ? rows : [];
     return window[key];
   }
@@ -86,7 +90,7 @@
     const panel = document.createElement('section');
     panel.id = 'player-leaders-toggle-panel';
     panel.className = 'player-leaders-hero section-reveal visible';
-    panel.innerHTML = `<div class="player-leaders-head"><div><p class="player-leaders-eyebrow">Player stat leaders</p><h2>League Top 10</h2><p id="player-leaders-subtitle">Compare the NFL leaders by category, then switch to your assigned team.</p></div><div class="player-leaders-scope" aria-label="Player leaderboard scope"><button type="button" data-player-scope="league" class="active">League Top 10</button><button type="button" data-player-scope="team">My Team</button></div></div><div class="player-leaders-cats" aria-label="Player stat categories">${CATEGORIES.map((cat, index) => `<button type="button" data-player-category="${cat.id}" class="${index === 0 ? 'active' : ''}">${cat.label}</button>`).join('')}</div><div id="player-leaders-status" class="player-leaders-status">Loading league leaders...</div><div id="player-leaders-grid" class="player-leaders-grid"></div>`;
+    panel.innerHTML = `<div class="player-leaders-head"><div><p class="player-leaders-eyebrow">Player stat leaders</p><h2>League Top 10</h2><p id="player-leaders-subtitle">Compare the NFL leaders by category, then switch to any team.</p></div><div class="player-leaders-controls"><div class="player-leaders-scope" aria-label="Player leaderboard scope"><button type="button" data-player-scope="league" class="active">League Top 10</button><button type="button" data-player-scope="team">My Team</button></div><label class="player-team-select-wrap" hidden><span>Choose team</span><select id="player-team-select" aria-label="Choose an NFL team">${TEAMS.map(team => `<option value="${team}">${esc(teamName(team))}</option>`).join('')}</select></label></div></div><div class="player-leaders-cats" aria-label="Player stat categories">${CATEGORIES.map((cat, index) => `<button type="button" data-player-category="${cat.id}" class="${index === 0 ? 'active' : ''}">${cat.label}</button>`).join('')}</div><div id="player-leaders-status" class="player-leaders-status">Loading league leaders...</div><div id="player-leaders-grid" class="player-leaders-grid"></div>`;
     page.insertBefore(panel, page.firstElementChild?.nextSibling || page.firstChild);
     hideDuplicateLeaderSections(page, panel);
     setTimeout(() => hideDuplicateLeaderSections(page, panel), 600);
@@ -94,19 +98,29 @@
     let scope = 'league';
     let category = CATEGORIES[0];
     let myTeam = '';
+    let activeTeam = '';
     const title = panel.querySelector('h2');
     const subtitle = panel.querySelector('#player-leaders-subtitle');
     const status = panel.querySelector('#player-leaders-status');
     const grid = panel.querySelector('#player-leaders-grid');
-    async function render() {
-      status.textContent = scope === 'team' ? 'Loading your team leaders...' : 'Loading league leaders...';
-      grid.innerHTML = '';
+    const selectWrap = panel.querySelector('.player-team-select-wrap');
+    const teamSelect = panel.querySelector('#player-team-select');
+    async function ensureTeam() {
       if (!myTeam) myTeam = await selectedTeam();
-      const rows = await scopeRows(scope, myTeam);
+      if (!activeTeam) activeTeam = myTeam || 'DAL';
+      if (teamSelect && teamSelect.value !== activeTeam) teamSelect.value = activeTeam;
+      return activeTeam;
+    }
+    async function render() {
+      const team = await ensureTeam();
+      if (selectWrap) selectWrap.hidden = scope !== 'team';
+      status.textContent = scope === 'team' ? `Loading ${teamName(team)} leaders...` : 'Loading league leaders...';
+      grid.innerHTML = '';
+      const rows = await scopeRows(scope, team);
       const top = leaders(rows, category);
-      title.textContent = scope === 'team' ? 'My Team Leaders' : 'League Top 10';
-      subtitle.textContent = scope === 'team' ? `Top ${myTeam || 'team'} players for ${category.label.toLowerCase()}.` : `Top NFL players for ${category.label.toLowerCase()}.`;
-      status.textContent = top.length ? `${category.label} · ${scope === 'team' ? myTeam || 'My team' : 'League Top 10'}` : 'No player stats found for this view yet.';
+      title.textContent = scope === 'team' ? `${teamName(team)} Leaders` : 'League Top 10';
+      subtitle.textContent = scope === 'team' ? `Top ${teamName(team)} players for ${category.label.toLowerCase()}.` : `Top NFL players for ${category.label.toLowerCase()}.`;
+      status.textContent = top.length ? `${category.label} · ${scope === 'team' ? teamName(team) : 'League Top 10'}` : 'No player stats found for this view yet.';
       grid.innerHTML = top.map((item, index) => cardHtml(item, index, category)).join('');
     }
     panel.addEventListener('click', event => {
@@ -123,6 +137,14 @@
         render();
       }
     });
+    if (teamSelect) {
+      teamSelect.addEventListener('change', () => {
+        activeTeam = teamCode(teamSelect.value);
+        scope = 'team';
+        panel.querySelectorAll('[data-player-scope]').forEach(button => button.classList.toggle('active', button.dataset.playerScope === 'team'));
+        render();
+      });
+    }
     render().catch(error => {
       console.warn('Could not load player leaders.', error);
       status.textContent = 'Player leaders are temporarily unavailable.';
