@@ -89,9 +89,31 @@ function transformTeacherHtml(html) {
   return output;
 }
 
+function transformStudentHtml(html) {
+  let output = html;
+  output = output.replace("'cities', 'tcu'", "'cities'");
+  output = output.replace(/,\s*'tcu'/g, '');
+  output = output.replace(/html\[data-portal-page="tcu"\]\s+body>#TCU\{display:block\}\n?/g, '');
+  output = output.replace(/<script[^>]+src=["']tcu-live\.js["'][^>]*><\/script>\s*/g, '');
+  output = output.replace(/<script[^>]+src=["']tcu-travel\.js["'][^>]*><\/script>\s*/g, '');
+  output = output.replace(/<script[^>]+src=["']tcu-travel-fixes\.js["'][^>]*><\/script>\s*/g, '');
+  output = output.replace(/<a\b[^>]*(?:href=["'][^"']*page=tcu[^"']*["']|data-page=["']tcu["'])[^>]*>[\s\S]*?<\/a>/gi, '');
+  output = output.replace(/<button\b[^>]*(?:data-page=["']tcu["']|data-nav=["']tcu["'])[^>]*>[\s\S]*?<\/button>/gi, '');
+  output = output.replace(/<section\b[^>]*id=["']TCU["'][\s\S]*?<\/section>/i, '');
+  output = output.replace('</body></html>', `<script>if(new URLSearchParams(location.search).get('page')==='tcu') location.replace('/');</script></body></html>`);
+  return output;
+}
+
 function serveTeacherPortal(response) {
   const file = path.join(__dirname, 'teacher.html');
   const html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.end(html);
+}
+
+function serveStudentPortal(response) {
+  const file = path.join(__dirname, 'index.html');
+  const html = transformStudentHtml(fs.readFileSync(file, 'utf8'));
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
   response.end(html);
 }
@@ -100,12 +122,18 @@ const originalCreateServer = http.createServer.bind(http);
 http.createServer = function createServerWithTeacherDashboard(listener) {
   return originalCreateServer(async (request, response) => {
     try {
-      const pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host || 'localhost'}`).pathname);
+      const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+      const pathname = decodeURIComponent(url.pathname);
       if ((pathname === '/teacher' || pathname === '/teacher.html') && request.method === 'GET') {
         const user = await getSessionUser(request);
         if (!user) return redirect(response, '/login');
         if (user.role !== 'teacher' && user.role !== 'super_admin') return redirect(response, '/');
         return serveTeacherPortal(response);
+      }
+      if ((pathname === '/' || pathname === '/index.html' || /^\/class\/\d+\/dashboard$/.test(pathname)) && request.method === 'GET') {
+        const user = await getSessionUser(request);
+        if (!user) return redirect(response, '/login');
+        return serveStudentPortal(response);
       }
       return listener(request, response);
     } catch (error) {
