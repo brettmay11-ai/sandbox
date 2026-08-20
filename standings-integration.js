@@ -86,14 +86,44 @@
   function tableHtml(rows) {
     return `<div class="standings-table-wrap"><table class="standings-table"><thead><tr><th>Rank</th><th>Team</th><th>Record</th><th>Win %</th><th>Div.</th><th>PF</th><th>PA</th><th>Diff</th><th>Streak</th></tr></thead><tbody>${rows.map(rowHtml).join('')}</tbody></table></div>`;
   }
+  function ensureStatsSubpages(stats) {
+    if (document.getElementById('stats-subpage-tabs')) return;
+    const existingChildren = [...stats.children];
+    const tabs = document.createElement('div');
+    tabs.id = 'stats-subpage-tabs';
+    tabs.className = 'stats-subpage-tabs';
+    tabs.innerHTML = '<button type="button" data-stats-subpage="team-stats" class="active">Team Stats</button><button type="button" data-stats-subpage="standings">Standings</button>';
+    const teamPane = document.createElement('div');
+    teamPane.id = 'stats-team-stats-subpage';
+    teamPane.className = 'stats-subpage stats-subpage-active';
+    const standingsPane = document.createElement('div');
+    standingsPane.id = 'stats-standings-subpage';
+    standingsPane.className = 'stats-subpage';
+    existingChildren.forEach(child => teamPane.appendChild(child));
+    stats.appendChild(tabs);
+    stats.appendChild(teamPane);
+    stats.appendChild(standingsPane);
+    function show(which) {
+      tabs.querySelectorAll('[data-stats-subpage]').forEach(button => button.classList.toggle('active', button.dataset.statsSubpage === which));
+      teamPane.classList.toggle('stats-subpage-active', which === 'team-stats');
+      standingsPane.classList.toggle('stats-subpage-active', which === 'standings');
+    }
+    tabs.addEventListener('click', event => {
+      const button = event.target.closest('[data-stats-subpage]');
+      if (button) show(button.dataset.statsSubpage);
+    });
+    show('team-stats');
+  }
   function installStatsStandings(rows) {
     const stats = document.getElementById('stats');
     if (!stats || document.getElementById('nfl-standings-panel')) return;
+    ensureStatsSubpages(stats);
+    const standingsPane = document.getElementById('stats-standings-subpage') || stats;
     const panel = document.createElement('div');
     panel.id = 'nfl-standings-panel';
     panel.className = 'glass-panel standings-panel section-reveal visible';
     panel.innerHTML = `<div class="standings-head"><div><p class="standings-eyebrow">League context</p><h2>NFL Standings</h2><p>Track where every team sits before you compare player and team stats.</p></div><div class="standings-tabs"><button data-standings-view="division" class="active">Division</button><button data-standings-view="conference">Conference</button><button data-standings-view="wildcard">Wild Card</button></div></div><div id="standings-content"></div>`;
-    stats.insertBefore(panel, stats.firstElementChild?.nextSibling || stats.firstChild);
+    standingsPane.appendChild(panel);
     const content = panel.querySelector('#standings-content');
     function render(view = 'division') {
       panel.querySelectorAll('[data-standings-view]').forEach(button => button.classList.toggle('active', button.dataset.standingsView === view));
