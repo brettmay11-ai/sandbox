@@ -62,6 +62,12 @@ function safeText(value, max = 80) {
   return String(value || '').trim().replace(/\s+/g, ' ').slice(0, max);
 }
 
+function normalizeNflTeam(value) {
+  const team = String(value || '').trim().toUpperCase();
+  const teams = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
+  return teams.has(team) ? team : null;
+}
+
 async function ensureClass(pool, slug, name, targetStudentCount) {
   const normalizedSlug = normalizeSlug(slug);
   const result = await pool.query(
@@ -77,18 +83,18 @@ async function ensureClass(pool, slug, name, targetStudentCount) {
   return result.rows[0].id;
 }
 
-async function upsertAccount(pool, { username, pin, displayName, role, classId = null }) {
+async function upsertAccount(pool, { username, pin, displayName, role, classId = null, selectedTeam = null }) {
   if (!username || !validPin(pin)) return false;
   const existing = await pool.query('SELECT id FROM users WHERE username=$1', [username]);
   if (!existing.rowCount) {
     await pool.query(
-      'INSERT INTO users(username,display_name,pin_hash,role,class_id,active) VALUES($1,$2,$3,$4,$5,TRUE)',
-      [username, displayName, await hashPin(pin), role, classId]
+      'INSERT INTO users(username,display_name,pin_hash,role,class_id,selected_team,active) VALUES($1,$2,$3,$4,$5,$6,TRUE)',
+      [username, displayName, await hashPin(pin), role, classId, normalizeNflTeam(selectedTeam)]
     );
   } else {
     await pool.query(
-      'UPDATE users SET display_name=COALESCE(NULLIF($2,\'\'),display_name), role=$3, class_id=$4, active=TRUE WHERE username=$1',
-      [username, displayName, role, classId]
+      'UPDATE users SET display_name=COALESCE(NULLIF($2,\'\'),display_name), role=$3, class_id=$4, selected_team=COALESCE($5,selected_team), active=TRUE WHERE username=$1',
+      [username, displayName, role, classId, normalizeNflTeam(selectedTeam)]
     );
   }
   return true;
@@ -112,6 +118,7 @@ async function bootstrapRoles() {
       ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
       ALTER TABLE users ADD CONSTRAINT users_role_check CHECK(role IN('super_admin','teacher','student'));
       ALTER TABLE users ADD COLUMN IF NOT EXISTS class_id BIGINT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_team VARCHAR(12);
 
       CREATE TABLE IF NOT EXISTS classes(
         id BIGSERIAL PRIMARY KEY,
@@ -145,7 +152,8 @@ async function bootstrapRoles() {
         pin: teacherPin,
         displayName: process.env.TEACHER_DISPLAY_NAME || 'Teacher',
         role: 'teacher',
-        classId: teacherClassId
+        classId: teacherClassId,
+        selectedTeam: process.env.TEACHER_TEAM || null
       });
     }
 
@@ -183,7 +191,7 @@ function installAdminTeacherApi() {
     const token = parseCookies(request).nfl_session;
     if (!token) return null;
     const result = await apiPool.query(
-      `SELECT u.id,u.username,u.display_name,u.role,u.class_id
+      `SELECT u.id,u.username,u.display_name,u.role,u.class_id,u.selected_team
        FROM sessions s
        JOIN users u ON u.id=s.user_id
        WHERE s.token_hash=$1 AND s.expires_at>NOW() AND u.active=TRUE`,
@@ -212,7 +220,7 @@ function installAdminTeacherApi() {
 
     if (pathname === '/api/admin/teachers' && request.method === 'GET') {
       const result = await apiPool.query(
-        `SELECT u.id,u.username,u.display_name,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at,
+        `SELECT u.id,u.username,u.display_name,u.active,u.class_id,u.selected_team,c.name AS class_name,u.created_at,u.last_login_at,
                 COUNT(s.id) FILTER (WHERE s.role='student')::int AS student_count
          FROM users u
          LEFT JOIN classes c ON c.id=u.class_id
@@ -230,6 +238,11 @@ function installAdminTeacherApi() {
       const username = normalizeUsername(body.username);
       const displayName = safeText(body.displayName || username, 80);
       const classId = Number(body.classId) || null;
+      const selectedTeam = body.selectedTeam ? normalizeNflTeam(body.selectedTeam) : null;
+      if (body.selectedTeam && !selectedTeam) {
+        sendJson(response, 400, { error:'Choose a valid NFL team.' });
+        return true;
+      }
       if (username.length < 2 || !validPin(body.pin) || !displayName || !classId) {
         sendJson(response, 400, { error:'Enter class, username, display name, and 4-8 digit PIN.' });
         return true;
@@ -241,8 +254,8 @@ function installAdminTeacherApi() {
       }
       try {
         const result = await apiPool.query(
-          'INSERT INTO users(username,display_name,pin_hash,role,class_id,active) VALUES($1,$2,$3,$4,$5,TRUE) RETURNING id,username,display_name,class_id,active',
-          [username, displayName, await hashPin(body.pin), 'teacher', classId]
+          'INSERT INTO users(username,display_name,pin_hash,role,class_id,selected_team,active) VALUES($1,$2,$3,$4,$5,$6,TRUE) RETURNING id,username,display_name,class_id,selected_team,active',
+          [username, displayName, await hashPin(body.pin), 'teacher', classId, selectedTeam]
         );
         sendJson(response, 201, { teacher:result.rows[0] });
         return true;
@@ -261,14 +274,20 @@ function installAdminTeacherApi() {
       const displayName = body.displayName ? safeText(body.displayName, 80) : null;
       const classId = body.classId === undefined ? null : Number(body.classId) || null;
       const active = body.active === undefined ? null : Boolean(body.active);
+      const selectedTeam = body.selectedTeam === undefined ? undefined : (body.selectedTeam ? normalizeNflTeam(body.selectedTeam) : null);
+      if (body.selectedTeam && !selectedTeam) {
+        sendJson(response, 400, { error:'Choose a valid NFL team.' });
+        return true;
+      }
       const result = await apiPool.query(
         `UPDATE users
          SET display_name=COALESCE($2,display_name),
              class_id=COALESCE($3,class_id),
-             active=COALESCE($4,active)
+             active=COALESCE($4,active),
+             selected_team=CASE WHEN $5::boolean THEN $6 ELSE selected_team END
          WHERE id=$1 AND role='teacher'
-         RETURNING id,username,display_name,class_id,active`,
-        [teacherMatch[1], displayName, classId, active]
+         RETURNING id,username,display_name,class_id,selected_team,active`,
+        [teacherMatch[1], displayName, classId, active, body.selectedTeam !== undefined, selectedTeam]
       );
       if (!result.rowCount) {
         sendJson(response, 404, { error:'Teacher not found.' });
