@@ -11,8 +11,8 @@
     .math-game-endzone.left{left:0}.math-game-endzone.right{right:0}.math-game-endzone span{font-size:8px;font-weight:900;letter-spacing:.14em;color:rgba(255,255,255,.78);writing-mode:vertical-rl;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.7)}
     .math-game-yard-number{position:absolute;top:12px;z-index:2;transform:translateX(-50%);font-size:10px;font-weight:900;color:rgba(255,255,255,.48);text-shadow:0 1px 3px rgba(0,0,0,.65)}.math-game-yard-number.bottom{top:auto;bottom:12px;transform:translateX(-50%) rotate(180deg)}
     .math-game-progress{position:absolute;left:48px;top:0;bottom:0;background:linear-gradient(90deg,rgba(255,218,77,.1),rgba(255,218,77,.24));border-right:3px solid #f7d154;box-shadow:0 0 24px rgba(247,209,84,.24);transition:width .55s ease;z-index:3}
-    .math-game-ball{position:absolute;top:50%;z-index:4;width:34px;height:21px;border-radius:50%;background:radial-gradient(circle at 30% 28%,#d89455,#8a411f 58%,#4b1f0e);border:1px solid rgba(255,255,255,.5);box-shadow:0 10px 18px rgba(0,0,0,.42),inset 0 2px 4px rgba(255,255,255,.22);transform:translate(-50%,-50%) rotate(-18deg);transition:left .55s ease}
-    .math-game-ball:before{content:'';position:absolute;left:7px;right:7px;top:9px;height:2px;background:rgba(255,255,255,.86);box-shadow:0 0 4px rgba(255,255,255,.45)}.math-game-ball:after{content:'';position:absolute;left:13px;top:5px;width:8px;height:11px;border-left:2px solid rgba(255,255,255,.85);border-right:2px solid rgba(255,255,255,.85)}
+    .math-game-midfield-logo{position:absolute;left:50%;top:50%;z-index:4;width:58px;height:58px;object-fit:contain;opacity:.5;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 4px rgba(0,0,0,.62));transition:opacity .2s ease,filter .2s ease}.math-game-midfield-logo.is-loaded{opacity:.68}
+    .math-game-ball{position:absolute;top:50%;z-index:5;width:52px;height:36px;object-fit:contain;filter:drop-shadow(0 9px 9px rgba(0,0,0,.48));transform:translate(-50%,-50%) rotate(-18deg);transition:left .55s ease,filter .2s ease}.math-game-ball:hover{filter:drop-shadow(0 11px 12px rgba(0,0,0,.58)) brightness(1.08)}
     .math-game-button:disabled{opacity:.45;cursor:not-allowed}
     .math-game-rank:first-child{background:rgba(255,214,10,.08)}
     .math-playbook-card{position:relative;isolation:isolate;overflow:hidden;min-height:138px;text-align:left;border:1px solid rgba(255,255,255,.13);background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 44px rgba(0,0,0,.24);transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease}
@@ -50,7 +50,7 @@
       </div>
       <div class="p-5 md:p-7">
         <div class="flex justify-between text-[10px] uppercase font-bold text-white/40 mb-2"><span>Current Drive</span><span id="mg-yards">0 / 100 yards</span></div>
-        <div class="math-game-field"><div class="math-game-endzone left"><span>End Zone</span></div><div class="math-game-endzone right"><span>End Zone</span></div>${yardNumbers}<div id="mg-progress" class="math-game-progress"></div><div id="mg-ball" class="math-game-ball" aria-hidden="true"></div></div>
+        <div class="math-game-field"><div class="math-game-endzone left"><span>End Zone</span></div><div class="math-game-endzone right"><span>End Zone</span></div>${yardNumbers}<div id="mg-midfield-logo" class="math-game-midfield-logo" aria-hidden="true"></div><div id="mg-progress" class="math-game-progress"></div><img id="mg-ball" class="math-game-ball" src="assets/math-football.png" alt="" aria-hidden="true"></div>
       </div>
       <div class="grid lg:grid-cols-[1.5fr_1fr] border-t border-white/10">
         <div class="p-5 md:p-7 lg:border-r border-white/10">
@@ -122,6 +122,16 @@
     $('mg-yards').textContent=`${yards} / 100 yards`;
     $('mg-progress').style.width=width;
     $('mg-ball').style.left=`calc(48px + (100% - 96px) * ${yards/100})`;
+  }
+
+  async function renderAssignedTeamMark() {
+    try {
+      const data=await api('/api/me'), team=typeof getNFLTeamBrand==='function'?getNFLTeamBrand(data.user?.selectedTeam):null;
+      const mark=$('mg-midfield-logo');
+      if(!mark||!team)return;
+      mark.innerHTML=`<img src="${escapeHtml(team.logo)}" alt="${escapeHtml(team.name)} logo" class="w-full h-full object-contain" onload="this.parentElement.classList.add('is-loaded')" onerror="this.parentElement.remove()">`;
+      mark.title=`${team.name} midfield mark`;
+    } catch(error) { console.warn('Could not load assigned team mark.',error); }
   }
 
   function renderLeaderboard() {
@@ -201,5 +211,5 @@
   $('mg-weekly-tab').addEventListener('click',()=>{state.board='weekly';renderLeaderboard()});
   $('mg-season-tab').addEventListener('click',()=>{state.board='allTime';renderLeaderboard()});
 
-  loadProfile().then(()=>showPlaybook()).catch(error=>{$('mg-question').textContent=error.message;$('mg-submit').disabled=true});
+  Promise.all([loadProfile(),renderAssignedTeamMark()]).then(()=>showPlaybook()).catch(error=>{$('mg-question').textContent=error.message;$('mg-submit').disabled=true});
 })();
