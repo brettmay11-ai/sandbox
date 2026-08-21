@@ -1,26 +1,42 @@
 (() => {
   const GAMES = [
-    {away:'San Francisco 49ers',home:'Los Angeles Rams',time:'7:35 PM CT',stadium:'Melbourne Cricket Ground',city:'Melbourne, Australia',location:'Melbourne Cricket Ground • Melbourne, Australia'},
-    {away:'Baltimore Ravens',home:'Dallas Cowboys',time:'3:25 PM CT',stadium:'Maracanã Stadium',city:'Rio de Janeiro, Brazil',location:'Maracanã Stadium • Rio de Janeiro, Brazil'},
-    {away:'Indianapolis Colts',home:'Washington Commanders',time:'8:30 AM CT',stadium:'Tottenham Hotspur Stadium',city:'London, U.K.',location:'Tottenham Hotspur Stadium • London, U.K.'},
-    {away:'Philadelphia Eagles',home:'Jacksonville Jaguars',time:'8:30 AM CT',stadium:'Tottenham Hotspur Stadium',city:'London, U.K.',location:'Tottenham Hotspur Stadium • London, U.K.'},
-    {away:'Houston Texans',home:'Jacksonville Jaguars',time:'8:30 AM CT',stadium:'Wembley Stadium',city:'London, U.K.',location:'Wembley Stadium • London, U.K.'},
-    {away:'Pittsburgh Steelers',home:'New Orleans Saints',time:'8:30 AM CT',stadium:'Stade de France',city:'Paris, France',location:'Stade de France • Paris, France'},
-    {away:'Cincinnati Bengals',home:'Atlanta Falcons',time:'8:30 AM CT',stadium:'Bernabéu Stadium',city:'Madrid, Spain',location:'Bernabéu Stadium • Madrid, Spain'},
-    {away:'New England Patriots',home:'Detroit Lions',time:'8:30 AM CT',stadium:'FC Bayern Munich Arena',city:'Munich, Germany',location:'FC Bayern Munich Arena • Munich, Germany'},
-    {away:'Minnesota Vikings',home:'San Francisco 49ers',time:'7:20 PM CT',stadium:'Estadio Banorte',city:'Mexico City, Mexico',location:'Estadio Banorte • Mexico City, Mexico'}
+    {week:1,awayAliases:['San Francisco 49ers','49ers','SF','San Francisco'],homeAliases:['Los Angeles Rams','Rams','LAR'],time:'7:35 PM CT',stadium:'Melbourne Cricket Ground',city:'Melbourne, Australia',location:'Melbourne Cricket Ground • Melbourne, Australia'},
+    {week:3,awayAliases:['Baltimore Ravens','Ravens','BAL'],homeAliases:['Dallas Cowboys','Cowboys','DAL'],time:'3:25 PM CT',stadium:'Maracanã Stadium',city:'Rio de Janeiro, Brazil',location:'Maracanã Stadium • Rio de Janeiro, Brazil'},
+    {week:4,awayAliases:['Indianapolis Colts','Colts','IND'],homeAliases:['Washington Commanders','Commanders','WAS','Washington'],time:'8:30 AM CT',stadium:'Tottenham Hotspur Stadium',city:'London, U.K.',location:'Tottenham Hotspur Stadium • London, U.K.'},
+    {week:5,awayAliases:['Philadelphia Eagles','Eagles','PHI'],homeAliases:['Jacksonville Jaguars','Jaguars','JAX','Jacksonville'],time:'8:30 AM CT',stadium:'Tottenham Hotspur Stadium',city:'London, U.K.',location:'Tottenham Hotspur Stadium • London, U.K.'},
+    {week:6,awayAliases:['Houston Texans','Texans','HOU'],homeAliases:['Jacksonville Jaguars','Jaguars','JAX','Jacksonville'],time:'8:30 AM CT',stadium:'Wembley Stadium',city:'London, U.K.',location:'Wembley Stadium • London, U.K.'},
+    {week:7,awayAliases:['Pittsburgh Steelers','Steelers','PIT'],homeAliases:['New Orleans Saints','Saints','NO','New Orleans'],time:'8:30 AM CT',stadium:'Stade de France',city:'Paris, France',location:'Stade de France • Paris, France'},
+    {week:9,awayAliases:['Cincinnati Bengals','Bengals','CIN'],homeAliases:['Atlanta Falcons','Falcons','ATL'],time:'8:30 AM CT',stadium:'Bernabéu Stadium',city:'Madrid, Spain',location:'Bernabéu Stadium • Madrid, Spain'},
+    {week:10,awayAliases:['New England Patriots','Patriots','NE','New England'],homeAliases:['Detroit Lions','Lions','DET'],time:'8:30 AM CT',stadium:'FC Bayern Munich Arena',city:'Munich, Germany',location:'FC Bayern Munich Arena • Munich, Germany'},
+    {week:11,awayAliases:['Minnesota Vikings','Vikings','MIN'],homeAliases:['San Francisco 49ers','49ers','SF','San Francisco'],time:'7:20 PM CT',stadium:'Estadio Banorte',city:'Mexico City, Mexico',location:'Estadio Banorte • Mexico City, Mexico'}
   ];
 
   const TIME_RE = /\b(?:1[0-2]|0?[1-9]):[0-5]\d\s*(?:AM|PM)(?:\s*(?:ET|CT))?\b/i;
-  const LOCATION_HINT_RE = /(stadium|arena|field|center|dome|park|melbourne|rio de janeiro|london|paris|madrid|munich|mexico city)/i;
+  const LOCATION_HINT_RE = /(stadium|arena|field|center|dome|park|sofi|inglewood|melbourne|rio de janeiro|london|paris|madrid|munich|mexico city)/i;
 
   function setTextIfChanged(node, value) {
     if (node && node.textContent !== value) node.textContent = value;
   }
 
+  function hasAlias(text, aliases) {
+    const normalized = String(text || '').toLowerCase();
+    return aliases.some(alias => normalized.includes(String(alias).toLowerCase()));
+  }
+
+  function currentWeek() {
+    const text = document.getElementById('week-label')?.textContent || '';
+    const match = text.match(/week\s*(\d+)/i);
+    return match ? Number(match[1]) : null;
+  }
+
   function findGame(container) {
     const text = (container?.textContent || '').replace(/\s+/g,' ');
-    return GAMES.find(item => text.includes(item.away) && text.includes(item.home));
+    const week = currentWeek();
+    return GAMES.find(item =>
+      (!week || item.week === week) &&
+      hasAlias(text, item.awayAliases) &&
+      hasAlias(text, item.homeAliases)
+    );
   }
 
   function patchStandardCard(card, game) {
@@ -62,27 +78,25 @@
         timePatched = true;
         return;
       }
-      if (!stadiumPatched && LOCATION_HINT_RE.test(text) && !text.includes(game.away) && !text.includes(game.home)) {
+      if (!stadiumPatched && LOCATION_HINT_RE.test(text)) {
         setTextIfChanged(node, game.stadium);
         stadiumPatched = true;
         return;
       }
-      if (!cityPatched && /(,\s*[A-Z]{2}\b|,\s*(Australia|Brazil|U\.K\.|France|Spain|Germany|Mexico)\b)/i.test(text)) {
+      if (!cityPatched && (/\bInglewood\b/i.test(text) || /,\s*[A-Z]{2}\b/.test(text) || /(Australia|Brazil|U\.K\.|France|Spain|Germany|Mexico)/i.test(text))) {
         setTextIfChanged(node, game.city);
         cityPatched = true;
       }
     });
 
-    if (!timePatched || !stadiumPatched) {
-      let meta = slot.querySelector('[data-official-international-meta]');
-      if (!meta) {
-        meta = document.createElement('div');
-        meta.dataset.officialInternationalMeta = 'true';
-        meta.className = 'mt-3 flex flex-wrap items-center gap-2 text-xs text-brand-400';
-        slot.firstElementChild?.appendChild(meta);
-      }
-      if (meta) meta.innerHTML = `<iconify-icon icon="lucide:globe"></iconify-icon><strong>${game.time}</strong><span>•</span><span>${game.location}</span><span class="ml-1 rounded bg-brand-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider">International</span>`;
+    let meta = slot.querySelector('[data-official-international-meta]');
+    if (!meta) {
+      meta = document.createElement('div');
+      meta.dataset.officialInternationalMeta = 'true';
+      meta.className = 'mt-3 flex flex-wrap items-center gap-2 text-xs text-brand-400';
+      slot.firstElementChild?.appendChild(meta);
     }
+    if (meta) meta.innerHTML = `<iconify-icon icon="lucide:globe"></iconify-icon><strong>${game.time}</strong><span>•</span><span>${game.location}</span><span class="ml-1 rounded bg-brand-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider">International</span>`;
     slot.dataset.officialInternational = 'true';
   }
 
