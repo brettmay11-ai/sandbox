@@ -21,10 +21,12 @@
   }
 
   function convertElement(element, assumeEastern=false) {
-    if (!element) return;
+    if (!element) return false;
     const text = element.textContent || '';
     const converted = shiftEtToCt(text, assumeEastern);
-    if (converted !== text) element.textContent = converted;
+    if (converted === text) return false;
+    element.textContent = converted;
+    return true;
   }
 
   function applyCentralTime() {
@@ -45,8 +47,21 @@
       const nodes = [];
       while (walker.nextNode()) nodes.push(walker.currentNode);
       nodes.forEach(node => {
-        if (/\b(?:AM|PM)\s*ET\b/i.test(node.nodeValue || '')) node.nodeValue = shiftEtToCt(node.nodeValue, false);
+        const current = node.nodeValue || '';
+        if (!/\b(?:AM|PM)\s*ET\b/i.test(current)) return;
+        const converted = shiftEtToCt(current, false);
+        if (converted !== current) node.nodeValue = converted;
       });
+    });
+  }
+
+  let scheduled = false;
+  function scheduleApply() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      applyCentralTime();
     });
   }
 
@@ -56,5 +71,5 @@
     setTimeout(applyCentralTime, 350);
     setTimeout(applyCentralTime, 1200);
   });
-  new MutationObserver(applyCentralTime).observe(document.documentElement, { childList:true, subtree:true, characterData:true });
+  new MutationObserver(scheduleApply).observe(document.documentElement, { childList:true, subtree:true, characterData:true });
 })();
