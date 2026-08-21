@@ -63,8 +63,26 @@
     card.dataset.officialInternational = 'true';
   }
 
+  function replaceFocusTextNodes(slot, game) {
+    const walker = document.createTreeWalker(slot, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    textNodes.forEach(node => {
+      const original = node.nodeValue || '';
+      let next = original;
+      if (/SoFi Stadium/i.test(next)) next = next.replace(/SoFi Stadium/gi, game.stadium);
+      if (/Inglewood\s*,\s*CA/i.test(next)) next = next.replace(/Inglewood\s*,\s*CA/gi, game.city);
+      else if (/\bInglewood\b/i.test(next)) next = next.replace(/\bInglewood\b/gi, game.city);
+      if (TIME_RE.test(next)) next = next.replace(TIME_RE, game.time);
+      if (next !== original) node.nodeValue = next;
+    });
+  }
+
   function patchTeamFocus(slot, game) {
     if (!slot || !game) return;
+    replaceFocusTextNodes(slot, game);
+
     const leaves = [...slot.querySelectorAll('*')].filter(node => node.children.length === 0);
     let timePatched = false;
     let stadiumPatched = false;
