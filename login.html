@@ -10,59 +10,50 @@
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 <style>
 *{box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:#05080d;color:#fff}
+body{font-family:'Inter',system-ui,sans-serif;background:#070a0f;color:#fff}
 h1{font-family:'Anton','Inter',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em}
-.field{position:fixed;inset:0;overflow:hidden;background:#05080d}
-.field:before{content:'';position:absolute;inset:-12% -8%;background:
-  radial-gradient(circle at 18% 18%,rgba(91,155,213,.32),transparent 18%),
-  radial-gradient(circle at 82% 18%,rgba(213,10,10,.24),transparent 18%),
-  radial-gradient(ellipse at 50% 16%,rgba(255,255,255,.18),transparent 13%),
-  linear-gradient(180deg,#07111d 0%,#07111d 34%,#061711 35%,#0d3f29 74%,#07100c 100%);
+.field{position:fixed;inset:0;overflow:hidden;background:
+  linear-gradient(180deg,#0b1220 0%,#070a0f 54%,#05110d 100%);
+}
+.field:before{content:'';position:absolute;inset:0;background:
+  linear-gradient(115deg,rgba(1,51,105,.42),transparent 31%),
+  linear-gradient(245deg,rgba(213,10,10,.26),transparent 32%),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 84px);
 }
 .field:after{content:'';position:absolute;inset:0;background:
-  linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.46) 52%,rgba(0,0,0,.72)),
-  radial-gradient(ellipse at 50% 58%,transparent 0 31%,rgba(0,0,0,.38) 74%),
-  repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,transparent 1px 96px);
+  linear-gradient(180deg,rgba(5,8,13,.08),rgba(5,8,13,.58) 54%,rgba(5,8,13,.85)),
+  radial-gradient(ellipse at 50% 101%,rgba(19,104,65,.7),transparent 36%);
 }
-.stadium-bowl{position:absolute;left:50%;top:6%;width:min(1160px,120vw);height:360px;transform:translateX(-50%);border:1px solid rgba(255,255,255,.08);border-radius:0 0 52% 52%/0 0 32% 32%;background:
-  repeating-linear-gradient(0deg,rgba(255,255,255,.045) 0 2px,transparent 2px 13px),
-  linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015) 36%,transparent);
-  opacity:.82;box-shadow:inset 0 -44px 90px rgba(0,0,0,.45)}
-.led-ribbon{position:absolute;left:50%;top:31%;width:min(980px,105vw);height:30px;transform:translateX(-50%);border:1px solid rgba(255,255,255,.12);border-radius:6px;background:linear-gradient(90deg,#013369,#1c77c3,#d50a0a,#f5f7fb,#013369);box-shadow:0 0 32px rgba(91,155,213,.3);opacity:.72}
-.stadium-light{position:absolute;top:10%;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.42),rgba(125,211,252,.14) 18%,transparent 54%);filter:blur(2px);opacity:.82}
-.stadium-light:after{content:'';position:absolute;left:50%;top:44%;width:360px;height:520px;transform:translateX(-50%) rotate(18deg);transform-origin:50% 0;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(125,211,252,.06) 34%,transparent 78%);clip-path:polygon(45% 0,55% 0,100% 100%,0 100%);filter:blur(10px);opacity:.8}
-.stadium-light.right:after{transform:translateX(-50%) rotate(-18deg)}
-.stadium-light.left{left:8%}.stadium-light.right{right:8%}
-.field-perspective{position:absolute;left:50%;bottom:-8%;width:min(1120px,126vw);height:68%;transform:translateX(-50%) perspective(680px) rotateX(60deg);transform-origin:50% 100%;border:2px solid rgba(255,255,255,.28);background:
-  linear-gradient(90deg,rgba(255,255,255,.8) 0 2px,transparent 2px calc(10% - 1px),rgba(255,255,255,.46) calc(10% - 1px) 10%),
-  repeating-linear-gradient(0deg,rgba(255,255,255,.22) 0 2px,transparent 2px 54px),
-  repeating-linear-gradient(90deg,rgba(255,255,255,.055) 0 1px,transparent 1px 30px),
-  linear-gradient(90deg,#145c39,#1b7547 48%,#145c39);
-  box-shadow:0 -24px 80px rgba(0,0,0,.22),inset 0 0 100px rgba(0,0,0,.26)}
-.field-perspective:before,.field-perspective:after{content:'';position:absolute;top:0;bottom:0;width:10%;background:rgba(213,10,10,.72);box-shadow:inset 0 0 28px rgba(0,0,0,.3)}
-.field-perspective:before{left:0}.field-perspective:after{right:0;background:rgba(1,51,105,.82)}
-.yard-number{position:absolute;z-index:1;bottom:22%;transform:translateX(-50%) perspective(600px) rotateX(58deg);font-size:clamp(34px,6vw,88px);font-weight:900;color:rgba(255,255,255,.18);text-shadow:0 4px 20px rgba(0,0,0,.36)}
-.yard-number:nth-of-type(1){left:15%}.yard-number:nth-of-type(2){left:35%}.yard-number:nth-of-type(3){left:50%}.yard-number:nth-of-type(4){left:65%}.yard-number:nth-of-type(5){left:85%}
-.login-shell{position:relative;z-index:2;overflow:hidden;background:linear-gradient(180deg,rgba(16,24,36,.96),rgba(7,11,17,.98));border:1px solid rgba(255,255,255,.16);box-shadow:0 34px 100px rgba(0,0,0,.58),0 0 0 1px rgba(91,155,213,.08),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(18px)}
-.login-shell:before{content:'';position:absolute;inset:0 0 auto;height:128px;background:linear-gradient(100deg,rgba(1,51,105,.28),transparent 44%,rgba(213,10,10,.18));pointer-events:none}
-.logo-wrap{background:#fff;border:4px solid #d50a0a;box-shadow:0 0 0 7px #013369,0 0 38px rgba(91,155,213,.28)}
+.scoreboard{position:absolute;left:50%;top:8%;width:min(960px,92vw);height:116px;transform:translateX(-50%);border:1px solid rgba(255,255,255,.11);border-radius:8px;background:
+  linear-gradient(90deg,rgba(1,51,105,.58),rgba(10,16,25,.72) 38%,rgba(213,10,10,.38));
+  box-shadow:0 24px 80px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.1)}
+.scoreboard:before{content:'';position:absolute;left:18px;right:18px;top:18px;height:10px;background:linear-gradient(90deg,#d50a0a,#f4f7fb,#5b9bd5,#013369);border-radius:999px;opacity:.85}
+.scoreboard:after{content:'';position:absolute;left:18px;right:18px;bottom:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent)}
+.light-bank{position:absolute;top:27%;width:260px;height:3px;background:rgba(255,255,255,.86);box-shadow:0 0 34px rgba(255,255,255,.45),0 0 90px rgba(91,155,213,.22)}
+.light-bank.left{left:8%;transform:rotate(7deg)}.light-bank.right{right:8%;transform:rotate(-7deg)}
+.field-lines{position:absolute;left:50%;bottom:-10%;width:min(1120px,120vw);height:42%;transform:translateX(-50%);border-top:1px solid rgba(255,255,255,.22);background:
+  repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.14) calc(10% - 1px) 10%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 1px,transparent 1px 34px),
+  linear-gradient(90deg,rgba(10,64,39,.54),rgba(25,116,71,.62),rgba(10,64,39,.54));
+  -webkit-mask:linear-gradient(180deg,transparent,black 22%,black);mask:linear-gradient(180deg,transparent,black 22%,black)}
+.login-shell{position:relative;z-index:2;overflow:hidden;border-radius:12px;background:rgba(8,13,21,.9);border:1px solid rgba(255,255,255,.15);box-shadow:0 28px 80px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(16px)}
+.login-shell:before{content:'';position:absolute;inset:0 0 auto;height:96px;background:linear-gradient(95deg,rgba(1,51,105,.42),rgba(255,255,255,.035),rgba(213,10,10,.22));pointer-events:none}
+.logo-wrap{background:#fff;border:4px solid #d50a0a;box-shadow:0 0 0 7px #013369,0 18px 34px rgba(0,0,0,.28)}
 .input-wrap{border-radius:8px}
 .input-wrap:focus-within{border-color:#5b9bd5;background:rgba(91,155,213,.08);box-shadow:0 0 0 3px rgba(91,155,213,.1)}
 input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #111a25 inset;-webkit-text-fill-color:#fff}
 .submit-btn{border-radius:8px;box-shadow:0 12px 28px rgba(1,51,105,.28)}
 .submit-btn:disabled{opacity:.65;cursor:wait}
-@media(max-width:640px){.stadium-bowl{height:300px;width:140vw}.led-ribbon{top:28%;width:120vw}.stadium-light{width:170px;height:170px;top:8%}.stadium-light.left{left:-18%}.stadium-light.right{right:-18%}.field-perspective{height:52%;width:150vw}.yard-number{display:none}.login-shell{max-width:420px}}
-@media(prefers-reduced-motion:no-preference){.led-ribbon{animation:ribbonPulse 5s ease-in-out infinite}.stadium-light{animation:lightSweep 6s ease-in-out infinite}.stadium-light.right{animation-delay:1.2s}@keyframes ribbonPulse{0%,100%{filter:saturate(1);opacity:.66}50%{filter:saturate(1.35);opacity:.9}}@keyframes lightSweep{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(8px);opacity:.95}}}
+@media(max-width:640px){.scoreboard{top:5%;height:96px;width:112vw}.light-bank{top:22%;width:180px}.light-bank.left{left:-16%}.light-bank.right{right:-16%}.field-lines{height:34%;width:150vw}.login-shell{max-width:420px}}
+@media(prefers-reduced-motion:no-preference){.scoreboard:before{animation:scoreGlow 4.8s ease-in-out infinite}@keyframes scoreGlow{0%,100%{opacity:.72}50%{opacity:1}}}
 </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 sm:p-6">
 <div class="field" aria-hidden="true">
-  <div class="stadium-bowl"></div>
-  <div class="led-ribbon"></div>
-  <div class="stadium-light left"></div>
-  <div class="stadium-light right"></div>
-  <div class="field-perspective"></div>
-  <span class="yard-number">20</span><span class="yard-number">40</span><span class="yard-number">50</span><span class="yard-number">40</span><span class="yard-number">20</span>
+  <div class="scoreboard"></div>
+  <div class="light-bank left"></div>
+  <div class="light-bank right"></div>
+  <div class="field-lines"></div>
 </div>
 <main class="login-shell w-full max-w-[440px]">
   <div class="h-2 bg-[#d50a0a]"></div>
@@ -72,7 +63,7 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #111a25 inset;-webkit-tex
     </div>
     <p class="text-[10px] uppercase font-bold tracking-[.24em] text-[#5b9bd5]">Classroom Portal</p>
     <h1 class="text-3xl sm:text-4xl font-black mt-2">NFL Classroom</h1>
-    <p class="text-sm text-white/45 mt-3 leading-relaxed">Students route to their class automatically. Teachers and admins route to their dashboards.</p>
+    <p class="text-sm text-white/45 mt-3 leading-relaxed">Follow your team. Build your skills. Earn XP.</p>
   </div>
   <form id="login-form" class="p-6 sm:p-9 space-y-5">
     <label class="block"><span class="text-[11px] uppercase font-bold tracking-wider text-white/50">Username</span><div class="input-wrap mt-2 flex items-center border border-white/12 bg-white/[.035] transition"><iconify-icon icon="lucide:user" class="ml-4 text-white/35"></iconify-icon><input id="username" autocomplete="username" required maxlength="32" autofocus class="w-full bg-transparent px-3 py-3.5 outline-none text-sm" placeholder="Enter your username"></div></label>
