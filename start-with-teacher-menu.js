@@ -16,7 +16,7 @@ function installStudentPortalAssetInjection() {
   if (fs.__studentPortalAssetInjectionInstalled) return;
   fs.__studentPortalAssetInjectionInstalled = true;
   const originalReadFile = fs.readFile.bind(fs);
-  const assetMarkup = '<link rel="stylesheet" href="/student-portal-fixes.css?v=1"><link rel="stylesheet" href="/standings-integration.css?v=2"><link rel="stylesheet" href="/player-leaders-toggle.css?v=1"><script defer src="/standings-integration.js?v=2"></script><script defer src="/student-portal-fixes.js?v=1"></script><script defer src="/player-leaders-toggle.js?v=1"></script><script defer src="/international-matchup-fixes.js?v=1"></script><script defer src="/central-time-display.js?v=1"></script>';
+  const assetMarkup = '<link rel="stylesheet" href="/student-portal-fixes.css?v=1"><link rel="stylesheet" href="/standings-integration.css?v=2"><link rel="stylesheet" href="/player-leaders-toggle.css?v=1"><script defer src="/standings-integration.js?v=2"></script><script defer src="/student-portal-fixes.js?v=1"></script><script defer src="/player-leaders-toggle.js?v=1"></script><script defer src="/international-matchup-fixes.js?v=2"></script><script defer src="/central-time-display.js?v=1"></script>';
   fs.readFile = function readFileWithStudentAssets(file, options, callback) {
     const done = typeof options === 'function' ? options : callback;
     const opts = typeof options === 'function' ? undefined : options;
@@ -138,7 +138,7 @@ function adminRefreshScript() {
     const button=document.getElementById('refresh');
     if(!button||button.dataset.siteRefreshInstalled)return;
     button.dataset.siteRefreshInstalled='true';
-    button.title='Clear cached sports data so stats, schedules, news, standings, and featured-game data reload fresh.';
+    button.title='Clear cached sports data so stats, schedules, news, standings, and featured-game details reload fresh.';
     button.addEventListener('click',event=>{event.preventDefault();refreshSiteData();},{capture:true});
   });
 })();
