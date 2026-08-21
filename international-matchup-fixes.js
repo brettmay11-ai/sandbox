@@ -83,6 +83,9 @@
     if (!slot || !game) return;
     replaceFocusTextNodes(slot, game);
 
+    const existingMeta = slot.querySelector('[data-official-international-meta]');
+    if (existingMeta) existingMeta.remove();
+
     const leaves = [...slot.querySelectorAll('*')].filter(node => node.children.length === 0);
     let timePatched = false;
     let stadiumPatched = false;
@@ -107,14 +110,6 @@
       }
     });
 
-    let meta = slot.querySelector('[data-official-international-meta]');
-    if (!meta) {
-      meta = document.createElement('div');
-      meta.dataset.officialInternationalMeta = 'true';
-      meta.className = 'mt-3 flex flex-wrap items-center gap-2 text-xs text-brand-400';
-      slot.firstElementChild?.appendChild(meta);
-    }
-    if (meta) meta.innerHTML = `<iconify-icon icon="lucide:globe"></iconify-icon><strong>${game.time}</strong><span>•</span><span>${game.location}</span><span class="ml-1 rounded bg-brand-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider">International</span>`;
     slot.dataset.officialInternational = 'true';
   }
 
