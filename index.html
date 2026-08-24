@@ -2324,16 +2324,11 @@ function openCompareModal(){
       <div class="text-[12px] ${winner===t2.abbr?'text-amber-200 font-bold':'text-white/65'}">${right}</div>
     </div>`;
 
-  const playerCard=(label,category,metricIndex,metricLabel)=>{
+  const playerRow=(label,category,metricIndex,metricLabel)=>{
     const p1=findPlayer(category,t1.abbr);const p2=findPlayer(category,t2.abbr);
     const metric=p=>p?`${typeof p[metricIndex]==='number'?p[metricIndex].toLocaleString():p[metricIndex]} ${metricLabel}`:'Not in top 10';
-    return`<div class="rounded-xl border border-white/8 bg-white/[.035] p-4">
-      <div class="flex items-center justify-between mb-3"><span class="text-[10px] font-mono text-white/35 uppercase tracking-wider">${label}</span><iconify-icon icon="lucide:user-round-star" class="text-brand-400"></iconify-icon></div>
-      <div class="grid grid-cols-2 gap-3">
-        <div><div class="text-xs font-bold">${p1?p1[1]:'No top-10 player'}</div><div class="text-[11px] text-white/45">${metric(p1)}</div></div>
-        <div class="text-right"><div class="text-xs font-bold">${p2?p2[1]:'No top-10 player'}</div><div class="text-[11px] text-white/45">${metric(p2)}</div></div>
-      </div>
-    </div>`;
+    const side=p=>`<div><div class="text-xs font-bold">${p?p[1]:'No top-10 player'}</div><div class="text-[11px] text-white/45">${metric(p)}</div></div>`;
+    return`<div class="grid grid-cols-[1fr_1.1fr_1fr] gap-3 items-center text-center py-3 border-b border-white/5 last:border-0">${side(p1)}<div class="text-[10px] text-white/35 uppercase tracking-wider">${label}</div>${side(p2)}</div>`;
   };
 
   const matchupText=recordMeeting?`Week ${recordMeeting.week}: ${fullName(getTeam(recordMeeting.away))} at ${fullName(getTeam(recordMeeting.home))} (${recordMeeting.day}, ${recordMeeting.time})`:'No 2026 regular-season meeting listed';
@@ -2369,9 +2364,11 @@ function openCompareModal(){
       </div>
     </div>
     <div data-ctab-panel="stats" class="hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div class="rounded-2xl border border-white/8 bg-black/20 p-5"><h3 class="text-sm font-semibold mb-3 text-brand-400 flex items-center gap-2"><iconify-icon icon="lucide:swords"></iconify-icon> Offense</h3>${buildStatRows(TEAM_STATS.offensive)}</div>
-        <div class="rounded-2xl border border-white/8 bg-black/20 p-5"><h3 class="text-sm font-semibold mb-3 text-nfl-red flex items-center gap-2"><iconify-icon icon="lucide:shield"></iconify-icon> Defense</h3>${buildStatRows(TEAM_STATS.defensive)}</div>
+      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
+        <h3 class="text-sm font-semibold mb-2 text-brand-400 flex items-center gap-2"><iconify-icon icon="lucide:swords"></iconify-icon> Offense</h3>
+        ${buildStatRows(TEAM_STATS.offensive)}
+        <h3 class="text-sm font-semibold mb-2 mt-6 text-nfl-red flex items-center gap-2"><iconify-icon icon="lucide:shield"></iconify-icon> Defense</h3>
+        ${buildStatRows(TEAM_STATS.defensive)}
       </div>
     </div>
     <div data-ctab-panel="cities" class="hidden">
@@ -2389,13 +2386,11 @@ function openCompareModal(){
     </div>
     <div data-ctab-panel="players" class="hidden">
       <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
-        <h3 class="text-sm font-semibold mb-4 text-emerald-300 flex items-center gap-2"><iconify-icon icon="lucide:star"></iconify-icon> Impact Players</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          ${playerCard('Top QB','passing',5,'pass yds')}
-          ${playerCard('Top RB','rushing',4,'rush yds')}
-          ${playerCard('Top WR','receiving',5,'rec yds')}
-          ${playerCard('Top Defender','defense',4,'sacks')}
-        </div>
+        <h3 class="text-sm font-semibold mb-2 text-emerald-300 flex items-center gap-2"><iconify-icon icon="lucide:star"></iconify-icon> Impact Players</h3>
+        ${playerRow('Top QB','passing',5,'pass yds')}
+        ${playerRow('Top RB','rushing',4,'rush yds')}
+        ${playerRow('Top WR','receiving',5,'rec yds')}
+        ${playerRow('Top Defender','defense',4,'sacks')}
       </div>
     </div>
   `;
