@@ -371,6 +371,7 @@ select option{background:#111827;color:#fff}
       <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-brand-500 border-2 border-white"></span> Home City</span>
       <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-white border-2 border-brand-500"></span> Away Destination</span>
       <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-white/70"></span> Other NFL City</span>
+    <button onclick="openIntlSeries()" class="ml-auto inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg border border-brand-500/40 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition font-semibold"><iconify-icon icon="lucide:globe"></iconify-icon> 2026 International Series</button>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
       <div class="lg:col-span-3 glass-panel rounded-2xl overflow-hidden">
@@ -393,24 +394,6 @@ select option{background:#111827;color:#fff}
         <div id="sidebar-away-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1 max-h-[500px]"><p class="text-xs text-white/30">Loading map data…</p></div>
       </div>
     </div>
-
-    <details class="data-expander">
-      <summary><span class="data-expander-title"><iconify-icon icon="lucide:route"></iconify-icon>Season Details <span class="data-expander-note">International games, trip log, and stadium facts</span></span><iconify-icon icon="lucide:chevron-down" class="data-expander-chevron"></iconify-icon></summary>
-      <div class="data-expander-content">
-<div class="mb-8 glass-panel rounded-2xl p-6">
-      <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon> How far does your team travel?</h3>
-      <div id="travel-summary"></div>
-    </div>
-
-    <!-- International Games Side Box -->
-    <div class="mb-8 glass-panel rounded-2xl p-6">
-      <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:globe" class="text-brand-400"></iconify-icon> 2026 International Series</h3>
-      <div id="international-games-list" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
-      <p class="text-[10px] text-white/30 mt-4">* International games are played outside the US. These long trips cross oceans and multiple time zones!</p>
-    </div>
-
-      </div>
-    </details>
   </div>
 </section>
 
@@ -511,6 +494,13 @@ select option{background:#111827;color:#fff}
 </section>
 
 <!-- Modals -->
+<div id="travel-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeTravelModal()">
+  <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+    <button onclick="closeTravelModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
+    <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><iconify-icon id="travel-modal-icon" icon="lucide:bar-chart-3" class="text-brand-400"></iconify-icon><span id="travel-modal-title"></span></h3>
+    <div id="travel-modal-content"></div>
+  </div>
+</div>
 <div id="team-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
   <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
     <button onclick="closeTeamModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
@@ -1407,34 +1397,6 @@ function renderPlayerStats(){
   
 function renderTravel(){
   focusedIntlGame = null;
-  const abbr=document.getElementById('travel-team-select').value;
-  const team=getTeam(abbr);
-  const summary=document.getElementById('travel-summary');
-  
-  const awayGames = getTeamTravelDestinations(abbr);
-  let totalMiles=0;
-  awayGames.forEach(g => {
-    g.distance = haversine(team.lat, team.lng, g.lat, g.lng);
-    totalMiles += g.distance;
-  });
-  
-  const farthest=awayGames.reduce((max,g)=>g.distance>max.distance?g:max,{distance:0});
-  const closest=awayGames.reduce((min,g)=>g.distance<min.distance?g:min,{distance:Infinity});
-
-  summary.innerHTML=`<div class="flex items-center gap-3 mb-5">${logo(abbr,44)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state} • ${team.tz} time zone</div></div></div>
-  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Season Road Travel</div><div class="text-xl font-bold text-brand-400 mt-1"><span data-countup="${totalMiles.toFixed(0)}">0</span> mi</div></div>
-    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Road Trips</div><div class="text-xl font-bold mt-1">${awayGames.length}</div></div>
-    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Avg Trip</div><div class="text-xl font-bold mt-1">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</div></div>
-    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Farthest Trip</div><div class="text-sm font-bold mt-1 truncate">${farthest.team?fullName(farthest.team):'—'}</div><div class="text-[10px] text-white/40">${farthest.distance?farthest.distance.toFixed(0)+' mi':''}</div></div>
-    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Closest Trip</div><div class="text-sm font-bold mt-1 truncate">${closest.team?fullName(closest.team):'—'}</div><div class="text-[10px] text-white/40">${isFinite(closest.distance)?closest.distance.toFixed(0)+' mi':''}</div></div>
-  </div>`;
-
-
-
-  runCountUps(summary);
-
-  // Also update the interactive map
   renderMap();
   window.refreshDataExperience?.();
 }
@@ -1920,6 +1882,60 @@ async function showTeamInfoModal(abbr){
   }
 }
 
+function openTravelModal(title, icon, html){
+  document.getElementById('travel-modal-icon').setAttribute('icon', icon);
+  document.getElementById('travel-modal-title').textContent = title;
+  document.getElementById('travel-modal-content').innerHTML = html;
+  const m=document.getElementById('travel-modal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeTravelModal(){ const m=document.getElementById('travel-modal'); if(m){m.classList.add('hidden'); m.classList.remove('flex');} }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeTravelModal(); });
+function selectedTravelTeam(){
+  const sel=document.getElementById('travel-team-select');
+  return (sel && sel.value) || window.assignedTeamAbbr || NFL_TEAMS[0].abbr;
+}
+function openTravelStats(){
+  const abbr=selectedTravelTeam();
+  const team=getTeam(abbr); if(!team)return;
+  const trips=getTeamTravelDestinations(abbr).map(t=>({...t,distance:haversine(team.lat,team.lng,t.lat,t.lng)}));
+  const total=trips.reduce((s,t)=>s+t.distance,0);
+  const n=trips.length, avg=n?total/n:0;
+  const farthest=trips.reduce((b,t)=>!b||t.distance>b.distance?t:b,null);
+  const closest=trips.reduce((b,t)=>!b||t.distance<b.distance?t:b,null);
+  const flightH=total/500;
+  const tzSet=new Set([team.tz]); trips.forEach(t=>{ if(t.team&&t.team.tz) tzSet.add(t.team.tz); });
+  const intl=INTERNATIONAL_GAMES.filter(g=>g.away===abbr||g.home===abbr).length;
+  const c2c=total/2800;
+  const dName=t=> !t?'—':(t.isIntl?`${t.city}, ${t.country}`:(t.team?fullName(t.team):'—'));
+  const card=(label,value,sub)=>`<div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">${label}</div><div class="text-lg font-bold mt-1">${value}</div>${sub?`<div class="text-[10px] text-white/40 mt-0.5">${sub}</div>`:''}</div>`;
+  const html=`<div class="flex items-center gap-3 mb-5">${logo(abbr,44)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">Home base: ${team.city}, ${team.state} &bull; ${team.tz}</div></div></div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      ${card('Season road travel', Math.round(total).toLocaleString()+' mi')}
+      ${card('Road trips', n)}
+      ${card('Average trip', Math.round(avg).toLocaleString()+' mi')}
+      ${card('Farthest trip', dName(farthest), farthest?Math.round(farthest.distance).toLocaleString()+' mi':'')}
+      ${card('Closest trip', dName(closest), closest?Math.round(closest.distance).toLocaleString()+' mi':'')}
+      ${card('Flight time (season)', flightH.toFixed(1)+' hrs', 'at 500 mph, one-way each trip')}
+      ${card('Time zones visited', tzSet.size, [...tzSet].join(' &middot; '))}
+      ${card('International trips', intl, intl?('overseas game'+(intl>1?'s':'')):'none this season')}
+      ${card('Coast-to-coast equal', c2c.toFixed(1)+'x', 'like NYC to LA and back')}
+    </div>
+    <p class="text-[10px] text-white/30 mt-4">Distances are straight-line estimates from ${team.city}. Real flights are a little longer.</p>`;
+  openTravelModal(fullName(team)+' — Travel Stats','lucide:bar-chart-3',html);
+}
+function focusIntlAndClose(week,away,home){ closeTravelModal(); focusInternationalGame(week,away,home); }
+function openIntlSeries(){
+  const rows=INTERNATIONAL_GAMES.map(g=>{
+    const away=getTeam(g.away), home=getTeam(g.home);
+    return `<button onclick="focusIntlAndClose(${g.week},'${g.away}','${g.home}')" class="w-full text-left flex items-center gap-3 p-3 rounded-lg border border-white/6 bg-white/2 hover:border-brand-500/40 hover:bg-brand-500/5 transition">
+      <span class="text-[10px] font-mono text-brand-400 w-10 shrink-0">Wk ${g.week}</span>
+      <span class="flex items-center gap-1.5 min-w-0">${logo(g.away,22)}<span class="text-[11px] font-semibold truncate">${fullName(away)}</span><span class="text-[9px] text-white/30">@</span>${logo(g.home,22)}<span class="text-[11px] font-semibold truncate">${fullName(home)}</span></span>
+      <span class="ml-auto text-right shrink-0 pl-2"><span class="block text-[11px]">${g.city}, ${g.country}</span><span class="block text-[9px] text-white/40">${g.stadium}</span></span>
+    </button>`;
+  }).join('');
+  openTravelModal('2026 International Series','lucide:globe',
+    `<p class="text-xs text-white/50 mb-4">These games are played outside the U.S. — long trips across oceans and time zones. Tap a game to see it on the map.</p><div class="space-y-2">${rows}</div>`);
+}
 function closeTeamModal(){
   document.getElementById('team-modal').classList.add('hidden');
   document.getElementById('team-modal').classList.remove('flex');
