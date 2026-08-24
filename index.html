@@ -371,7 +371,10 @@ select option{background:#111827;color:#fff}
       <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-brand-500 border-2 border-white"></span> Home City</span>
       <span class="flex items-center gap-2"><span class="w-3.5 h-3.5 rounded-full bg-white border-2 border-brand-500"></span> Away Destination</span>
       <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-white/70"></span> Other NFL City</span>
-    <button onclick="openIntlSeries()" class="ml-auto inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg border border-brand-500/40 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition font-semibold"><iconify-icon icon="lucide:globe"></iconify-icon> 2026 International Series</button>
+    <div class="ml-auto flex items-center gap-2">
+      <button onclick="openIntlSeries()" class="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg border border-brand-500/40 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition font-semibold"><iconify-icon icon="lucide:globe"></iconify-icon> 2026 International Series</button>
+      <button id="travel-selected-stats-button" onclick="openTravelStats()" class="travel-inline-button travel-selected-stats-button hidden"><iconify-icon icon="lucide:bar-chart-3"></iconify-icon><span>See More Stats</span></button>
+    </div>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
       <div class="lg:col-span-3 glass-panel rounded-2xl overflow-hidden">
@@ -1397,9 +1400,15 @@ function renderPlayerStats(){
   return destinations;
 }
   
+function updateTravelSelectedStatsAction(){
+  const button=document.getElementById('travel-selected-stats-button'),select=document.getElementById('travel-team-select'),assigned=window.assignedTeamAbbr;
+  if(!button||!select)return;
+  button.classList.toggle('hidden',!assigned||select.value===assigned);
+}
 function renderTravel(){
   focusedIntlGame = null;
   renderMap();
+  updateTravelSelectedStatsAction();
   window.refreshDataExperience?.();
 }
 
