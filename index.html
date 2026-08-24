@@ -2272,6 +2272,13 @@ function processChatMessage(text) {
   return "I'm not sure how to answer that. Try asking about a specific team (e.g., 'Chiefs passing stats') or a specific player (e.g., 'Patrick Mahomes').";
 }
 
+function switchCompareTab(name){
+  document.querySelectorAll('#compare-modal [data-ctab-panel]').forEach(pnl=>pnl.classList.toggle('hidden', pnl.getAttribute('data-ctab-panel')!==name));
+  document.querySelectorAll('#compare-tabs [data-ctab]').forEach(b=>{
+    const on=b.getAttribute('data-ctab')===name;
+    b.className='text-[11px] px-4 py-2 rounded-lg border transition '+(on?'bg-brand-500/20 text-brand-400 border-brand-500/40 font-semibold':'bg-white/5 text-white/50 border-white/10 hover:bg-white/10');
+  });
+}
 function openCompareModal(){
   if(compareTeams.length!==2)return;
   const t1=getTeam(compareTeams[0]);const t2=getTeam(compareTeams[1]);
@@ -2288,6 +2295,9 @@ function openCompareModal(){
   let t1StatWins=0;let t2StatWins=0;
   [...TEAM_STATS.offensive,...TEAM_STATS.defensive].forEach(cat=>{const r1=statRank(cat,t1.abbr);const r2=statRank(cat,t2.abbr);if(r1&&r2){if(r1<r2)t1StatWins++;else if(r2<r1)t2StatWins++}});
 
+  const capWinnerName=capWinner==='Tie'?'Tie':getTeam(capWinner).name;
+  const olderTeamName=olderTeam==='Tie'?'Tie':getTeam(olderTeam).name;
+  const statLeader=t1StatWins===t2StatWins?'Even':(t1StatWins>t2StatWins?t1.name:t2.name);
   const buildHeroSide=(team,align='left')=>`
     <div class="rounded-2xl p-4 border border-white/10 relative overflow-hidden" style="background:linear-gradient(135deg,${team.color}44,rgba(255,255,255,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.08)">
       <div class="absolute inset-x-0 bottom-0 h-1" style="background:linear-gradient(90deg,${team.color},${team.secColor||team.color})"></div>
@@ -2334,65 +2344,58 @@ function openCompareModal(){
       <span class="text-[10px] font-mono text-brand-400 uppercase tracking-widest">Team Comparison</span>
       <h2 class="text-2xl md:text-3xl font-black mt-1">Tale of the Tape</h2>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-center mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-center mb-5">
       ${buildHeroSide(t1)}
       <div class="w-14 h-14 rounded-full border border-white/10 bg-white/5 flex items-center justify-center font-black text-brand-400 mx-auto">VS</div>
       ${buildHeroSide(t2,'right')}
     </div>
-
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Stat Wins</div><div class="text-xl font-black mt-1">${t1StatWins}-${t2StatWins}</div><div class="text-[11px] text-white/45">Across offense + defense</div></div>
-      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Travel Gap</div><div class="text-xl font-black mt-1">${distance.toLocaleString()} mi</div><div class="text-[11px] text-white/45">City to city</div></div>
-      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Older Team</div><div class="text-xl font-black mt-1">${olderTeam}</div><div class="text-[11px] text-white/45">${t1.founded} vs ${t2.founded}</div></div>
-      <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Bigger Stadium</div><div class="text-xl font-black mt-1">${capWinner}</div><div class="text-[11px] text-white/45">${t1.stadiumCap.toLocaleString()} vs ${t2.stadiumCap.toLocaleString()}</div></div>
+    <div id="compare-tabs" class="flex gap-2 justify-center mb-5 flex-wrap">
+      <button data-ctab="overview" onclick="switchCompareTab('overview')" class="text-[11px] px-4 py-2 rounded-lg border transition bg-brand-500/20 text-brand-400 border-brand-500/40 font-semibold">Overview</button>
+      <button data-ctab="stats" onclick="switchCompareTab('stats')" class="text-[11px] px-4 py-2 rounded-lg border transition bg-white/5 text-white/50 border-white/10 hover:bg-white/10">Stats</button>
+      <button data-ctab="cities" onclick="switchCompareTab('cities')" class="text-[11px] px-4 py-2 rounded-lg border transition bg-white/5 text-white/50 border-white/10 hover:bg-white/10">Cities & Stadiums</button>
+      <button data-ctab="players" onclick="switchCompareTab('players')" class="text-[11px] px-4 py-2 rounded-lg border transition bg-white/5 text-white/50 border-white/10 hover:bg-white/10">Players</button>
     </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+    <div data-ctab-panel="overview">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Stat Wins</div><div class="text-xl font-black mt-1">${t1StatWins}-${t2StatWins}</div><div class="text-[11px] text-white/45">${statLeader==='Even'?'Dead even':statLeader+' leads'}</div></div>
+        <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Travel Gap</div><div class="text-xl font-black mt-1">${distance.toLocaleString()} mi</div><div class="text-[11px] text-white/45">Between home cities</div></div>
+        <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Older Team</div><div class="text-xl font-black mt-1">${olderTeamName}</div><div class="text-[11px] text-white/45">${t1.founded} vs ${t2.founded}</div></div>
+        <div class="rounded-xl border border-white/8 bg-white/[.035] p-4"><div class="text-[10px] font-mono text-white/35 uppercase tracking-wider">Bigger Stadium</div><div class="text-xl font-black mt-1">${capWinnerName}</div><div class="text-[11px] text-white/45">${t1.stadiumCap.toLocaleString()} vs ${t2.stadiumCap.toLocaleString()}</div></div>
+      </div>
+      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
+        <div class="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">2026 Meeting</div>
+        <div class="text-sm font-bold">${matchupText}</div>
+        <div class="text-[11px] text-white/50 mt-1">${meetingTravel}</div>
+      </div>
+    </div>
+    <div data-ctab-panel="stats" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="rounded-2xl border border-white/8 bg-black/20 p-5"><h3 class="text-sm font-semibold mb-3 text-brand-400 flex items-center gap-2"><iconify-icon icon="lucide:swords"></iconify-icon> Offense</h3>${buildStatRows(TEAM_STATS.offensive)}</div>
+        <div class="rounded-2xl border border-white/8 bg-black/20 p-5"><h3 class="text-sm font-semibold mb-3 text-nfl-red flex items-center gap-2"><iconify-icon icon="lucide:shield"></iconify-icon> Defense</h3>${buildStatRows(TEAM_STATS.defensive)}</div>
+      </div>
+    </div>
+    <div data-ctab-panel="cities" class="hidden">
       <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
         <h3 class="text-sm font-semibold mb-3 text-brand-400 flex items-center gap-2"><iconify-icon icon="lucide:map"></iconify-icon> City + Stadium</h3>
         ${buildCompareRow('Home City',`${t1.city}, ${t1.state}`,`${t2.city}, ${t2.state}`)}
         ${buildCompareRow('Division',t1.div,t2.div,t1.div===t2.div?'Tie':null)}
-        ${buildCompareRow('State Nickname',s1.nickname||'Not listed',s2.nickname||'Not listed')}
-        ${buildCompareRow('Capital',s1.capital||'Not listed',s2.capital||'Not listed')}
+        ${buildCompareRow('Time Zone',tzLabel(t1.tz),tzLabel(t2.tz),t1.tz===t2.tz?'Tie':null)}
         ${buildCompareRow('Region',s1.region||'Not listed',s2.region||'Not listed',s1.region===s2.region?'Tie':null)}
         ${buildCompareRow('Stadium',t1.stadium,t2.stadium)}
         ${buildCompareRow('Roof',f1.roof||'Not listed',f2.roof||'Not listed')}
         ${buildCompareRow('Surface',f1.surface||'Not listed',f2.surface||'Not listed')}
-      </div>
-
-      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
-        <h3 class="text-sm font-semibold mb-3 text-amber-300 flex items-center gap-2"><iconify-icon icon="lucide:calendar-days"></iconify-icon> Schedule + Classroom Angles</h3>
-        <div class="rounded-xl bg-white/[.035] border border-white/8 p-4 mb-4">
-          <div class="text-[10px] font-mono text-white/35 uppercase tracking-wider mb-1">2026 Meeting</div>
-          <div class="text-sm font-bold">${matchupText}</div>
-          <div class="text-[11px] text-white/50 mt-1">${meetingTravel}</div>
-        </div>
-        <div class="space-y-3 text-[12px] text-white/65 leading-relaxed">
-          <div class="flex gap-2"><iconify-icon icon="lucide:calculator" class="text-brand-400 mt-0.5"></iconify-icon><span>Which team has the better points-per-game rank, and by how many ranking spots?</span></div>
-          <div class="flex gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400 mt-0.5"></iconify-icon><span>If a flight averages 500 mph, about how long would this trip take?</span></div>
-          <div class="flex gap-2"><iconify-icon icon="lucide:landmark" class="text-brand-400 mt-0.5"></iconify-icon><span>Compare the two home states: population, region, capital, and landmark research.</span></div>
-        </div>
+        ${buildCompareRow('Capacity',t1.stadiumCap.toLocaleString(),t2.stadiumCap.toLocaleString(),capWinner==='Tie'?'Tie':capWinner)}
       </div>
     </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+    <div data-ctab-panel="players" class="hidden">
       <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
-        <h3 class="text-sm font-semibold mb-3 text-brand-400 flex items-center gap-2"><iconify-icon icon="lucide:swords"></iconify-icon> Offense</h3>
-        ${buildStatRows(TEAM_STATS.offensive)}
-      </div>
-      <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
-        <h3 class="text-sm font-semibold mb-3 text-nfl-red flex items-center gap-2"><iconify-icon icon="lucide:shield"></iconify-icon> Defense</h3>
-        ${buildStatRows(TEAM_STATS.defensive)}
-      </div>
-    </div>
-
-    <div class="rounded-2xl border border-white/8 bg-black/20 p-5">
-      <h3 class="text-sm font-semibold mb-4 text-emerald-300 flex items-center gap-2"><iconify-icon icon="lucide:star"></iconify-icon> Impact Players</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        ${playerCard('Top QB','passing',5,'pass yds')}
-        ${playerCard('Top RB','rushing',4,'rush yds')}
-        ${playerCard('Top WR','receiving',5,'rec yds')}
-        ${playerCard('Top Defender','defense',4,'sacks')}
+        <h3 class="text-sm font-semibold mb-4 text-emerald-300 flex items-center gap-2"><iconify-icon icon="lucide:star"></iconify-icon> Impact Players</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          ${playerCard('Top QB','passing',5,'pass yds')}
+          ${playerCard('Top RB','rushing',4,'rush yds')}
+          ${playerCard('Top WR','receiving',5,'rec yds')}
+          ${playerCard('Top Defender','defense',4,'sacks')}
+        </div>
       </div>
     </div>
   `;
