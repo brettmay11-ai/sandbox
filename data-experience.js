@@ -161,7 +161,7 @@
       ],
       actions:[
         { label:'Show My Team', icon:'lucide:locate-fixed', onclick:'showAssignedTeamTravel()' },
-        { label:'Season Details', icon:'lucide:arrow-down', onclick:'openTravelSeasonDetails()' }
+        { label:'See more stats', icon:'lucide:bar-chart-3', onclick:'openTravelStats()' }
       ]
     });
   }
