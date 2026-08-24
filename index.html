@@ -1160,6 +1160,8 @@ function renderMatchups(){
 
 function renderTeams(){const divisions=[...new Set(NFL_TEAMS.map(t=>t.div))];const divFilters=document.getElementById('division-filters');divFilters.innerHTML=`<button onclick="filterDivision('all')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter==='all'?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="all">All Divisions</button>`;divisions.forEach(d=>{divFilters.innerHTML+=`<button onclick="filterDivision('${d}')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter===d?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="${d}">${d}</button>`});renderTeamCards()}
 
+const TZ_NAMES={EST:'Eastern',CST:'Central',MST:'Mountain',PST:'Pacific'};
+function tzLabel(tz){return TZ_NAMES[tz]?`${TZ_NAMES[tz]} (${tz})`:tz;}
 function renderTeamCards(){
   const grid=document.getElementById('teams-grid');
   if(!grid)return;
@@ -1174,7 +1176,7 @@ function renderTeamCards(){
     card.style.setProperty('--tc-p',team.color);
     card.style.setProperty('--tc-s',team.secColor||team.color);
     card.onclick=()=>showTeamInfoModal(team.abbr);
-    card.innerHTML=`${isAssigned?'<span class="your-team-badge"><iconify-icon icon="lucide:user-round-check"></iconify-icon>Your Team</span>':''}<div class="relative">${logo(team.abbr,52)}</div><div><div class="text-[11px] font-semibold leading-tight">${fullName(team)}</div><div class="text-[9px] text-white/40 mt-0.5">${team.city}, ${team.state}</div></div><div class="text-[8px] font-mono text-white/25 uppercase tracking-wider">${team.div}</div><button onclick="event.stopPropagation();toggleCompareTeam('${team.abbr}')" class="team-compare-button mt-1 text-[9px] px-2 py-1 rounded-md border ${isComparing?'bg-brand-500/20 text-brand-400 border-brand-500/40':'bg-white/5 text-white/40 hover:bg-white/10 border-white/10'} transition">${isComparing?'<span class="inline-flex items-center gap-1"><iconify-icon icon="lucide:check"></iconify-icon>Selected</span>':'Compare'}</button>`;
+    card.innerHTML=`${isAssigned?'<span class="your-team-badge"><iconify-icon icon="lucide:user-round-check"></iconify-icon>Your Team</span>':''}<div class="relative">${logo(team.abbr,52)}</div><div><div class="text-[11px] font-semibold leading-tight">${fullName(team)}</div><div class="text-[9px] text-white/40 mt-0.5">${team.city}, ${team.state}</div></div><div class="text-[8px] font-mono text-white/25 uppercase tracking-wider">${team.div} &bull; ${team.tz}</div><button onclick="event.stopPropagation();toggleCompareTeam('${team.abbr}')" class="team-compare-button mt-1 text-[9px] px-2 py-1 rounded-md border ${isComparing?'bg-brand-500/20 text-brand-400 border-brand-500/40':'bg-white/5 text-white/40 hover:bg-white/10 border-white/10'} transition">${isComparing?'<span class="inline-flex items-center gap-1"><iconify-icon icon="lucide:check"></iconify-icon>Selected</span>':'Compare'}</button>`;
     grid.appendChild(card);
   });
 }
@@ -1818,7 +1820,7 @@ async function showTeamInfoModal(abbr){
       <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Off)</div><div class="text-xl font-bold mt-1">#${offPPG}</div></div>
       <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Def)</div><div class="text-xl font-bold mt-1">#${defPPG}</div></div>
       <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Stadium</div><div class="text-sm font-semibold mt-1">${team.stadium}</div><div class="text-[10px] text-white/40">${facts.roof} • ${facts.surface||'—'} • ${team.stadiumCap.toLocaleString()} cap</div></div>
-      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Location</div><div class="text-sm font-semibold mt-1">${team.city}, ${team.state}</div><div class="text-[10px] text-white/40">${team.lat}° N, ${Math.abs(team.lng)}° W</div></div>
+      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Location</div><div class="text-sm font-semibold mt-1">${team.city}, ${team.state}</div><div class="text-[10px] text-white/40">${team.lat}° N, ${Math.abs(team.lng)}° W</div><div class="text-[10px] text-white/40">${tzLabel(team.tz)} time</div></div>
     </div>
     
     <!-- IMPACT PLAYERS -->
