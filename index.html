@@ -397,18 +397,18 @@ select option{background:#111827;color:#fff}
     <details class="data-expander">
       <summary><span class="data-expander-title"><iconify-icon icon="lucide:route"></iconify-icon>Season Details <span class="data-expander-note">International games, trip log, and stadium facts</span></span><iconify-icon icon="lucide:chevron-down" class="data-expander-chevron"></iconify-icon></summary>
       <div class="data-expander-content">
-<!-- International Games Side Box -->
+<div class="mb-8 glass-panel rounded-2xl p-6">
+      <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon> How far does your team travel?</h3>
+      <div id="travel-summary"></div>
+    </div>
+
+    <!-- International Games Side Box -->
     <div class="mb-8 glass-panel rounded-2xl p-6">
       <h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:globe" class="text-brand-400"></iconify-icon> 2026 International Series</h3>
       <div id="international-games-list" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
       <p class="text-[10px] text-white/30 mt-4">* International games are played outside the US. These long trips cross oceans and multiple time zones!</p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div class="glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:plane" class="text-brand-400"></iconify-icon> Season Travel Summary</h3><div id="travel-summary"></div></div>
-      <div class="lg:col-span-2 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:map-pin" class="text-brand-400"></iconify-icon> All 2026 Away Games</h3><div id="away-games-list" class="space-y-1 max-h-[600px] overflow-y-auto pr-2"></div></div>
-    </div>
-    <div class="mt-6 glass-panel rounded-2xl p-6"><h3 class="text-sm font-semibold mb-4 flex items-center gap-2"><iconify-icon icon="lucide:building-2" class="text-brand-400"></iconify-icon> Stadium & City Facts</h3><div id="stadium-facts" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div></div>
       </div>
     </details>
   </div>
@@ -1410,8 +1410,6 @@ function renderTravel(){
   const abbr=document.getElementById('travel-team-select').value;
   const team=getTeam(abbr);
   const summary=document.getElementById('travel-summary');
-  const awayList=document.getElementById('away-games-list');
-  const stadiumFacts=document.getElementById('stadium-facts');
   
   const awayGames = getTeamTravelDestinations(abbr);
   let totalMiles=0;
@@ -1423,17 +1421,16 @@ function renderTravel(){
   const farthest=awayGames.reduce((max,g)=>g.distance>max.distance?g:max,{distance:0});
   const closest=awayGames.reduce((min,g)=>g.distance<min.distance?g:min,{distance:Infinity});
 
-  summary.innerHTML=`<div class="space-y-4"><div class="flex items-center gap-3 mb-4">${logo(abbr,48)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state}</div></div></div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Season Road Travel</span><span class="text-sm font-bold text-brand-400"><span data-countup="${totalMiles.toFixed(0)}">0</span> mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Away / Travel Games</span><span class="text-sm font-bold">${awayGames.length}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Avg Trip Distance</span><span class="text-sm font-bold">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Farthest Trip</span><span class="text-sm font-bold">${farthest.team?fullName(farthest.team):'—'}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Closest Trip</span><span class="text-sm font-bold">${closest.team?fullName(closest.team):'—'}</span></div><hr class="border-white/6"><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Home Stadium</span><span class="text-[11px] font-medium text-right">${team.stadium}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Time Zone</span><span class="text-[11px] font-medium">${team.tz}</span></div><div class="flex justify-between items-center"><span class="text-[11px] text-white/50">Founded</span><span class="text-[11px] font-medium">${team.founded}</span></div></div></div>`;
+  summary.innerHTML=`<div class="flex items-center gap-3 mb-5">${logo(abbr,44)}<div><div class="font-semibold">${fullName(team)}</div><div class="text-[10px] text-white/40">${team.city}, ${team.state} • ${team.tz} time zone</div></div></div>
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Season Road Travel</div><div class="text-xl font-bold text-brand-400 mt-1"><span data-countup="${totalMiles.toFixed(0)}">0</span> mi</div></div>
+    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Road Trips</div><div class="text-xl font-bold mt-1">${awayGames.length}</div></div>
+    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Avg Trip</div><div class="text-xl font-bold mt-1">${awayGames.length?(totalMiles/awayGames.length).toFixed(0):0} mi</div></div>
+    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Farthest Trip</div><div class="text-sm font-bold mt-1 truncate">${farthest.team?fullName(farthest.team):'—'}</div><div class="text-[10px] text-white/40">${farthest.distance?farthest.distance.toFixed(0)+' mi':''}</div></div>
+    <div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">Closest Trip</div><div class="text-sm font-bold mt-1 truncate">${closest.team?fullName(closest.team):'—'}</div><div class="text-[10px] text-white/40">${isFinite(closest.distance)?closest.distance.toFixed(0)+' mi':''}</div></div>
+  </div>`;
 
-  awayList.innerHTML=awayGames.map(g=>{
-    const isFar=g===farthest;
-    const isClose=g===closest;
-    const locStr = g.isIntl ? `${g.city}, ${g.country}` : `${g.team.city}, ${g.team.state}`;
-    return`<div class="away-row flex items-center gap-3 p-3 rounded-lg hover:bg-white/4 transition">${logo(g.abbr,28)}<div class="flex-1 min-w-0"><div class="text-[11px] font-medium flex items-center gap-1.5">at ${fullName(g.team)} ${g.isIntl?'<span class="text-[8px] px-1.5 py-0.5 bg-brand-500/15 text-brand-400 rounded font-semibold uppercase tracking-wider">International</span>':''}</div><div class="text-[9px] text-white/30">${g.stadium} • ${locStr}</div></div><div class="text-right flex items-center gap-2"><span class="text-[11px] font-mono ${isFar?'text-red-400':isClose?'text-green-400':'text-white/50'}">${g.distance.toFixed(0)} mi</span>${isFar?'<span class="text-[8px] px-1.5 py-0.5 bg-red-500/15 text-red-400 rounded whitespace-nowrap">FARTHEST</span>':''}${isClose?'<span class="text-[8px] px-1.5 py-0.5 bg-green-500/15 text-green-400 rounded whitespace-nowrap">CLOSEST</span>':''}</div></div>`
-  }).join('');
 
-  const tf=STADIUM_FACTS[abbr];
-  stadiumFacts.innerHTML=`<div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:building-2" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Stadium</span></div><div class="text-sm font-semibold mb-1">${team.stadium}</div><div class="text-[11px] text-white/50">${tf.roof} • ${tf.surface}</div><div class="text-[11px] text-white/50">Capacity: ${team.stadiumCap.toLocaleString()}</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:map" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Location</span></div><div class="text-sm font-semibold mb-1">${team.city}, ${team.state}</div><div class="text-[11px] text-white/50">Lat: ${team.lat}° N</div><div class="text-[11px] text-white/50">Lng: ${Math.abs(team.lng)}° W</div></div><div class="fun-fact-card glass-panel rounded-xl p-4"><div class="flex items-center gap-2 mb-2"><iconify-icon icon="lucide:sparkles" class="text-brand-400 text-xs"></iconify-icon><span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">Fun Fact</span></div><div class="text-[11px] text-white/60 leading-relaxed">${tf.trivia}</div></div>`;
 
   runCountUps(summary);
 
@@ -1855,10 +1852,11 @@ async function showTeamInfoModal(abbr){
   const content=document.getElementById('team-modal-content');
   content.innerHTML=`
     <div class="flex items-center gap-4 mb-6">${logo(abbr,64)}<div><div class="text-2xl font-bold">${fullName(team)}</div><div class="text-sm text-white/50">${team.city}, ${team.state} • ${team.div} • Founded ${team.founded}</div></div></div>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Off)</div><div class="text-xl font-bold mt-1">#${offPPG}</div></div>
       <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Def)</div><div class="text-xl font-bold mt-1">#${defPPG}</div></div>
-      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Stadium</div><div class="text-sm font-semibold mt-1">${team.stadium}</div><div class="text-[10px] text-white/40">${facts.roof} • ${team.stadiumCap.toLocaleString()} cap</div></div>
+      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Stadium</div><div class="text-sm font-semibold mt-1">${team.stadium}</div><div class="text-[10px] text-white/40">${facts.roof} • ${facts.surface||'—'} • ${team.stadiumCap.toLocaleString()} cap</div></div>
+      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Location</div><div class="text-sm font-semibold mt-1">${team.city}, ${team.state}</div><div class="text-[10px] text-white/40">${team.lat}° N, ${Math.abs(team.lng)}° W</div></div>
     </div>
     
     <!-- IMPACT PLAYERS -->
