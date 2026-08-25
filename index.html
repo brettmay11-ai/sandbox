@@ -572,7 +572,8 @@ const FEATURED_GAME={
   away:"KC",
   home:"BUF",
   day:"Thursday",
-  time:"3:20 PM ET",
+  date:"Nov 26",
+  time:"8:20 PM ET",
   discussion:"The Chiefs travel to Buffalo — that's about 976 miles! If their plane flies at 500 mph, how long is the flight? Buffalo is in New York, but the Bills don't play in New York City. What city do they play in, and how is it different from NYC?"
 };
 
@@ -678,13 +679,288 @@ const TEAM_STATS={offensive:[
   {stat:"Interceptions",data:[{team:"SF",val:20},{team:"BUF",val:18},{team:"BAL",val:17},{team:"DAL",val:16},{team:"PIT",val:15},{team:"CLE",val:14},{team:"MIN",val:14},{team:"NYJ",val:13},{team:"KC",val:12},{team:"MIA",val:12},{team:"HOU",val:11},{team:"DET",val:11},{team:"GB",val:10},{team:"SEA",val:10},{team:"DEN",val:9},{team:"PHI",val:9},{team:"LAR",val:8},{team:"TB",val:8},{team:"NO",val:8},{team:"ATL",val:7},{team:"CIN",val:7},{team:"CHI",val:7},{team:"IND",val:6},{team:"LV",val:6},{team:"LAC",val:6},{team:"NYG",val:5},{team:"JAX",val:5},{team:"WAS",val:5},{team:"NE",val:5},{team:"ARI",val:4},{team:"CAR",val:4},{team:"TEN",val:4}]}
 ]};
 
-const SCHED_2026_RAW={ARI:['@LAC','SEA','@SF','@NYG','DET','@LAR','DEN','@DAL','@SEA','LAR','@KC','WAS','PHI','BYE','NYJ','@NO','LV','SF'],ATL:['@PIT','CAR','@GB','@NO','BAL','CHI','SF','@TB','CIN','KC','BYE','@MIN','DET','@CLE','@WAS','TB','NO','@CAR'],BAL:['@IND','NO','@DAL','TEN','@ATL','@CLE','CIN','@BUF','JAX','LAC','@CAR','@HOU','BYE','TB','@PIT','CLE','@CIN','PIT'],BUF:['@HOU','DET','LAC','NE','@LAR','@LV','BYE','BAL','@MIN','@NYJ','MIA','KC','@NE','@GB','CHI','@DEN','@MIA','NYJ'],CAR:['CHI','@ATL','@CLE','DET','BYE','@PHI','TB','@GB','DEN','@NO','BAL','@TB','@MIN','NO','CIN','@PIT','SEA','ATL'],CHI:['@CAR','MIN','PHI','NYJ','@GB','@ATL','NE','@SEA','TB','BYE','NO','@DET','JAX','@MIA','@BUF','GB','DET','@MIN'],CIN:['TB','@HOU','@PIT','JAX','@MIA','BYE','@BAL','TEN','ATL','PIT','@WAS','NO','@CLE','KC','@CAR','@IND','BAL','CLE'],CLE:['@JAX','@TB','CAR','PIT','@NYJ','BAL','@TEN','@PIT','@NO','HOU','BYE','LV','CIN','ATL','@NYG','@BAL','IND','@CIN'],DAL:['@NYG','WAS','BAL','@HOU','TB','@GB','@PHI','ARI','@IND','SF','TEN','PHI','@SEA','BYE','@LAR','JAX','NYG','@WAS'],DEN:['@KC','JAX','LAR','@SF','@LAC','SEA','@ARI','KC','@CAR','BYE','LV','@PIT','MIA','@NYJ','@LV','BUF','@NE','LAC'],DET:['NO','@BUF','NYJ','@CAR','@ARI','BYE','GB','MIN','@MIA','NE','TB','CHI','@ATL','TEN','@MIN','NYG','@CHI','@GB'],GB:['@MIN','@NYJ','ATL','@TB','CHI','DAL','@DET','CAR','@NE','MIN','BYE','@LAR','@NO','BUF','MIA','@CHI','HOU','DET'],HOU:['BUF','CIN','@IND','DAL','@TEN','@JAX','NYG','BYE','@LAC','@CLE','IND','BAL','@PIT','@WAS','JAX','@PHI','@GB','TEN'],IND:['BAL','@KC','HOU','@WAS','@PIT','TEN','@MIN','@JAX','DAL','MIA','@HOU','NYG','BYE','@PHI','@TEN','CIN','@CLE','JAX'],JAX:['CLE','@DEN','NE','@CIN','PHI','HOU','BYE','IND','@BAL','@TEN','@NYG','TEN','@CHI','PIT','@HOU','@DAL','WAS','@IND'],KC:['DEN','IND','@MIA','@LV','BYE','LAC','@SEA','@DEN','NYJ','@ATL','ARI','@BUF','@LAR','@CIN','NE','SF','@LAC','LV'],LV:['MIA','@LAC','@NO','KC','@NE','BUF','LAR','@NYJ','@SF','SEA','@DEN','@CLE','BYE','LAC','DEN','TEN','@ARI','@KC'],LAC:['ARI','LV','@BUF','@SEA','DEN','@KC','BYE','@LAR','HOU','@BAL','NYJ','NE','@TB','@LV','SF','@MIA','KC','@DEN'],LAR:['SF','NYG','@DEN','@PHI','BUF','ARI','@LV','LAC','@WAS','@ARI','BYE','GB','KC','@SF','DAL','@SEA','@TB','SEA'],MIA:['@LV','@SF','KC','@MIN','CIN','BYE','@NYJ','NE','DET','@IND','@BUF','NYJ','@DEN','CHI','@GB','LAC','BUF','@NE'],MIN:['GB','@CHI','@TB','MIA','@NO','BYE','IND','@DET','BUF','@GB','@SF','ATL','CAR','@NE','DET','WAS','@NYG','CHI'],NE:['@SEA','PIT','@JAX','@BUF','LV','NYJ','@CHI','@MIA','GB','@DET','BYE','@LAC','BUF','MIN','@KC','@NYJ','DEN','MIA'],NO:['@DET','@BAL','LV','ATL','MIN','@NYG','PIT','BYE','CLE','CAR','@CHI','@CIN','GB','@CAR','@TB','ARI','@ATL','TB'],NYG:['DAL','@LAR','TEN','ARI','@WAS','NO','@HOU','BYE','@PHI','WAS','JAX','@IND','SF','@SEA','CLE','@DET','@DAL','PHI'],NYJ:['@TEN','GB','@DET','@CHI','CLE','@NE','MIA','LV','@KC','BUF','@LAC','@MIA','BYE','DEN','@ARI','NE','MIN','@BUF'],PHI:['WAS','@TEN','@CHI','LAR','@JAX','CAR','DAL','@WAS','NYG','BYE','PIT','@DAL','@ARI','IND','SEA','HOU','@SF','@NYG'],PIT:['ATL','@NE','CIN','@CLE','IND','@TB','@NO','CLE','BYE','@CIN','@PHI','DEN','HOU','@JAX','BAL','CAR','@TEN','@BAL'],SF:['@LAR','MIA','ARI','DEN','@SEA','WAS','@ATL','BYE','LV','@DAL','MIN','SEA','@NYG','LAR','@LAC','@KC','PHI','@ARI'],SEA:['NE','@ARI','@WAS','LAC','SF','@DEN','KC','CHI','ARI','@LV','BYE','@SF','DAL','NYG','@PHI','LAR','@CAR','@LAR'],TB:['@CIN','CLE','MIN','GB','@DAL','PIT','@CAR','ATL','@CHI','BYE','@DET','CAR','LAC','@BAL','NO','@ATL','LAR','@NO'],TEN:['NYJ','PHI','@NYG','@BAL','HOU','@IND','CLE','@CIN','BYE','JAX','@DAL','@JAX','WAS','@DET','IND','@LV','PIT','@HOU'],WAS:['@PHI','@DAL','SEA','IND','NYG','@SF','BYE','PHI','LAR','@NYG','CIN','@ARI','@TEN','HOU','ATL','@MIN','@JAX','DAL']};
+const SCHED_2026_RAW={ARI:['@LAC','SEA','@SF','@NYG','DET','@LAR','DEN','@DAL','@SEA','LAR','@KC','WAS','PHI','BYE','NYJ','@NO','LV','SF'],ATL:['@PIT','CAR','@GB','@NO','BAL','CHI','SF','@TB','CIN','KC','BYE','@MIN','DET','@CLE','@WAS','TB','NO','@CAR'],BAL:['@IND','NO','@DAL','TEN','@ATL','@CLE','CIN','@BUF','JAX','LAC','@CAR','@HOU','BYE','TB','@PIT','CLE','@CIN','PIT'],BUF:['@HOU','DET','LAC','NE','@LAR','@LV','BYE','BAL','@MIN','@NYJ','MIA','KC','@NE','@GB','CHI','@DEN','@MIA','NYJ'],CAR:['CHI','@ATL','@CLE','DET','BYE','@PHI','TB','@GB','DEN','@NO','BAL','@TB','@MIN','NO','CIN','@PIT','SEA','ATL'],CHI:['@CAR','MIN','PHI','NYJ','@GB','@ATL','NE','@SEA','TB','BYE','NO','@DET','JAX','@MIA','@BUF','GB','DET','@MIN'],CIN:['TB','@HOU','@PIT','JAX','@MIA','BYE','@BAL','TEN','@ATL','PIT','@WAS','NO','@CLE','KC','@CAR','@IND','BAL','CLE'],CLE:['@JAX','@TB','CAR','PIT','@NYJ','BAL','@TEN','@PIT','@NO','HOU','BYE','LV','CIN','ATL','@NYG','@BAL','IND','@CIN'],DAL:['@NYG','WAS','BAL','@HOU','TB','@GB','@PHI','ARI','@IND','SF','TEN','PHI','@SEA','BYE','@LAR','JAX','NYG','@WAS'],DEN:['@KC','JAX','LAR','@SF','@LAC','SEA','@ARI','KC','@CAR','BYE','LV','@PIT','MIA','@NYJ','@LV','BUF','@NE','LAC'],DET:['NO','@BUF','NYJ','@CAR','@ARI','BYE','GB','MIN','@MIA','NE','TB','CHI','@ATL','TEN','@MIN','NYG','@CHI','@GB'],GB:['@MIN','@NYJ','ATL','@TB','CHI','DAL','@DET','CAR','@NE','MIN','BYE','@LAR','@NO','BUF','MIA','@CHI','HOU','DET'],HOU:['BUF','CIN','@IND','DAL','@TEN','@JAX','NYG','BYE','@LAC','@CLE','IND','BAL','@PIT','@WAS','JAX','@PHI','@GB','TEN'],IND:['BAL','@KC','HOU','@WAS','@PIT','TEN','@MIN','@JAX','DAL','MIA','@HOU','NYG','BYE','@PHI','@TEN','CIN','@CLE','JAX'],JAX:['CLE','@DEN','NE','@CIN','PHI','HOU','BYE','IND','@BAL','@TEN','@NYG','TEN','@CHI','PIT','@HOU','@DAL','WAS','@IND'],KC:['DEN','IND','@MIA','@LV','BYE','LAC','@SEA','@DEN','NYJ','@ATL','ARI','@BUF','@LAR','@CIN','NE','SF','@LAC','LV'],LV:['MIA','@LAC','@NO','KC','@NE','BUF','LAR','@NYJ','@SF','SEA','@DEN','@CLE','BYE','LAC','DEN','TEN','@ARI','@KC'],LAC:['ARI','LV','@BUF','@SEA','DEN','@KC','BYE','@LAR','HOU','@BAL','NYJ','NE','@TB','@LV','SF','@MIA','KC','@DEN'],LAR:['SF','NYG','@DEN','@PHI','BUF','ARI','@LV','LAC','@WAS','@ARI','BYE','GB','KC','@SF','DAL','@SEA','@TB','SEA'],MIA:['@LV','@SF','KC','@MIN','CIN','BYE','@NYJ','NE','DET','@IND','@BUF','NYJ','@DEN','CHI','@GB','LAC','BUF','@NE'],MIN:['GB','@CHI','@TB','MIA','@NO','BYE','IND','@DET','BUF','@GB','@SF','ATL','CAR','@NE','DET','WAS','@NYJ','CHI'],NE:['@SEA','PIT','@JAX','@BUF','LV','NYJ','@CHI','@MIA','GB','@DET','BYE','@LAC','BUF','MIN','@KC','@NYJ','DEN','MIA'],NO:['@DET','@BAL','LV','ATL','MIN','@NYG','PIT','BYE','CLE','CAR','@CHI','@CIN','GB','@CAR','@TB','ARI','@ATL','TB'],NYG:['DAL','@LAR','TEN','ARI','@WAS','NO','@HOU','BYE','@PHI','WAS','JAX','@IND','SF','@SEA','CLE','@DET','@DAL','PHI'],NYJ:['@TEN','GB','@DET','@CHI','CLE','@NE','MIA','LV','@KC','BUF','@LAC','@MIA','BYE','DEN','@ARI','NE','MIN','@BUF'],PHI:['WAS','@TEN','@CHI','LAR','@JAX','CAR','DAL','@WAS','NYG','BYE','PIT','@DAL','@ARI','IND','SEA','HOU','@SF','@NYG'],PIT:['ATL','@NE','CIN','@CLE','IND','@TB','@NO','CLE','BYE','@CIN','@PHI','DEN','HOU','@JAX','BAL','CAR','@TEN','@BAL'],SF:['@LAR','MIA','ARI','DEN','@SEA','WAS','@ATL','BYE','LV','@DAL','MIN','SEA','@NYG','LAR','@LAC','@KC','PHI','@ARI'],SEA:['NE','@ARI','@WAS','LAC','SF','@DEN','KC','CHI','ARI','@LV','BYE','@SF','DAL','NYG','@PHI','LAR','@CAR','@LAR'],TB:['@CIN','CLE','MIN','GB','@DAL','PIT','@CAR','ATL','@CHI','BYE','@DET','CAR','LAC','@BAL','NO','@ATL','LAR','@NO'],TEN:['NYJ','PHI','@NYG','@BAL','HOU','@IND','CLE','@CIN','BYE','JAX','@DAL','@JAX','WAS','@DET','IND','@LV','PIT','@HOU'],WAS:['@PHI','@DAL','SEA','IND','NYG','@SF','BYE','PHI','LAR','@NYG','CIN','@ARI','@TEN','HOU','ATL','@MIN','@JAX','DAL']};
+
+const REAL_GAME_TIMES={
+"1_NE_SEA":{day:"Wednesday",date:"Sep 9",time:"8:20 PM",iso:"2026-09-09"},
+"1_SF_LAR":{day:"Thursday",date:"Sep 10",time:"8:35 PM",iso:"2026-09-10"},
+"1_CHI_CAR":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_TB_CIN":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_NO_DET":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_BUF_HOU":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_BAL_IND":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_CLE_JAX":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_ATL_PIT":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_NYJ_TEN":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
+"1_ARI_LAC":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
+"1_MIA_LV":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
+"1_GB_MIN":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
+"1_WAS_PHI":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
+"1_DAL_NYG":{day:"Sunday",date:"Sep 13",time:"8:20 PM",iso:"2026-09-13"},
+"1_DEN_KC":{day:"Monday",date:"Sep 14",time:"8:15 PM",iso:"2026-09-14"},
+"2_DET_BUF":{day:"Thursday",date:"Sep 17",time:"8:15 PM",iso:"2026-09-17"},
+"2_CAR_ATL":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_NO_BAL":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_MIN_CHI":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_CIN_HOU":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_PIT_NE":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_GB_NYJ":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_CLE_TB":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_PHI_TEN":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
+"2_JAX_DEN":{day:"Sunday",date:"Sep 20",time:"4:05 PM",iso:"2026-09-20"},
+"2_LV_LAC":{day:"Sunday",date:"Sep 20",time:"4:05 PM",iso:"2026-09-20"},
+"2_SEA_ARI":{day:"Sunday",date:"Sep 20",time:"4:25 PM",iso:"2026-09-20"},
+"2_WAS_DAL":{day:"Sunday",date:"Sep 20",time:"4:25 PM",iso:"2026-09-20"},
+"2_MIA_SF":{day:"Sunday",date:"Sep 20",time:"4:25 PM",iso:"2026-09-20"},
+"2_IND_KC":{day:"Sunday",date:"Sep 20",time:"8:20 PM",iso:"2026-09-20"},
+"2_NYG_LAR":{day:"Monday",date:"Sep 21",time:"8:15 PM",iso:"2026-09-21"},
+"3_ATL_GB":{day:"Thursday",date:"Sep 24",time:"8:15 PM",iso:"2026-09-24"},
+"3_LAC_BUF":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_CAR_CLE":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_NYJ_DET":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_HOU_IND":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_NE_JAX":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_KC_MIA":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_TEN_NYG":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_CIN_PIT":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_SEA_WAS":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
+"3_ARI_SF":{day:"Sunday",date:"Sep 27",time:"4:05 PM",iso:"2026-09-27"},
+"3_MIN_TB":{day:"Sunday",date:"Sep 27",time:"4:05 PM",iso:"2026-09-27"},
+"3_BAL_DAL":{day:"Sunday",date:"Sep 27",time:"4:25 PM",iso:"2026-09-27"},
+"3_LV_NO":{day:"Sunday",date:"Sep 27",time:"4:25 PM",iso:"2026-09-27"},
+"3_LAR_DEN":{day:"Sunday",date:"Sep 27",time:"8:20 PM",iso:"2026-09-27"},
+"3_PHI_CHI":{day:"Monday",date:"Sep 28",time:"8:15 PM",iso:"2026-09-28"},
+"4_PIT_CLE":{day:"Thursday",date:"Oct 1",time:"8:15 PM",iso:"2026-10-01"},
+"4_IND_WAS":{day:"Sunday",date:"Oct 4",time:"9:30 AM",iso:"2026-10-04"},
+"4_TEN_BAL":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_NE_BUF":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_NYJ_CHI":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_JAX_CIN":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_DAL_HOU":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_ARI_NYG":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_LAR_PHI":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_GB_TB":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
+"4_MIA_MIN":{day:"Sunday",date:"Oct 4",time:"4:05 PM",iso:"2026-10-04"},
+"4_KC_LV":{day:"Sunday",date:"Oct 4",time:"4:25 PM",iso:"2026-10-04"},
+"4_LAC_SEA":{day:"Sunday",date:"Oct 4",time:"4:25 PM",iso:"2026-10-04"},
+"4_DEN_SF":{day:"Sunday",date:"Oct 4",time:"4:25 PM",iso:"2026-10-04"},
+"4_DET_CAR":{day:"Sunday",date:"Oct 4",time:"8:20 PM",iso:"2026-10-04"},
+"4_ATL_NO":{day:"Monday",date:"Oct 5",time:"8:15 PM",iso:"2026-10-05"},
+"5_TB_DAL":{day:"Thursday",date:"Oct 8",time:"8:15 PM",iso:"2026-10-08"},
+"5_PHI_JAX":{day:"Sunday",date:"Oct 11",time:"9:30 AM",iso:"2026-10-11"},
+"5_CIN_MIA":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
+"5_LV_NE":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
+"5_MIN_NO":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
+"5_CLE_NYJ":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
+"5_IND_PIT":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
+"5_HOU_TEN":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
+"5_NYG_WAS":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
+"5_DEN_LAC":{day:"Sunday",date:"Oct 11",time:"4:05 PM",iso:"2026-10-11"},
+"5_DET_ARI":{day:"Sunday",date:"Oct 11",time:"4:25 PM",iso:"2026-10-11"},
+"5_CHI_GB":{day:"Sunday",date:"Oct 11",time:"4:25 PM",iso:"2026-10-11"},
+"5_SF_SEA":{day:"Sunday",date:"Oct 11",time:"4:25 PM",iso:"2026-10-11"},
+"5_BAL_ATL":{day:"Sunday",date:"Oct 11",time:"8:20 PM",iso:"2026-10-11"},
+"5_BUF_LAR":{day:"Monday",date:"Oct 12",time:"8:15 PM",iso:"2026-10-12"},
+"6_SEA_DEN":{day:"Thursday",date:"Oct 15",time:"8:15 PM",iso:"2026-10-15"},
+"6_HOU_JAX":{day:"Sunday",date:"Oct 18",time:"9:30 AM",iso:"2026-10-18"},
+"6_CHI_ATL":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
+"6_BAL_CLE":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
+"6_TEN_IND":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
+"6_NYJ_NE":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
+"6_NO_NYG":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
+"6_CAR_PHI":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
+"6_PIT_TB":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
+"6_ARI_LAR":{day:"Sunday",date:"Oct 18",time:"4:05 PM",iso:"2026-10-18"},
+"6_LAC_KC":{day:"Sunday",date:"Oct 18",time:"4:25 PM",iso:"2026-10-18"},
+"6_BUF_LV":{day:"Sunday",date:"Oct 18",time:"4:25 PM",iso:"2026-10-18"},
+"6_DAL_GB":{day:"Sunday",date:"Oct 18",time:"8:20 PM",iso:"2026-10-18"},
+"6_WAS_SF":{day:"Monday",date:"Oct 19",time:"8:15 PM",iso:"2026-10-19"},
+"7_NE_CHI":{day:"Thursday",date:"Oct 22",time:"8:15 PM",iso:"2026-10-22"},
+"7_PIT_NO":{day:"Sunday",date:"Oct 25",time:"9:30 AM",iso:"2026-10-25"},
+"7_SF_ATL":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
+"7_CIN_BAL":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
+"7_TB_CAR":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
+"7_NYG_HOU":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
+"7_IND_MIN":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
+"7_MIA_NYJ":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
+"7_CLE_TEN":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
+"7_DEN_ARI":{day:"Sunday",date:"Oct 25",time:"4:05 PM",iso:"2026-10-25"},
+"7_GB_DET":{day:"Sunday",date:"Oct 25",time:"4:25 PM",iso:"2026-10-25"},
+"7_LAR_LV":{day:"Sunday",date:"Oct 25",time:"4:25 PM",iso:"2026-10-25"},
+"7_KC_SEA":{day:"Sunday",date:"Oct 25",time:"8:20 PM",iso:"2026-10-25"},
+"7_DAL_PHI":{day:"Monday",date:"Oct 26",time:"8:15 PM",iso:"2026-10-26"},
+"8_CAR_GB":{day:"Thursday",date:"Oct 29",time:"8:15 PM",iso:"2026-10-29"},
+"8_BAL_BUF":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_TEN_CIN":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_ARI_DAL":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_MIN_DET":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_IND_JAX":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_LV_NYJ":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_CLE_PIT":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_ATL_TB":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
+"8_LAC_LAR":{day:"Sunday",date:"Nov 1",time:"4:05 PM",iso:"2026-11-01"},
+"8_KC_DEN":{day:"Sunday",date:"Nov 1",time:"4:25 PM",iso:"2026-11-01"},
+"8_NE_MIA":{day:"Sunday",date:"Nov 1",time:"4:25 PM",iso:"2026-11-01"},
+"8_PHI_WAS":{day:"Sunday",date:"Nov 1",time:"8:20 PM",iso:"2026-11-01"},
+"8_CHI_SEA":{day:"Monday",date:"Nov 2",time:"8:15 PM",iso:"2026-11-02"},
+"9_JAX_BAL":{day:"Thursday",date:"Nov 5",time:"8:15 PM",iso:"2026-11-05"},
+"9_CIN_ATL":{day:"Sunday",date:"Nov 8",time:"9:30 AM",iso:"2026-11-08"},
+"9_DEN_CAR":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
+"9_DAL_IND":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
+"9_NYJ_KC":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
+"9_DET_MIA":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
+"9_CLE_NO":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
+"9_NYG_PHI":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
+"9_LAR_WAS":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
+"9_HOU_LAC":{day:"Sunday",date:"Nov 8",time:"4:05 PM",iso:"2026-11-08"},
+"9_LV_SF":{day:"Sunday",date:"Nov 8",time:"4:05 PM",iso:"2026-11-08"},
+"9_GB_NE":{day:"Sunday",date:"Nov 8",time:"4:25 PM",iso:"2026-11-08"},
+"9_ARI_SEA":{day:"Sunday",date:"Nov 8",time:"4:25 PM",iso:"2026-11-08"},
+"9_TB_CHI":{day:"Sunday",date:"Nov 8",time:"8:20 PM",iso:"2026-11-08"},
+"9_BUF_MIN":{day:"Monday",date:"Nov 9",time:"8:15 PM",iso:"2026-11-09"},
+"10_WAS_NYG":{day:"Thursday",date:"Nov 12",time:"8:15 PM",iso:"2026-11-12"},
+"10_NE_DET":{day:"Sunday",date:"Nov 15",time:"9:30 AM",iso:"2026-11-15"},
+"10_KC_ATL":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
+"10_HOU_CLE":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
+"10_MIN_GB":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
+"10_MIA_IND":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
+"10_CAR_NO":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
+"10_BUF_NYJ":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
+"10_JAX_TEN":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
+"10_LAR_ARI":{day:"Sunday",date:"Nov 15",time:"4:05 PM",iso:"2026-11-15"},
+"10_SEA_LV":{day:"Sunday",date:"Nov 15",time:"4:05 PM",iso:"2026-11-15"},
+"10_SF_DAL":{day:"Sunday",date:"Nov 15",time:"4:25 PM",iso:"2026-11-15"},
+"10_PIT_CIN":{day:"Sunday",date:"Nov 15",time:"8:20 PM",iso:"2026-11-15"},
+"10_LAC_BAL":{day:"Monday",date:"Nov 16",time:"8:15 PM",iso:"2026-11-16"},
+"11_IND_HOU":{day:"Thursday",date:"Nov 19",time:"8:15 PM",iso:"2026-11-19"},
+"11_MIA_BUF":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
+"11_BAL_CAR":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
+"11_NO_CHI":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
+"11_TEN_DAL":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
+"11_TB_DET":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
+"11_ARI_KC":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
+"11_JAX_NYG":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
+"11_NYJ_LAC":{day:"Sunday",date:"Nov 22",time:"4:05 PM",iso:"2026-11-22"},
+"11_LV_DEN":{day:"Sunday",date:"Nov 22",time:"4:25 PM",iso:"2026-11-22"},
+"11_PIT_PHI":{day:"Sunday",date:"Nov 22",time:"4:25 PM",iso:"2026-11-22"},
+"11_MIN_SF":{day:"Sunday",date:"Nov 22",time:"8:20 PM",iso:"2026-11-22"},
+"11_CIN_WAS":{day:"Monday",date:"Nov 23",time:"8:15 PM",iso:"2026-11-23"},
+"12_GB_LAR":{day:"Wednesday",date:"Nov 25",time:"8:00 PM",iso:"2026-11-25"},
+"12_CHI_DET":{day:"Thursday",date:"Nov 26",time:"1:00 PM",iso:"2026-11-26"},
+"12_PHI_DAL":{day:"Thursday",date:"Nov 26",time:"4:30 PM",iso:"2026-11-26"},
+"12_KC_BUF":{day:"Thursday",date:"Nov 26",time:"8:20 PM",iso:"2026-11-26"},
+"12_DEN_PIT":{day:"Friday",date:"Nov 27",time:"3:00 PM",iso:"2026-11-27"},
+"12_NO_CIN":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
+"12_LV_CLE":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
+"12_BAL_HOU":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
+"12_NYG_IND":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
+"12_NYJ_MIA":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
+"12_ATL_MIN":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
+"12_TEN_JAX":{day:"Sunday",date:"Nov 29",time:"4:05 PM",iso:"2026-11-29"},
+"12_WAS_ARI":{day:"Sunday",date:"Nov 29",time:"4:25 PM",iso:"2026-11-29"},
+"12_SEA_SF":{day:"Sunday",date:"Nov 29",time:"4:25 PM",iso:"2026-11-29"},
+"12_NE_LAC":{day:"Sunday",date:"Nov 29",time:"8:20 PM",iso:"2026-11-29"},
+"12_CAR_TB":{day:"Monday",date:"Nov 30",time:"8:15 PM",iso:"2026-11-30"},
+"13_KC_LAR":{day:"Thursday",date:"Dec 3",time:"8:15 PM",iso:"2026-12-03"},
+"13_DET_ATL":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
+"13_JAX_CHI":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
+"13_CIN_CLE":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
+"13_GB_NO":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
+"13_SF_NYG":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
+"13_LAC_TB":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
+"13_WAS_TEN":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
+"13_PHI_ARI":{day:"Sunday",date:"Dec 6",time:"4:05 PM",iso:"2026-12-06"},
+"13_MIA_DEN":{day:"Sunday",date:"Dec 6",time:"4:05 PM",iso:"2026-12-06"},
+"13_CAR_MIN":{day:"Sunday",date:"Dec 6",time:"4:25 PM",iso:"2026-12-06"},
+"13_BUF_NE":{day:"Sunday",date:"Dec 6",time:"4:25 PM",iso:"2026-12-06"},
+"13_HOU_PIT":{day:"Sunday",date:"Dec 6",time:"8:20 PM",iso:"2026-12-06"},
+"13_DAL_SEA":{day:"Monday",date:"Dec 7",time:"8:15 PM",iso:"2026-12-07"},
+"14_MIN_NE":{day:"Thursday",date:"Dec 10",time:"8:15 PM",iso:"2026-12-10"},
+"14_TB_BAL":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_NO_CAR":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_ATL_CLE":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_TEN_DET":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_CHI_MIA":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_DEN_NYJ":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_IND_PHI":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_HOU_WAS":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
+"14_LAC_LV":{day:"Sunday",date:"Dec 13",time:"4:05 PM",iso:"2026-12-13"},
+"14_KC_CIN":{day:"Sunday",date:"Dec 13",time:"4:25 PM",iso:"2026-12-13"},
+"14_NYG_SEA":{day:"Sunday",date:"Dec 13",time:"4:25 PM",iso:"2026-12-13"},
+"14_LAR_SF":{day:"Sunday",date:"Dec 13",time:"4:25 PM",iso:"2026-12-13"},
+"14_BUF_GB":{day:"Sunday",date:"Dec 13",time:"8:20 PM",iso:"2026-12-13"},
+"14_PIT_JAX":{day:"Monday",date:"Dec 14",time:"8:15 PM",iso:"2026-12-14"},
+"15_SF_LAC":{day:"Thursday",date:"Dec 17",time:"8:15 PM",iso:"2026-12-17"},
+"15_SEA_PHI":{day:"Saturday",date:"Dec 19",time:"5:00 PM",iso:"2026-12-19"},
+"15_CHI_BUF":{day:"Saturday",date:"Dec 19",time:"8:20 PM",iso:"2026-12-19"},
+"15_CIN_CAR":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_MIA_GB":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_JAX_HOU":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_CLE_NYG":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_BAL_PIT":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_NO_TB":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_IND_TEN":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_ATL_WAS":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
+"15_NYJ_ARI":{day:"Sunday",date:"Dec 20",time:"4:05 PM",iso:"2026-12-20"},
+"15_DAL_LAR":{day:"Sunday",date:"Dec 20",time:"4:25 PM",iso:"2026-12-20"},
+"15_DEN_LV":{day:"Sunday",date:"Dec 20",time:"4:25 PM",iso:"2026-12-20"},
+"15_DET_MIN":{day:"Sunday",date:"Dec 20",time:"8:20 PM",iso:"2026-12-20"},
+"15_NE_KC":{day:"Monday",date:"Dec 21",time:"8:15 PM",iso:"2026-12-21"},
+"16_HOU_PHI":{day:"Thursday",date:"Dec 24",time:"8:15 PM",iso:"2026-12-24"},
+"16_GB_CHI":{day:"Friday",date:"Dec 25",time:"1:00 PM",iso:"2026-12-25"},
+"16_BUF_DEN":{day:"Friday",date:"Dec 25",time:"4:30 PM",iso:"2026-12-25"},
+"16_LAR_SEA":{day:"Friday",date:"Dec 25",time:"8:15 PM",iso:"2026-12-25"},
+"16_TB_ATL":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_CLE_BAL":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_CIN_IND":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_LAC_MIA":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_WAS_MIN":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_ARI_NO":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_NE_NYJ":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_CAR_PIT":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
+"16_TEN_LV":{day:"Sunday",date:"Dec 27",time:"4:05 PM",iso:"2026-12-27"},
+"16_SF_KC":{day:"Sunday",date:"Dec 27",time:"4:25 PM",iso:"2026-12-27"},
+"16_JAX_DAL":{day:"Sunday",date:"Dec 27",time:"8:20 PM",iso:"2026-12-27"},
+"16_NYG_DET":{day:"Monday",date:"Dec 28",time:"8:15 PM",iso:"2026-12-28"},
+"17_BAL_CIN":{day:"Thursday",date:"Dec 31",time:"8:15 PM",iso:"2026-12-31"},
+"17_NO_ATL":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_SEA_CAR":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_IND_CLE":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_NYG_DAL":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_WAS_JAX":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_KC_LAC":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_BUF_MIA":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_DEN_NE":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_MIN_NYJ":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_LAR_TB":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_PIT_TEN":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
+"17_LV_ARI":{day:"Sunday",date:"Jan 3",time:"4:05 PM",iso:"2027-01-03"},
+"17_DET_CHI":{day:"Sunday",date:"Jan 3",time:"4:25 PM",iso:"2027-01-03"},
+"17_PHI_SF":{day:"Sunday",date:"Jan 3",time:"8:20 PM",iso:"2027-01-03"},
+"17_HOU_GB":{day:"Monday",date:"Jan 4",time:"8:15 PM",iso:"2027-01-04"},
+"18_SF_ARI":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_PIT_BAL":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_NYJ_BUF":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_ATL_CAR":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_CLE_CIN":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_LAC_DEN":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_DET_GB":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_TEN_HOU":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_JAX_IND":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_LV_KC":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_SEA_LAR":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_CHI_MIN":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_MIA_NE":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_TB_NO":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_PHI_NYG":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
+"18_DAL_WAS":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"}
+};
 
 const SCHED_2026={};
 for(const[abbr,weeks]of Object.entries(SCHED_2026_RAW)){SCHED_2026[abbr]={home:[],away:[]};weeks.forEach(w=>{if(w==='BYE')return;if(w.startsWith('@')||w.startsWith('at ')){SCHED_2026[abbr].away.push(w.replace('@','').replace('at ','').trim())}else{SCHED_2026[abbr].home.push(w.trim())}})}
 
 const WEEKS=[];
-for(let i=0;i<18;i++){const weekNum=i+1;const games=[];const used=new Set();for(const[abbr,weeks]of Object.entries(SCHED_2026_RAW)){if(used.has(abbr))continue;const oppStr=weeks[i];if(!oppStr||oppStr==='BYE')continue;const isAway=oppStr.startsWith('@')||oppStr.startsWith('at ');const opp=oppStr.replace('@','').replace('at ','').trim();if(isAway){if(!used.has(opp)){games.push({away:abbr,home:opp,day:'Sunday',time:'1:00 PM'});used.add(abbr);used.add(opp)}}else{if(!used.has(opp)){games.push({away:opp,home:abbr,day:'Sunday',time:'1:00 PM'});used.add(abbr);used.add(opp)}}}if(games.length>0){games[0].time='8:15 PM';games[0].day='Monday'}if(games.length>1){games[1].time='4:25 PM'}if(games.length>2){games[2].time='4:25 PM'}if(games.length>3){games[3].day='Thursday';games[3].time='8:15 PM'}WEEKS.push({week:weekNum,games})}
+for(let i=0;i<18;i++){const weekNum=i+1;const games=[];const used=new Set();for(const[abbr,weeks]of Object.entries(SCHED_2026_RAW)){if(used.has(abbr))continue;const oppStr=weeks[i];if(!oppStr||oppStr==='BYE')continue;const isAway=oppStr.startsWith('@')||oppStr.startsWith('at ');const opp=oppStr.replace('@','').replace('at ','').trim();let away,home;if(isAway){away=abbr;home=opp}else{away=opp;home=abbr}if(used.has(away)||used.has(home))continue;const rt=REAL_GAME_TIMES[`${weekNum}_${away}_${home}`];games.push({away,home,day:rt?rt.day:'Sunday',time:rt?rt.time:'1:00 PM',date:rt?rt.date:''});used.add(away);used.add(home)}WEEKS.push({week:weekNum,games})}
 
   const INTERNATIONAL_GAMES=[
   {week:1,away:'SF',home:'LAR',stadium:'Melbourne Cricket Ground',city:'Melbourne',country:'Australia',time:'8:35 PM ET',lat:-37.85,lng:144.98},
@@ -693,7 +969,7 @@ for(let i=0;i<18;i++){const weekNum=i+1;const games=[];const used=new Set();for(
   {week:5,away:'PHI',home:'JAX',stadium:'Tottenham Hotspur Stadium',city:'London',country:'U.K.',time:'9:30 AM ET',lat:51.60,lng:-0.07},
   {week:6,away:'HOU',home:'JAX',stadium:'Wembley Stadium',city:'London',country:'U.K.',time:'9:30 AM ET',lat:51.56,lng:-0.28},
   {week:7,away:'PIT',home:'NO',stadium:'Stade de France',city:'Paris',country:'France',time:'9:30 AM ET',lat:48.92,lng:2.36},
-  {week:9,away:'ATL',home:'CIN',stadium:'Bernabéu Stadium',city:'Madrid',country:'Spain',time:'9:30 AM ET',lat:40.45,lng:-3.69},
+  {week:9,away:'CIN',home:'ATL',stadium:'Bernabéu Stadium',city:'Madrid',country:'Spain',time:'9:30 AM ET',lat:40.45,lng:-3.69},
   {week:10,away:'NE',home:'DET',stadium:'FC Bayern Munich Arena',city:'Munich',country:'Germany',time:'9:30 AM ET',lat:48.22,lng:11.62},
   {week:11,away:'MIN',home:'SF',stadium:'Estadio Banorte',city:'Mexico City',country:'Mexico',time:'8:20 PM ET',lat:19.33,lng:-99.15}
 ];
@@ -879,7 +1155,8 @@ function renderFeaturedGame(){
   const homeDefRank=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===fg.home)+1;
   document.getElementById('featured-home-record').innerHTML=`${home.div} • Off #${homeOffRank} • Def #${homeDefRank}`;
 
-  document.getElementById('featured-day').textContent=fg.day||scheduled?.day;
+  const featuredDate=fg.date||scheduled?.date;
+  document.getElementById('featured-day').textContent=[fg.day||scheduled?.day,featuredDate].filter(Boolean).join(', ');
   document.getElementById('featured-time').textContent=fg.time||(scheduled?.time?`${scheduled.time} ET`:'Time TBD');
   document.getElementById('featured-venue').textContent=home.stadium;
   document.getElementById('featured-location').textContent=`${home.city}, ${home.state}`;
@@ -963,12 +1240,11 @@ const SEASON_2026_DATES = {
   18: { Thursday: '2027-01-07', Sunday: '2027-01-10', Monday: '2027-01-11' }
 };
 
-function getGameDate(weekNum, dayStr) {
+function getGameDate(weekNum, awayAbbr, homeAbbr) {
+  const real = REAL_GAME_TIMES[`${weekNum}_${awayAbbr}_${homeAbbr}`];
+  if (real) return real.iso;
   const weekDates = SEASON_2026_DATES[weekNum];
-  if (!weekDates) return null;
-  if (dayStr === 'Thursday' && weekDates.Thursday) return weekDates.Thursday;
-  if (dayStr === 'Monday' && weekDates.Monday) return weekDates.Monday;
-  return weekDates.Sunday; // Default
+  return weekDates ? weekDates.Sunday : null; // Fallback
 }
 
 async function fetchLiveWeather(lat, lng, dateStr) {
@@ -987,7 +1263,7 @@ async function fetchLiveWeather(lat, lng, dateStr) {
   return null;
 }
 
-async function getWeather(awayAbbr, homeAbbr, weekNum, dayStr) {
+async function getWeather(awayAbbr, homeAbbr, weekNum) {
   const homeTeam = getTeam(homeAbbr);
   if (!homeTeam) return { temp: "72°F", precip: "0%", icon: "lucide:thermometer", desc: "Indoors" };
 
@@ -1011,7 +1287,7 @@ async function getWeather(awayAbbr, homeAbbr, weekNum, dayStr) {
 
   if (roof === "Fixed") return { temp: "72°F", precip: "0%", icon: "lucide:building", desc: "Climate Controlled (Indoors)" };
 
-  const dateStr = getGameDate(weekNum, dayStr);
+  const dateStr = getGameDate(weekNum, awayAbbr, homeAbbr);
   if (dateStr) {
     const today = new Date().toISOString().split('T')[0];
     const daysUntil = (new Date(dateStr) - new Date(today)) / (1000 * 60 * 60 * 24);
@@ -1109,11 +1385,11 @@ function renderMatchups(){
     const card=document.createElement('div');
     card.className=`matchup-card glass-panel rounded-xl p-4 ${isRel?'border-brand-500/30':''} ${isIntl?'border-brand-500/20':''}`;
     card.style.cursor='pointer';
-    card.onclick=()=>showMatchupModal(game.away,game.home,week.week,game.day);
+    card.onclick=()=>showMatchupModal(game.away,game.home,week.week);
 
     card.innerHTML=`
       <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">${game.day}</span>
+        <span class="text-[10px] font-mono text-white/40 uppercase tracking-wider">${game.day}${game.date?' &bull; '+game.date:''}</span>
         <span class="text-[10px] font-mono ${isRel?'text-brand-400':'text-white/30'}">${timeStr}</span>
       </div>
       <div class="flex items-center justify-between gap-4">
@@ -1187,14 +1463,14 @@ function renderTeamCards(){
 function filterTeams(conf){currentConfFilter=conf;document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===conf);b.classList.toggle('text-white/50',b.dataset.filter!==conf)});renderTeamCards()}
 function filterDivision(div){currentDivFilter=div;document.querySelectorAll('.division-btn').forEach(b=>{const a=b.dataset.div===div;b.classList.toggle('!bg-brand-500/15',a);b.classList.toggle('!text-brand-400',a);b.classList.toggle('!border-brand-500/30',a)});renderTeamCards()}
 
-async function showMatchupModal(awayAbbr, homeAbbr, weekNum, dayStr){
+async function showMatchupModal(awayAbbr, homeAbbr, weekNum){
   const t1=getTeam(awayAbbr);const t2=getTeam(homeAbbr);
   if(!t1||!t2)return;
   const f1=STADIUM_FACTS[awayAbbr];const f2=STADIUM_FACTS[homeAbbr];
   const dist=haversine(t1.lat,t1.lng,t2.lat,t2.lng).toFixed(0);
 
   // Fetch weather (Live API if within 16 days, otherwise Historical Simulator)
-  const weather = await getWeather(awayAbbr, homeAbbr, weekNum, dayStr);
+  const weather = await getWeather(awayAbbr, homeAbbr, weekNum);
 
   const infoRows=[
     {label:'City',v1:`${t1.city}, ${t1.state}`,v2:`${t2.city}, ${t2.state}`},
