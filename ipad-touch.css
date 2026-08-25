@@ -1,0 +1,217 @@
+/* iPad / touch readiness for the student portal.
+   Students use iPads, so this layer fixes the things that only break on touch:
+   iOS auto-zoom on form controls, tap targets under Apple's 44px minimum,
+   hover states that stick after a tap, modal scroll chaining, and 100vh. */
+
+/* ---------- 1. Stop iOS Safari zooming the page when a field is tapped ----------
+   Mobile Safari zooms in on any input/select/textarea whose font-size is under
+   16px, and it never zooms back out. Every student select and both lab editors
+   were 12-14px. Applies on touch pointers and at iPad widths. */
+@media (pointer: coarse), (max-width: 1024px) {
+  input,
+  select,
+  textarea,
+  .wl-editor,
+  .cs-editor,
+  .player-team-select-wrap select {
+    font-size: 16px !important;
+  }
+
+  /* Keep the labs comfortable to read now that the base size went up. */
+  .cs-editor { line-height: 1.6; }
+  .wl-editor { line-height: 1.75; }
+}
+
+/* ---------- 2. Tap targets ----------
+   Apple's minimum is 44x44. These were 28-35px. */
+@media (pointer: coarse), (max-width: 1024px) {
+  /* Main page menu in the top bar (was 35px tall). */
+  nav [aria-label="Main pages"] a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px !important;
+  }
+
+  /* "Compare" button on every team card (was 66x32, 9px text).
+     visual-system.css pins this at 32px with !important, so match that weight. */
+  .team-compare-button {
+    min-height: 44px !important;
+    padding: 0 12px;
+    font-size: 11px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Modal close buttons (was 32x32). */
+  #team-modal > div > button,
+  #compare-modal > div > button,
+  #travel-modal > div > button {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Tab rows and pill buttons that sit just under the 44px line. */
+  #compare-tabs button,
+  .stats-subpage-tabs button,
+  .standings-tabs button,
+  .player-leaders-scope button,
+  .player-leaders-cats button {
+    min-height: 44px;
+  }
+
+  /* Page filter/segment controls: conference tabs, division pills, week arrows,
+     the team dropdowns, and the lab segmented toggles (were 31-40px). */
+  .page-controls .tab-btn,
+  .page-controls select,
+  .page-controls button,
+  #division-filters button,
+  .tab-btn,
+  .seg-btn,
+  .wl-btn,
+  .mg-btn {
+    min-height: 44px !important;
+  }
+
+  /* Every dropdown on the student side, wherever it sits in the markup. */
+  select {
+    min-height: 44px !important;
+  }
+
+  /* Player Stats team picker is pinned to 42px in player-leaders-toggle.css. */
+  .player-team-select-wrap select {
+    height: 44px !important;
+  }
+
+  /* Travel page inline actions ("See more stats", international series). */
+  .travel-inline-button,
+  #travel .page-intro button,
+  #travel button.inline-flex {
+    min-height: 44px !important;
+  }
+
+  /* Square icon buttons such as the matchup week arrows (were 36px wide). */
+  .page-controls button.w-9,
+  .page-controls button.h-9 {
+    min-width: 44px !important;
+  }
+
+  /* Math Lab's "This Week / Season" toggle (was 31px). */
+  #math .flex.border > button,
+  #math button.px-3 {
+    min-height: 44px !important;
+  }
+
+  /* Footer: previous/next page links (34px) and the source links (16px). */
+  footer a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Give the nav menu a little breathing room so the taller pills fit. */
+  nav [aria-label="Main pages"] > div { padding-block: 2px; }
+}
+
+/* ---------- 3. Hover effects that stick after a tap ----------
+   iOS keeps :hover applied to the last-tapped element until you tap elsewhere,
+   so card shine sweeps and zooms freeze mid-animation. Turn them off where
+   there is no real hover. */
+@media (hover: none) {
+  .team-card:hover::after { left: -80%; }
+  .team-card:hover img { transform: none; }
+  .team-card::after { display: none; }
+
+  /* Replace hover feedback with press feedback so taps still feel responsive. */
+  .team-card:active { transform: scale(0.985); }
+  .team-compare-button:active,
+  nav [aria-label="Main pages"] a:active,
+  #compare-tabs button:active { opacity: 0.7; }
+}
+
+/* ---------- 4. Modals ----------
+   Without overscroll containment, scrolling past the end of a modal on iOS
+   scrolls the page behind it and the student loses their place. */
+#team-modal > div,
+#compare-modal > div,
+#travel-modal > div {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Set by ipad-touch.js while a modal is open, so the page cannot scroll under it.
+   Deliberately no touch-action here: touch-action intersects down the ancestor
+   chain, so locking it on body would also stop the modal itself from scrolling. */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* ---------- 5. Viewport height ----------
+   iOS Safari's 100vh includes the area behind the toolbars, so a 100vh hero is
+   taller than the screen and its bottom is cut off. svh is the visible height. */
+#featured { min-height: 100vh; min-height: 100svh; }
+#featured .featured-content { min-height: 100vh; min-height: 100svh; }
+.data-page { min-height: calc(100vh - 64px); min-height: calc(100svh - 64px); }
+
+/* ---------- 6. General touch behaviour ---------- */
+a, button, select, summary, [role="button"], [onclick] {
+  /* Removes the 300ms double-tap-to-zoom delay on taps. */
+  touch-action: manipulation;
+}
+
+body { -webkit-tap-highlight-color: rgba(91, 155, 213, 0.18); }
+
+/* Stop iOS inflating text in landscape. */
+html { -webkit-text-size-adjust: 100%; }
+
+/* Horizontal scrollers should not chain into the page scroll. */
+nav [aria-label="Main pages"],
+.standings-table-wrap,
+.player-leaders-cats {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- 7. Map ----------
+   Dots are ~10px across once the 960-wide viewBox is scaled down. ipad-touch.js
+   adds a larger invisible hit circle; this keeps the map itself from being
+   swallowed by page panning while a student aims at a dot. */
+#map-svg { touch-action: manipulation; }
+#map-svg g[data-abbr] { cursor: pointer; }
+
+/* On touch the tooltip is opened by tapping a dot, so give it a close affordance. */
+@media (hover: none) {
+  #map-tooltip { pointer-events: none; }
+}
+
+/* ---------- 8. Ticker ----------
+   A 28px-tall marquee that expands on hover is unusable on touch: the target
+   moves and there is no hover. ipad-touch.js pauses it on tap; this makes the
+   tapped item readable and keeps it clear of the home indicator. */
+@media (hover: none) {
+  .ticker-item:active,
+  .ticker-item.ticker-item-open { max-width: 620px; background: rgba(255,255,255,.06); color: #fff; }
+  .ticker-item.ticker-item-open .ticker-short { max-width: 0; opacity: 0; }
+  .ticker-item.ticker-item-open .ticker-full { max-width: 580px; opacity: 1; }
+  #ticker.ticker-paused .ticker-track { animation-play-state: paused; }
+}
+
+/* ---------- 9. Safe areas ----------
+   Keeps the fixed bars clear of the rounded corners and home indicator. */
+@supports (padding: max(0px)) {
+  nav {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  #ticker { padding-bottom: env(safe-area-inset-bottom); }
+  #chatbot-btn { margin-bottom: env(safe-area-inset-bottom); }
+}
+
+/* ---------- 10. iPad portrait layout ----------
+   Between 768px and 1024px a few grids were still single column and left half
+   the screen empty. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .player-leaders-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .selected-standing-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
