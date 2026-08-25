@@ -137,7 +137,7 @@ async function initDatabase() {
     console.warn('Set SUPER_ADMIN_USERNAME and a 4-8 digit SUPER_ADMIN_PIN, or use TEACHER_USERNAME/TEACHER_PIN as the bootstrap super admin.');
   }
 
-  if (process.env.SEED_CLASS_STUDENTS !== 'false') {
+  if (process.env.SEED_CLASS_STUDENTS === 'true') {
     for (let classIndex = 0; classIndex < CLASS_SEEDS.length; classIndex += 1) {
       const item = CLASS_SEEDS[classIndex];
       const classResult = await pool.query('SELECT id FROM classes WHERE slug=$1', [item.slug]);
