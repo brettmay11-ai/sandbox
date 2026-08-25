@@ -291,6 +291,32 @@ body {
   background: color-mix(in srgb, var(--focus-primary, #013369) 72%, #111);
 }
 
+.travel-inline-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.travel-inline-button:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.travel-inline-button iconify-icon {
+  color: var(--student-team-accent, #5b9bd5);
+  font-size: 14px;
+}
+
 .data-expander {
   border: 0;
   border-top: 1px solid var(--ui-border);

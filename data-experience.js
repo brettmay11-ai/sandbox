@@ -159,10 +159,7 @@
         { label:'Total Travel', value:`${formatNumber(Math.round(total))} mi`, note:'Approximate road distance', icon:'lucide:plane' },
         { label:'Longest Trip', value:farthest ? `${formatNumber(Math.round(farthest.distance))} mi` : 'No trips', note:farthest ? `${farthest.city}, ${farthest.state}` : 'Home schedule', icon:'lucide:route' }
       ],
-      actions:[
-        { label:'Show My Team', icon:'lucide:locate-fixed', onclick:'showAssignedTeamTravel()' },
-        { label:'See more stats', icon:'lucide:bar-chart-3', onclick:'openTravelStats()' }
-      ]
+      actions:[{ label:'Show My Team', icon:'lucide:locate-fixed', onclick:'showAssignedTeamTravel()' }]
     });
   }
 
@@ -218,6 +215,7 @@
       window.assignedTeamAbbr = assignedTeam.abbr;
       if (page === 'teams') renderTeamCards();
       renderFocus();
+      window.updateTravelSelectedStatsAction?.();
     } catch (error) {
       if (slot) slot.innerHTML = '<div class="team-focus-skeleton"><span>Your team summary is temporarily unavailable.</span></div>';
     }
