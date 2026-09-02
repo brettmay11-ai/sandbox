@@ -33,9 +33,8 @@ The app stores only:
 - Teacher-created username and display name
 - Securely hashed PIN
 - Selected NFL team
-- Pages viewed and time spent
 - Pages marked complete
 - Math game XP, progress, answers, and leaderboard results
-- Last login/activity time
+- Last login time
 
 No student email addresses are collected.

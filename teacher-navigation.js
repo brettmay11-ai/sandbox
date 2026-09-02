@@ -18,8 +18,6 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
   const teamName = abbr => (typeof getNFLTeamBrand === 'function' ? getNFLTeamBrand(abbr)?.name : abbr) || abbr || 'Unassigned';
-  const dateValue = value => value ? new Date(value).getTime() : 0;
-
   const nav = document.createElement('nav');
   nav.id = 'teacher-page-nav';
   nav.className = 'max-w-7xl mx-auto px-5 pt-6';
@@ -89,13 +87,18 @@
     const writingCount = submissions.filter(item => item.status === 'submitted').length;
     const safetyCount = Number(data.safety?.unreadCount || 0);
     const students = data.analytics?.students || data.students?.students || [];
-    const supportCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const supportCount = students.filter(student => student.active && dateValue(student.last_activity || student.last_login_at) < supportCutoff).length;
+    const supportCount = students.filter(student => {
+      if (!student.active) return false;
+      const answers = Number(student.questions_answered || 0);
+      const accuracy = Number(student.accuracy || 0);
+      const totalXp = Number(student.total_xp || 0) + Number(student.writing_xp || 0);
+      return (answers >= 3 && accuracy < 70) || totalXp === 0;
+    }).length;
     const featured = data.featured?.featuredGame;
     const featuredLabel = featured ? `${teamName(featured.away)} at ${teamName(featured.home)}` : 'Needs setup';
     setCard('writing', writingCount, writingCount ? 'Ready for your feedback' : 'Nothing waiting right now', writingCount ? 'accent' : 'success');
     setCard('safety', safetyCount, safetyCount ? 'Review before the next class' : 'No unread reports', safetyCount ? 'alert' : 'success');
-    setCard('support', supportCount, supportCount ? 'A quick check-in may help' : 'Everyone is recently active', supportCount ? 'warning' : 'success');
+    setCard('support', supportCount, supportCount ? 'A quick check-in may help' : 'Progress looks steady', supportCount ? 'warning' : 'success');
     setCard('featured', featured ? `Week ${featured.week || '?'}` : 'Setup', featuredLabel, featured ? 'accent' : 'warning');
 
     const achievements = document.getElementById('teacher-achievements');
@@ -124,7 +127,7 @@
       console.warn('Could not load teacher notifications.', error);
       setCard('writing', '—', 'Unable to load this queue');
       setCard('safety', '—', 'Unable to load this queue');
-      setCard('support', '—', 'Unable to load class activity');
+      setCard('support', '—', 'Unable to load class progress');
       setCard('featured', '—', 'Unable to load game setup');
     }
   };

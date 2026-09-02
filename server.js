@@ -363,9 +363,7 @@ async function handleApi(request, response, pathname, user) {
   if (pathname === '/api/me' && request.method === 'GET') return sendJson(response, 200, { user:publicUser(user), redirectPath:redirectPathFor(user) });
 
   if (pathname === '/api/engagement' && request.method === 'POST') {
-    const body = await readJson(request);
-    await pool.query('INSERT INTO engagement_events(user_id,page,event_type,duration_seconds) VALUES($1,$2,$3,$4)', [user.id, String(body.page || 'home').slice(0,32), String(body.event || 'page_view').slice(0,32), Math.max(0, Math.min(7200, Number(body.durationSeconds) || 0))]);
-    return sendJson(response, 201, { ok:true });
+    return sendJson(response, 200, { ok:true, tracked:false });
   }
 
   if (pathname === '/api/progress' && request.method === 'GET') {
@@ -387,13 +385,10 @@ async function handleApi(request, response, pathname, user) {
     let classFilter = '';
     if (user.role === 'teacher' && user.class_id) { params.push(user.class_id); classFilter = `AND u.class_id=$${params.length}`; }
     const result = await pool.query(
-      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at,
-              COUNT(e.id)::int AS page_views,MAX(e.created_at) AS last_activity
+      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at
        FROM users u
        LEFT JOIN classes c ON c.id=u.class_id
-       LEFT JOIN engagement_events e ON e.user_id=u.id AND e.event_type='page_view'
        WHERE u.role='student' ${classFilter}
-       GROUP BY u.id,c.name
        ORDER BY c.name NULLS LAST,u.display_name`,
       params
     );
