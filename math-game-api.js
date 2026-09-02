@@ -45,25 +45,33 @@ async function initMathGame(pool){
   await pool.query(`CREATE TABLE IF NOT EXISTS users(id BIGSERIAL PRIMARY KEY,username VARCHAR(32) UNIQUE NOT NULL,display_name VARCHAR(80) NOT NULL,pin_hash TEXT NOT NULL,role VARCHAR(12) NOT NULL CHECK(role IN('teacher','student')),selected_team VARCHAR(12),active BOOLEAN NOT NULL DEFAULT TRUE,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),last_login_at TIMESTAMPTZ);CREATE TABLE IF NOT EXISTS math_profiles(user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,total_xp INTEGER NOT NULL DEFAULT 0,touchdowns INTEGER NOT NULL DEFAULT 0,drive_yards INTEGER NOT NULL DEFAULT 0,correct_answers INTEGER NOT NULL DEFAULT 0,questions_answered INTEGER NOT NULL DEFAULT 0,current_streak INTEGER NOT NULL DEFAULT 0,best_streak INTEGER NOT NULL DEFAULT 0,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW());CREATE TABLE IF NOT EXISTS math_challenges(id VARCHAR(64) PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,question TEXT NOT NULL,answer NUMERIC NOT NULL,explanation TEXT NOT NULL,difficulty VARCHAR(24) NOT NULL,xp INTEGER NOT NULL,yards INTEGER NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),answered_at TIMESTAMPTZ);CREATE TABLE IF NOT EXISTS math_weekly_stats(user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,week_start DATE NOT NULL,xp INTEGER NOT NULL DEFAULT 0,correct_answers INTEGER NOT NULL DEFAULT 0,questions_answered INTEGER NOT NULL DEFAULT 0,touchdowns INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(user_id,week_start));CREATE INDEX IF NOT EXISTS math_challenges_user_idx ON math_challenges(user_id,created_at DESC);`);
 }
 
-async function rankingData(pool,userId){
-  const season=(await pool.query(`SELECT position,total FROM (SELECT p.user_id,RANK() OVER(ORDER BY p.total_xp DESC,p.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE) ranked WHERE user_id=$1`,[userId])).rows[0]||null;
-  const weekly=(await pool.query(`SELECT position,total FROM (SELECT w.user_id,RANK() OVER(ORDER BY w.xp DESC,w.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE) ranked WHERE user_id=$1`,[userId])).rows[0]||null;
+function classScopeFor(user, alias = 'u') {
+  return user.class_id
+    ? { clause:`AND ${alias}.class_id=$2`, params:[user.id, user.class_id] }
+    : { clause:`AND ${alias}.id=$1`, params:[user.id] };
+}
+
+async function rankingData(pool,user){
+  const scope=classScopeFor(user);
+  const season=(await pool.query(`SELECT position,total FROM (SELECT p.user_id,RANK() OVER(ORDER BY p.total_xp DESC,p.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE ${scope.clause}) ranked WHERE user_id=$1`,scope.params)).rows[0]||null;
+  const weekly=(await pool.query(`SELECT position,total FROM (SELECT w.user_id,RANK() OVER(ORDER BY w.xp DESC,w.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE ${scope.clause}) ranked WHERE user_id=$1`,scope.params)).rows[0]||null;
   return {season,weekly};
 }
 
-async function profileData(pool,userId){
-  await pool.query('INSERT INTO math_profiles(user_id) VALUES($1) ON CONFLICT DO NOTHING',[userId]);
-  const profile=(await pool.query('SELECT * FROM math_profiles WHERE user_id=$1',[userId])).rows[0];
-  const weekly=(await pool.query(`SELECT u.display_name,u.username,u.selected_team,w.xp,w.correct_answers,w.touchdowns FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE ORDER BY w.xp DESC,w.correct_answers DESC LIMIT 10`)).rows;
-  const allTime=(await pool.query(`SELECT u.display_name,u.username,u.selected_team,p.total_xp,p.touchdowns,p.best_streak FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE ORDER BY p.total_xp DESC,p.correct_answers DESC LIMIT 10`)).rows;
-  const level=levelFor(profile.total_xp),next=nextLevel(profile.total_xp),rankings=await rankingData(pool,userId);
+async function profileData(pool,user){
+  await pool.query('INSERT INTO math_profiles(user_id) VALUES($1) ON CONFLICT DO NOTHING',[user.id]);
+  const profile=(await pool.query('SELECT * FROM math_profiles WHERE user_id=$1',[user.id])).rows[0];
+  const scope=classScopeFor(user);
+  const weekly=(await pool.query(`SELECT u.display_name,u.username,u.selected_team,w.xp,w.correct_answers,w.touchdowns FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE ${scope.clause} ORDER BY w.xp DESC,w.correct_answers DESC LIMIT 10`,scope.params)).rows;
+  const allTime=(await pool.query(`SELECT u.display_name,u.username,u.selected_team,p.total_xp,p.touchdowns,p.best_streak FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE ${scope.clause} ORDER BY p.total_xp DESC,p.correct_answers DESC LIMIT 10`,scope.params)).rows;
+  const level=levelFor(profile.total_xp),next=nextLevel(profile.total_xp),rankings=await rankingData(pool,user);
   return {profile:{...profile,level:level.name,nextLevel:next?.name||null,xpToNext:next?next.xp-profile.total_xp:0},rankings,weekly,allTime};
 }
 
 async function handleMathGame({pool,req,res,path,user,sendJson,readJson}){
   if(!path.startsWith('/api/math-game/'))return false;
   if(!user){sendJson(res,401,{error:'Please sign in.'});return true;}
-  if(path==='/api/math-game/profile'&&req.method==='GET'){sendJson(res,200,await profileData(pool,user.id));return true;}
+  if(path==='/api/math-game/profile'&&req.method==='GET'){sendJson(res,200,await profileData(pool,user));return true;}
   if(path==='/api/math-game/challenge'&&req.method==='POST'){
     const body=await readJson(req);
     await pool.query('DELETE FROM math_challenges WHERE user_id=$1 AND answered_at IS NULL',[user.id]);
@@ -81,7 +89,7 @@ async function handleMathGame({pool,req,res,path,user,sendJson,readJson}){
     const combined=previous.drive_yards+(correct?challenge.yards:0),newTouchdowns=Math.floor(combined/100),driveYards=combined%100,currentStreak=correct?previous.current_streak+1:0;
     await pool.query(`UPDATE math_profiles SET total_xp=total_xp+$2,touchdowns=touchdowns+$3,drive_yards=$4,correct_answers=correct_answers+$5,questions_answered=questions_answered+1,current_streak=$6,best_streak=GREATEST(best_streak,$6),updated_at=NOW() WHERE user_id=$1`,[user.id,correct?challenge.xp:0,newTouchdowns,driveYards,correct?1:0,currentStreak]);
     await pool.query(`INSERT INTO math_weekly_stats(user_id,week_start,xp,correct_answers,questions_answered,touchdowns) VALUES($1,date_trunc('week',CURRENT_DATE)::date,$2,$3,1,$4) ON CONFLICT(user_id,week_start) DO UPDATE SET xp=math_weekly_stats.xp+EXCLUDED.xp,correct_answers=math_weekly_stats.correct_answers+EXCLUDED.correct_answers,questions_answered=math_weekly_stats.questions_answered+1,touchdowns=math_weekly_stats.touchdowns+EXCLUDED.touchdowns`,[user.id,correct?challenge.xp:0,correct?1:0,newTouchdowns]);
-    const data=await profileData(pool,user.id),awardedBadges=await awardMathBadges(pool,user.id,data.profile,{challengeId:challenge.id,correct});
+    const data=await profileData(pool,user),awardedBadges=await awardMathBadges(pool,user.id,data.profile,{challengeId:challenge.id,correct});
     const levelUp=correct&&data.profile.level!==previousLevel.name?{from:previousLevel.name,to:data.profile.level,totalXp:Number(data.profile.total_xp||0)}:null;
     sendJson(res,200,{correct,correctAnswer:Number(challenge.answer),explanation:challenge.explanation,xpEarned:correct?challenge.xp:0,yardsEarned:correct?challenge.yards:0,touchdown:newTouchdowns>0,levelUp,...data,awardedBadges});return true;
   }
