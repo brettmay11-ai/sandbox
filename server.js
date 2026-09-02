@@ -40,7 +40,16 @@ function tokenHash(token) { return crypto.createHash('sha256').update(token).dig
 function isTeacherLike(user) { return user && (user.role === 'teacher' || user.role === 'super_admin'); }
 function isSuperAdmin(user) { return user && user.role === 'super_admin'; }
 function safeText(value, max = 80) { return String(value || '').trim().replace(/\s+/g, ' ').slice(0, max); }
-function redirectPathFor(user) { if (!user) return '/login'; if (user.role === 'super_admin') return '/admin'; if (user.role === 'teacher') return '/teacher'; return user.class_id ? `/class/${user.class_id}/dashboard` : '/'; }
+function studentPagePath(page = 'dashboard') {
+  const allowed = new Set(['home', 'dashboard', 'profile', 'teams', 'matchups', 'stats', 'players', 'travel', 'math', 'writing', 'cities', 'tcu']);
+  const safePage = allowed.has(String(page || '').toLowerCase()) ? String(page).toLowerCase() : 'dashboard';
+  return safePage === 'home' ? '/index.html' : `/index.html?page=${safePage}`;
+}
+function legacyClassRedirect(pathname) {
+  const parts = String(pathname || '').split('/').filter(Boolean);
+  return studentPagePath(parts[2] || 'dashboard');
+}
+function redirectPathFor(user) { if (!user) return '/login'; if (user.role === 'super_admin') return '/admin'; if (user.role === 'teacher') return '/teacher'; return studentPagePath('dashboard'); }
 
 function hashPin(pin, salt = crypto.randomBytes(16).toString('hex')) {
   return new Promise((resolve, reject) => crypto.scrypt(String(pin), salt, 64, (error, key) => error ? reject(error) : resolve(`${salt}:${key.toString('hex')}`)));
@@ -444,7 +453,7 @@ async function route(request, response) {
     if (pathname === '/login' || pathname === '/login.html') return user ? redirect(response, redirectPathFor(user)) : serveFile(response, 'login.html');
     if (pathname === '/admin' || pathname === '/admin.html') return !user ? redirect(response, '/login') : !isSuperAdmin(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'admin.html');
     if (pathname === '/teacher' || pathname === '/teacher.html') return !user ? redirect(response, '/login') : !isTeacherLike(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'teacher.html');
-    if (pathname.startsWith('/class/')) return !user ? redirect(response, '/login') : serveFile(response, 'index.html');
+    if (pathname.startsWith('/class/')) return !user ? redirect(response, '/login') : redirect(response, legacyClassRedirect(pathname));
     if (pathname === '/' || pathname === '/index.html') return !user ? redirect(response, '/login') : user.role === 'super_admin' ? redirect(response, '/admin') : serveFile(response, 'index.html');
     return serveFile(response, pathname);
   } catch (error) {
