@@ -10,4 +10,4 @@ window.NFL_TEAM_BRANDS = [
   ['SEA','Seattle Seahawks','#002244','#69BE28'],['TB','Tampa Bay Buccaneers','#D50A0A','#FF7900'],['TEN','Tennessee Titans','#0C2340','#4B92DB'],['WAS','Washington Commanders','#5A1414','#FFB612']
 ].map(([abbr,name,primary,secondary])=>({abbr,name,primary,secondary,logo:`https://a.espncdn.com/i/teamlogos/nfl/500/${abbr.toLowerCase()}.png`}));
 window.getNFLTeamBrand = abbreviation => window.NFL_TEAM_BRANDS.find(team=>team.abbr===abbreviation) || null;
-if(location.pathname.startsWith('/teacher'))for(const source of ['teacher-navigation.js','teacher-featured-game.js','teacher-coach-settings.js','teacher-analytics.js','teacher-writing.js','teacher-teks.js']){const script=document.createElement('script');script.src=source;document.body.appendChild(script)}
+if(location.pathname.startsWith('/teacher'))for(const source of ['teacher-navigation.js?v=4','teacher-featured-game.js?v=3','teacher-coach-settings.js?v=2','teacher-analytics.js?v=3','teacher-writing.js?v=2','teacher-teks.js?v=2']){const script=document.createElement('script');script.src=source;document.body.appendChild(script)}

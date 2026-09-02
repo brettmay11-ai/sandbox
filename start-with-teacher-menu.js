@@ -99,18 +99,18 @@ function installCleatProductionNotice(){
   page.prepend(notice);
 }
 function removeLegacyProgressTrackingColumns(){
-  const table=document.querySelector('#analytics-table')?.closest('table');
-  if(!table)return;
-  const headers=[...table.querySelectorAll('thead th')];
-  const indexes=headers
-    .map((header,index)=>({index,label:(header.textContent||'').trim().toLowerCase()}))
-    .filter(item=>item.label==='views'||item.label==='time')
-    .map(item=>item.index)
-    .sort((a,b)=>b-a);
-  if(!indexes.length)return;
-  table.querySelectorAll('tr').forEach(row=>{
-    const cells=[...row.children];
-    indexes.forEach(index=>cells[index]?.remove());
+  document.querySelectorAll('table').forEach(table=>{
+    const headers=[...table.querySelectorAll('thead th')];
+    const indexes=headers
+      .map((header,index)=>({index,label:(header.textContent||'').trim().toLowerCase()}))
+      .filter(item=>item.label==='views'||item.label==='time')
+      .map(item=>item.index)
+      .sort((a,b)=>b-a);
+    if(!indexes.length)return;
+    table.querySelectorAll('tr').forEach(row=>{
+      const cells=[...row.children];
+      indexes.forEach(index=>cells[index]?.remove());
+    });
   });
 }
 function watchProgressTable(){
