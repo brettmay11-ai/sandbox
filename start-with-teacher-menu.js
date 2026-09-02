@@ -98,9 +98,32 @@ function installCleatProductionNotice(){
   notice.innerHTML='<div class="flex items-start gap-3"><iconify-icon icon="lucide:construction" class="text-2xl text-amber-300"></iconify-icon><div><strong class="block text-sm uppercase tracking-[.18em] text-amber-200">Still in production</strong><p class="mt-1 text-sm text-amber-100/85">Cleat Studio is not live yet. This page is for internal previewing and testing only.</p></div></div>';
   page.prepend(notice);
 }
+function removeLegacyProgressTrackingColumns(){
+  const table=document.querySelector('#analytics-table')?.closest('table');
+  if(!table)return;
+  const headers=[...table.querySelectorAll('thead th')];
+  const indexes=headers
+    .map((header,index)=>({index,label:(header.textContent||'').trim().toLowerCase()}))
+    .filter(item=>item.label==='views'||item.label==='time')
+    .map(item=>item.index)
+    .sort((a,b)=>b-a);
+  if(!indexes.length)return;
+  table.querySelectorAll('tr').forEach(row=>{
+    const cells=[...row.children];
+    indexes.forEach(index=>cells[index]?.remove());
+  });
+}
+function watchProgressTable(){
+  removeLegacyProgressTrackingColumns();
+  const main=document.querySelector('main');
+  if(!main)return;
+  const observer=new MutationObserver(removeLegacyProgressTrackingColumns);
+  observer.observe(main,{childList:true,subtree:true});
+}
 window.addEventListener('DOMContentLoaded',()=>{
   loadTeacherDashboardClassName();
   installCleatProductionNotice();
+  watchProgressTable();
 });
 </script>`;
 }
@@ -167,14 +190,14 @@ function transformAdminHtml(html) {
 function serveTeacherPortal(response) {
   const file = path.join(__dirname, 'teacher.html');
   const html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   response.end(html);
 }
 
 function serveAdminPortal(response) {
   const file = path.join(__dirname, 'admin.html');
   const html = transformAdminHtml(fs.readFileSync(file, 'utf8'));
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   response.end(html);
 }
 
