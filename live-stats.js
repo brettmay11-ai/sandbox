@@ -28,19 +28,6 @@ async function resolveLiveStatsSeason() {
 
   liveStatsSeasonPromise = (async () => {
     const currentSeason = Number(await fetchStatsJson('/api/sportsdata/nfl/current-season'));
-    const testTeams = ['KC', 'BUF'];
-
-    for (const season of [currentSeason, currentSeason - 1]) {
-      for (const team of testTeams) {
-        try {
-          const players = await fetchStatsJson(`/api/sportsdata/nfl/player-season-stats-by-team/${season}/${team}`);
-          if (Array.isArray(players) && players.some(player => Number(player.Played) > 0)) return season;
-        } catch (error) {
-          console.warn(`Stats season ${season} is unavailable.`, error);
-        }
-      }
-    }
-
     return currentSeason;
   })();
 
@@ -49,12 +36,13 @@ async function resolveLiveStatsSeason() {
 
 async function fetchTeamLiveStats(teamAbbr) {
   const season = await resolveLiveStatsSeason();
-  const cacheKey = `${season}-${teamAbbr}`;
+  const cacheKey = `${season}-league`;
   if (!liveStatsCache.has(cacheKey)) {
-    liveStatsCache.set(cacheKey, fetchStatsJson(`/api/sportsdata/nfl/player-season-stats-by-team/${season}/${teamAbbr}`));
+    liveStatsCache.set(cacheKey, fetchStatsJson(`/api/sportsdata/nfl/player-season-stats/${season}`));
   }
   const players = await liveStatsCache.get(cacheKey);
-  return { season, players: Array.isArray(players) ? players : [] };
+  const team = String(teamAbbr || '').toUpperCase();
+  return { season, players: Array.isArray(players) ? players.filter(player => String(player.Team || player.TeamKey || '').toUpperCase() === team) : [] };
 }
 
 function formatLiveStat(value) {

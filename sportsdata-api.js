@@ -57,6 +57,11 @@ function routeToSportsData(pathname) {
     if (parts[3] === 'current-season') {
       return { sport, apiPath:'scores/json/CurrentSeason', ttlSeconds:24 * 60 * 60 };
     }
+    if (parts[3] === 'player-season-stats') {
+      const season = seasonValue(parts[4]);
+      if (!season) return { error:'Choose a valid NFL season.' };
+      return { sport, apiPath:`stats/json/PlayerSeasonStats/${season}`, ttlSeconds:24 * 60 * 60 };
+    }
     if (parts[3] === 'player-season-stats-by-team') {
       const season = seasonValue(parts[4]), team = teamValue(parts[5], NFL_TEAMS);
       if (!season || !team) return { error:'Choose a valid NFL season and team.' };
