@@ -2244,15 +2244,24 @@ function toggleCompareTeam(abbr){
 async function fetchTeamNews(teamAbbr) {
   try {
     const response = await fetch(`/api/nfl-news/team/${encodeURIComponent(teamAbbr)}`);
-    if (!response.ok) console.warn("Team RSS feed returned status:", response.status);
+    const stripHtml = value => String(value || '').replace(/<[^>]*>?/gm, ' ');
     if (response.ok) {
       const data = await response.json();
-      const stripHtml = value => String(value || '').replace(/<[^>]*>?/gm, ' ');
       const articles = (Array.isArray(data) ? data : []).slice(0, 3);
       if (articles.length) return articles.map(a => ({
         title: a.title || a.Title || 'Team News',
         description: (a.description || a.Content) ? stripHtml(a.description || a.Content).replace(/\s+/g, ' ').trim().substring(0, 120) + '...' : 'Click to read the full article.',
         link: a.link || a.Url || '#'
+      }));
+    }
+    console.warn("Team RSS feed returned status:", response.status, "using cached news fallback.");
+    const legacyResponse = await fetch(`/api/sportsdata/nfl/news/team/${encodeURIComponent(teamAbbr)}`);
+    if (legacyResponse.ok) {
+      const legacyData = await legacyResponse.json();
+      if (Array.isArray(legacyData) && legacyData.length) return legacyData.slice(0, 3).map(a => ({
+        title: a.Title || 'NFL News',
+        description: a.Content ? stripHtml(a.Content).replace(/\s+/g, ' ').trim().substring(0, 120) + '...' : 'Click to read the full article.',
+        link: a.Url || '#'
       }));
     }
 
