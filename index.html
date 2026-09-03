@@ -2243,30 +2243,21 @@ function toggleCompareTeam(abbr){
 /* ===== CACHED NEWS API ===== */
 async function fetchTeamNews(teamAbbr) {
   try {
-    const response = await fetch('/api/sportsdata/nfl/news');
-    if (!response.ok) console.warn("SportsData API returned status:", response.status);
+    const response = await fetch(`/api/nfl-news/team/${encodeURIComponent(teamAbbr)}`);
+    if (!response.ok) console.warn("Team RSS feed returned status:", response.status);
     if (response.ok) {
       const data = await response.json();
-      const team = getTeam(teamAbbr) || {};
-      const terms = [team.name, team.displayName, team.city, team.nickname, teamAbbr]
-        .filter(term => String(term || '').trim().length >= 3)
-        .map(term => String(term).trim().toLowerCase());
       const stripHtml = value => String(value || '').replace(/<[^>]*>?/gm, ' ');
-      const matchesTeam = article => {
-        const text = `${article.Title || ''} ${stripHtml(article.Content || '')}`.toLowerCase();
-        return terms.some(term => new RegExp(`\\b${term.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'i').test(text));
-      };
-      const teamArticles = Array.isArray(data) ? data.filter(matchesTeam) : [];
-      const articles = (teamArticles.length ? teamArticles : Array.isArray(data) ? data : []).slice(0, 3);
+      const articles = (Array.isArray(data) ? data : []).slice(0, 3);
       if (articles.length) return articles.map(a => ({
-        title: a.Title || 'NFL News',
-        description: a.Content ? stripHtml(a.Content).replace(/\s+/g, ' ').trim().substring(0, 120) + '...' : 'Click to read the full article.',
-        link: a.Url || '#'
+        title: a.title || a.Title || 'Team News',
+        description: (a.description || a.Content) ? stripHtml(a.description || a.Content).replace(/\s+/g, ' ').trim().substring(0, 120) + '...' : 'Click to read the full article.',
+        link: a.link || a.Url || '#'
       }));
     }
 
   } catch (e) {
-    console.warn("SportsData news fetch failed, using educational fallback.", e);
+    console.warn("Team RSS news fetch failed, using educational fallback.", e);
   }
 
   // Attempt 3: Educational Fallback (If API limits are hit or network blocks it)
