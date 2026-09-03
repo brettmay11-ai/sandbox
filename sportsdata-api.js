@@ -1,7 +1,6 @@
 const SPORTS_DATA_KEY = process.env.SPORTSDATA_IO_KEY || process.env.SPORTSDATA_API_KEY || 'ec29dd369c2544a980efca06d3e5b4ad';
 const BASE_URL = 'https://api.sportsdata.io/v3';
 const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
-const SPORTS_DATA_REFRESH_DAYS = new Set(['Monday','Tuesday','Friday']);
 
 async function initSportsDataCache(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
@@ -99,7 +98,7 @@ async function cachedSportsData(pool, route) {
   const cacheKey = `sportsdata:${route.sport}:${route.apiPath}`;
   const cached = await pool.query('SELECT data,fetched_at,expires_at FROM sportsdata_cache WHERE cache_key=$1', [cacheKey]);
   const row = cached.rows[0];
-  if (row && !scheduledRefreshNeeded(row)) return row.data;
+  if (row && new Date(row.expires_at).getTime() > Date.now()) return row.data;
 
   const requestedAt=Date.now();
   let externalCallCompleted=false;
@@ -122,17 +121,6 @@ async function cachedSportsData(pool, route) {
     }
     throw error;
   }
-}
-
-function localDate(value) {
-  return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
-}
-
-function scheduledRefreshNeeded(row) {
-  const today=new Date();
-  const weekday=new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',weekday:'long'}).format(today);
-  if(!SPORTS_DATA_REFRESH_DAYS.has(weekday)) return false;
-  return localDate(row.fetched_at)!==localDate(today);
 }
 
 async function recordSportsDataCall(pool,route,details) {
