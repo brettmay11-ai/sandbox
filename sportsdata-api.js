@@ -1,7 +1,6 @@
 const SPORTS_DATA_KEY = process.env.SPORTSDATA_IO_KEY || process.env.SPORTSDATA_API_KEY || 'ec29dd369c2544a980efca06d3e5b4ad';
 const BASE_URL = 'https://api.sportsdata.io/v3';
 const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
-const CFB_TEAMS = new Set(['TCU']);
 const SPORTS_DATA_REFRESH_DAYS = new Set(['Monday','Tuesday','Friday']);
 
 async function initSportsDataCache(pool) {
@@ -38,7 +37,7 @@ function routeToSportsData(pathname) {
   const parts = pathname.split('/').filter(Boolean);
   if (parts[0] !== 'api' || parts[1] !== 'sportsdata') return null;
   const sport = parts[2];
-  if (!['nfl', 'cfb'].includes(sport)) return { error:'Unknown sports feed.' };
+  if (sport !== 'nfl') return { error:'Unknown sports feed.' };
 
   if (sport === 'nfl') {
     if (parts[3] === 'schedule') {
@@ -66,35 +65,6 @@ function routeToSportsData(pathname) {
     }
     if (parts[3] === 'news') {
       return { sport, apiPath:'news-rotoballer/json/RotoBallerPremiumNews', ttlSeconds:24 * 60 * 60 };
-    }
-  }
-
-  if (sport === 'cfb') {
-    if (parts[3] === 'current-season') {
-      return { sport, apiPath:'scores/json/CurrentSeason', ttlSeconds:24 * 60 * 60 };
-    }
-    if (parts[3] === 'teams') {
-      return { sport, apiPath:'scores/json/Teams', ttlSeconds:24 * 60 * 60 };
-    }
-    if (parts[3] === 'team') {
-      const team = teamValue(parts[4], CFB_TEAMS);
-      if (!team) return { error:'Choose a valid CFB team.' };
-      return { sport, apiPath:`scores/json/Team/${team}`, ttlSeconds:24 * 60 * 60 };
-    }
-    if (parts[3] === 'games') {
-      const season = seasonValue(parts[4]);
-      if (!season) return { error:'Choose a valid CFB season.' };
-      return { sport, apiPath:`scores/json/Games/${season}`, ttlSeconds:24 * 60 * 60 };
-    }
-    if (parts[3] === 'player-season-stats-by-team') {
-      const season = seasonValue(parts[4]), team = teamValue(parts[5], CFB_TEAMS);
-      if (!season || !team) return { error:'Choose a valid CFB season and team.' };
-      return { sport, apiPath:`stats/json/PlayerSeasonStatsByTeam/${season}/${team}`, ttlSeconds:24 * 60 * 60 };
-    }
-    if (parts[3] === 'team-season-stats') {
-      const season = seasonValue(parts[4]);
-      if (!season) return { error:'Choose a valid CFB season.' };
-      return { sport, apiPath:`stats/json/TeamSeasonStats/${season}`, ttlSeconds:24 * 60 * 60 };
     }
   }
 
