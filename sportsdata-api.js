@@ -17,13 +17,14 @@ async function initSportsDataCache(pool) {
     id BIGSERIAL PRIMARY KEY,
     sport VARCHAR(12) NOT NULL,
     api_path TEXT NOT NULL,
+    provider VARCHAR(20) NOT NULL DEFAULT 'sportsdata',
     cache_key TEXT NOT NULL,
     status_code INTEGER,
     succeeded BOOLEAN NOT NULL DEFAULT FALSE,
     duration_ms INTEGER,
     error_message TEXT,
     requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  );CREATE INDEX IF NOT EXISTS sportsdata_usage_requested_idx ON sportsdata_usage(requested_at DESC);CREATE INDEX IF NOT EXISTS sportsdata_usage_endpoint_idx ON sportsdata_usage(sport,api_path,requested_at DESC)`);
+  );ALTER TABLE sportsdata_usage ADD COLUMN IF NOT EXISTS provider VARCHAR(20) NOT NULL DEFAULT 'sportsdata';CREATE INDEX IF NOT EXISTS sportsdata_usage_requested_idx ON sportsdata_usage(requested_at DESC);CREATE INDEX IF NOT EXISTS sportsdata_usage_endpoint_idx ON sportsdata_usage(sport,api_path,requested_at DESC)`);
 }
 
 function seasonValue(value) {
@@ -190,9 +191,10 @@ function scheduledRefreshNeeded(row) {
 
 async function recordSportsDataCall(pool,route,details) {
   try {
-    const apiPath = details.provider === 'espn' ? `espn:${details.externalPath}` : route.apiPath;
-    await pool.query(`INSERT INTO sportsdata_usage(sport,api_path,cache_key,status_code,succeeded,duration_ms,error_message) VALUES($1,$2,$3,$4,$5,$6,$7)`,[
-      route.sport,apiPath,`sportsdata:${route.sport}:${route.apiPath}`,details.statusCode||null,Boolean(details.succeeded),details.durationMs||null,details.errorMessage||null
+    const provider = details.provider || (String(details.externalPath || '').startsWith('https://site.api.espn.com') ? 'espn' : 'sportsdata');
+    const apiPath = provider === 'espn' ? `espn:${details.externalPath}` : route.apiPath;
+    await pool.query(`INSERT INTO sportsdata_usage(sport,api_path,provider,cache_key,status_code,succeeded,duration_ms,error_message) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[
+      route.sport,apiPath,provider,`sportsdata:${route.sport}:${route.apiPath}`,details.statusCode||null,Boolean(details.succeeded),details.durationMs||null,details.errorMessage||null
     ]);
   } catch(error) {
     console.warn('SportsData usage log write failed.',error);
