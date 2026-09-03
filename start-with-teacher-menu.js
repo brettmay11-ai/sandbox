@@ -235,8 +235,8 @@ async function handleAdminSportsDataUsage(request,response,pathname) {
   );ALTER TABLE sportsdata_usage ADD COLUMN IF NOT EXISTS provider VARCHAR(20) NOT NULL DEFAULT 'sportsdata'`);
   const [summary,byEndpoint,recent]=await Promise.all([
     pool.query(`SELECT COUNT(*)::int AS total,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS last_24_hours,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '7 days')::int AS last_7_days,COUNT(*) FILTER(WHERE NOT succeeded)::int AS failures FROM sportsdata_usage`),
-    pool.query(`SELECT sport,COALESCE(provider,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE 'sportsdata' END) AS provider,api_path,COUNT(*)::int AS calls,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS calls_24h,MAX(requested_at) AS last_requested,ROUND(AVG(duration_ms))::int AS average_duration_ms FROM sportsdata_usage GROUP BY sport,provider,api_path ORDER BY calls DESC,last_requested DESC LIMIT 100`),
-    pool.query(`SELECT id,sport,COALESCE(provider,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE 'sportsdata' END) AS provider,api_path,status_code,succeeded,duration_ms,error_message,requested_at FROM sportsdata_usage ORDER BY requested_at DESC LIMIT 100`)
+    pool.query(`SELECT sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END AS provider,api_path,COUNT(*)::int AS calls,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS calls_24h,MAX(requested_at) AS last_requested,ROUND(AVG(duration_ms))::int AS average_duration_ms FROM sportsdata_usage GROUP BY sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END,api_path ORDER BY calls DESC,last_requested DESC LIMIT 100`),
+    pool.query(`SELECT id,sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END AS provider,api_path,status_code,succeeded,duration_ms,error_message,requested_at FROM sportsdata_usage ORDER BY requested_at DESC LIMIT 100`)
   ]);
   sendJson(response,200,{summary:summary.rows[0],byEndpoint:byEndpoint.rows,recent:recent.rows});return true;
 }
