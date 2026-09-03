@@ -29,16 +29,17 @@ async function fetchRss(url) {
 async function initRssNewsCache(pool) { await pool.query(`CREATE TABLE IF NOT EXISTS nfl_rss_cache(team VARCHAR(3) PRIMARY KEY,data JSONB NOT NULL,fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),expires_at TIMESTAMPTZ NOT NULL)`); }
 async function cachedTeamNews(pool, team) {
   const cached = await pool.query('SELECT data,expires_at FROM nfl_rss_cache WHERE team=$1', [team]), row = cached.rows[0];
-  if (row && new Date(row.expires_at).getTime() > Date.now()) return row.data;
+  if (row && Array.isArray(row.data) && row.data.length && new Date(row.expires_at).getTime() > Date.now()) return row.data;
   if (inFlightFeeds.has(team)) return inFlightFeeds.get(team);
   const refresh = (async () => {
     const latest = await pool.query('SELECT data,expires_at FROM nfl_rss_cache WHERE team=$1', [team]), latestRow = latest.rows[0];
-    if (latestRow && new Date(latestRow.expires_at).getTime() > Date.now()) return latestRow.data;
+    if (latestRow && Array.isArray(latestRow.data) && latestRow.data.length && new Date(latestRow.expires_at).getTime() > Date.now()) return latestRow.data;
     try {
       const data = await fetchRss(RSS_FEEDS[team]);
+      if (!data.length) throw new Error('RSS feed contained no usable articles.');
       await pool.query(`INSERT INTO nfl_rss_cache(team,data,expires_at) VALUES($1,$2,NOW()+($3 || ' seconds')::interval) ON CONFLICT(team) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [team, JSON.stringify(data), RSS_CACHE_TTL_SECONDS]);
       return data;
-    } catch (error) { if (latestRow || row) return (latestRow || row).data; throw error; }
+    } catch (error) { if ((latestRow && latestRow.data?.length) || (row && row.data?.length)) return (latestRow || row).data; throw error; }
   })();
   inFlightFeeds.set(team, refresh);
   try { return await refresh; } finally { inFlightFeeds.delete(team); }
