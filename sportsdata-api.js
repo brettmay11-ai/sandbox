@@ -48,7 +48,7 @@ function routeToSportsData(pathname) {
     if (parts[3] === 'standings') {
       const season = seasonValue(parts[4]);
       if (!season) return { error:'Choose a valid NFL season.' };
-      return { sport, apiPath:`scores/json/Standings/${season}`, ttlSeconds:60 * 60 };
+      return { sport, apiPath:`scores/json/Standings/${season}`, ttlSeconds:24 * 60 * 60 };
     }
     if (parts[3] === 'current-season') {
       return { sport, apiPath:'scores/json/CurrentSeason', ttlSeconds:24 * 60 * 60 };
@@ -56,15 +56,15 @@ function routeToSportsData(pathname) {
     if (parts[3] === 'player-season-stats-by-team') {
       const season = seasonValue(parts[4]), team = teamValue(parts[5], NFL_TEAMS);
       if (!season || !team) return { error:'Choose a valid NFL season and team.' };
-      return { sport, apiPath:`stats/json/PlayerSeasonStatsByTeam/${season}/${team}`, ttlSeconds:6 * 60 * 60 };
+      return { sport, apiPath:`stats/json/PlayerSeasonStatsByTeam/${season}/${team}`, ttlSeconds:24 * 60 * 60 };
     }
     if (parts[3] === 'news' && parts[4] === 'team') {
       const team = teamValue(parts[5], NFL_TEAMS);
       if (!team) return { error:'Choose a valid NFL team.' };
-      return { sport, apiPath:`news-rotoballer/json/RotoBallerPremiumNewsByTeam/${team}`, ttlSeconds:6 * 60 * 60 };
+      return { sport, apiPath:`news-rotoballer/json/RotoBallerPremiumNewsByTeam/${team}`, ttlSeconds:24 * 60 * 60 };
     }
     if (parts[3] === 'news') {
-      return { sport, apiPath:'news-rotoballer/json/RotoBallerPremiumNews', ttlSeconds:6 * 60 * 60 };
+      return { sport, apiPath:'news-rotoballer/json/RotoBallerPremiumNews', ttlSeconds:24 * 60 * 60 };
     }
   }
 
@@ -88,12 +88,12 @@ function routeToSportsData(pathname) {
     if (parts[3] === 'player-season-stats-by-team') {
       const season = seasonValue(parts[4]), team = teamValue(parts[5], CFB_TEAMS);
       if (!season || !team) return { error:'Choose a valid CFB season and team.' };
-      return { sport, apiPath:`stats/json/PlayerSeasonStatsByTeam/${season}/${team}`, ttlSeconds:6 * 60 * 60 };
+      return { sport, apiPath:`stats/json/PlayerSeasonStatsByTeam/${season}/${team}`, ttlSeconds:24 * 60 * 60 };
     }
     if (parts[3] === 'team-season-stats') {
       const season = seasonValue(parts[4]);
       if (!season) return { error:'Choose a valid CFB season.' };
-      return { sport, apiPath:`stats/json/TeamSeasonStats/${season}`, ttlSeconds:6 * 60 * 60 };
+      return { sport, apiPath:`stats/json/TeamSeasonStats/${season}`, ttlSeconds:24 * 60 * 60 };
     }
   }
 
