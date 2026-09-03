@@ -31,6 +31,7 @@ const CLASS_SEEDS = [
   { slug:'bolger', name:'Bolger Class', targetStudentCount:20 },
   { slug:'mccullough', name:'McCullough Class', targetStudentCount:19 }
 ];
+const CLEAN_STUDENT_PAGES = new Set(['dashboard','profile','teams','matchups','stats','players','travel','math','writing','cities']);
 
 function normalizeUsername(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 32); }
 function normalizeSlug(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
@@ -43,7 +44,7 @@ function safeText(value, max = 80) { return String(value || '').trim().replace(/
 function studentPagePath(page = 'dashboard') {
   const allowed = new Set(['home', 'dashboard', 'profile', 'teams', 'matchups', 'stats', 'players', 'travel', 'math', 'writing', 'cities', 'tcu']);
   const safePage = allowed.has(String(page || '').toLowerCase()) ? String(page).toLowerCase() : 'dashboard';
-  return safePage === 'home' ? '/index.html' : `/index.html?page=${safePage}`;
+  return safePage === 'home' ? '/' : `/${safePage}`;
 }
 function legacyClassRedirect(pathname) {
   const parts = String(pathname || '').split('/').filter(Boolean);
@@ -449,6 +450,7 @@ async function route(request, response) {
     if (pathname === '/admin' || pathname === '/admin.html') return !user ? redirect(response, '/login') : !isSuperAdmin(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'admin.html');
     if (pathname === '/teacher' || pathname === '/teacher.html') return !user ? redirect(response, '/login') : !isTeacherLike(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'teacher.html');
     if (pathname.startsWith('/class/')) return !user ? redirect(response, '/login') : redirect(response, legacyClassRedirect(pathname));
+    if (CLEAN_STUDENT_PAGES.has(pathname.slice(1))) return !user ? redirect(response, '/login') : user.role === 'super_admin' ? redirect(response, '/admin') : serveFile(response, 'index.html');
     if (pathname === '/' || pathname === '/index.html') return !user ? redirect(response, '/login') : user.role === 'super_admin' ? redirect(response, '/admin') : serveFile(response, 'index.html');
     return serveFile(response, pathname);
   } catch (error) {

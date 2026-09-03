@@ -128,7 +128,7 @@
               </div>
             </div>
           </div>
-          <a href="index.html?page=math" class="sd-cta inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white shrink-0"><iconify-icon icon="lucide:play"></iconify-icon>Play Math Game</a>
+          <a href="/math" class="sd-cta inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white shrink-0"><iconify-icon icon="lucide:play"></iconify-icon>Play Math Game</a>
         </div>
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
