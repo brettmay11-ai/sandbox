@@ -52,14 +52,16 @@ async function initMathGame(pool){
 
 function classScopeFor(user, alias = 'u') {
   return user.class_id
-    ? { clause:`AND ${alias}.class_id=$2`, params:[user.id, user.class_id] }
+    ? { clause:`AND ${alias}.class_id=$1`, params:[user.class_id] }
     : { clause:`AND ${alias}.id=$1`, params:[user.id] };
 }
 
 async function rankingData(pool,user){
-  const scope=classScopeFor(user);
-  const season=(await pool.query(`SELECT position,total FROM (SELECT p.user_id,RANK() OVER(ORDER BY p.total_xp DESC,p.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE ${scope.clause}) ranked WHERE user_id=$1`,scope.params)).rows[0]||null;
-  const weekly=(await pool.query(`SELECT position,total FROM (SELECT w.user_id,RANK() OVER(ORDER BY w.xp DESC,w.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE ${scope.clause}) ranked WHERE user_id=$1`,scope.params)).rows[0]||null;
+  const scope=user.class_id
+    ? { clause:'AND u.class_id=$1', params:[user.class_id,user.id], userParam:'$2' }
+    : { clause:'AND u.id=$1', params:[user.id], userParam:'$1' };
+  const season=(await pool.query(`SELECT position,total FROM (SELECT p.user_id,RANK() OVER(ORDER BY p.total_xp DESC,p.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE ${scope.clause}) ranked WHERE user_id=${scope.userParam}`,scope.params)).rows[0]||null;
+  const weekly=(await pool.query(`SELECT position,total FROM (SELECT w.user_id,RANK() OVER(ORDER BY w.xp DESC,w.correct_answers DESC) AS position,COUNT(*) OVER() AS total FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE ${scope.clause}) ranked WHERE user_id=${scope.userParam}`,scope.params)).rows[0]||null;
   return {season,weekly};
 }
 
