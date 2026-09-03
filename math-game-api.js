@@ -47,7 +47,7 @@ async function initMathGame(pool){
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS class_id BIGINT;ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_team VARCHAR(12);ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
     ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS total_xp INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS touchdowns INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS drive_yards INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS correct_answers INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS questions_answered INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS current_streak INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS best_streak INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
     ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS explanation TEXT NOT NULL DEFAULT '';ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS difficulty VARCHAR(24) NOT NULL DEFAULT 'Starter';ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 10;ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS yards INTEGER NOT NULL DEFAULT 10;ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS answered_at TIMESTAMPTZ;
-    ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS correct_answers INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS questions_answered INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS touchdowns INTEGER NOT NULL DEFAULT 0;`);
+    ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS week_start DATE NOT NULL DEFAULT CURRENT_DATE;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS correct_answers INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS questions_answered INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS touchdowns INTEGER NOT NULL DEFAULT 0;`);
 }
 
 function classScopeFor(user, alias = 'u') {
@@ -67,9 +67,14 @@ async function profileData(pool,user){
   await pool.query('INSERT INTO math_profiles(user_id) VALUES($1) ON CONFLICT DO NOTHING',[user.id]);
   const profile=(await pool.query('SELECT * FROM math_profiles WHERE user_id=$1',[user.id])).rows[0];
   const scope=classScopeFor(user);
-  const weekly=(await pool.query(`SELECT u.display_name,u.username,u.selected_team,w.xp,w.correct_answers,w.touchdowns FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE ${scope.clause} ORDER BY w.xp DESC,w.correct_answers DESC LIMIT 10`,scope.params)).rows;
-  const allTime=(await pool.query(`SELECT u.display_name,u.username,u.selected_team,p.total_xp,p.touchdowns,p.best_streak FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE ${scope.clause} ORDER BY p.total_xp DESC,p.correct_answers DESC LIMIT 10`,scope.params)).rows;
-  const level=levelFor(profile.total_xp),next=nextLevel(profile.total_xp),rankings=await rankingData(pool,user);
+  const [weeklyResult,allTimeResult,rankingsResult]=await Promise.allSettled([
+    pool.query(`SELECT u.display_name,u.username,u.selected_team,w.xp,w.correct_answers,w.touchdowns FROM math_weekly_stats w JOIN users u ON u.id=w.user_id WHERE w.week_start=date_trunc('week',CURRENT_DATE)::date AND u.role='student' AND u.active=TRUE ${scope.clause} ORDER BY w.xp DESC,w.correct_answers DESC LIMIT 10`,scope.params),
+    pool.query(`SELECT u.display_name,u.username,u.selected_team,p.total_xp,p.touchdowns,p.best_streak FROM math_profiles p JOIN users u ON u.id=p.user_id WHERE u.role='student' AND u.active=TRUE ${scope.clause} ORDER BY p.total_xp DESC,p.correct_answers DESC LIMIT 10`,scope.params),
+    rankingData(pool,user)
+  ]);
+  for(const result of [weeklyResult,allTimeResult,rankingsResult]) if(result.status==='rejected') console.error('Math leaderboard query failed.',result.reason);
+  const weekly=weeklyResult.status==='fulfilled'?weeklyResult.value.rows:[],allTime=allTimeResult.status==='fulfilled'?allTimeResult.value.rows:[],rankings=rankingsResult.status==='fulfilled'?rankingsResult.value:null;
+  const level=levelFor(Number(profile.total_xp||0)),next=nextLevel(Number(profile.total_xp||0));
   return {profile:{...profile,level:level.name,nextLevel:next?.name||null,xpToNext:next?next.xp-profile.total_xp:0},rankings,weekly,allTime};
 }
 
