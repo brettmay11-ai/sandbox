@@ -17,8 +17,12 @@ Add these variables to the NFL web service:
 - `TEACHER_DISPLAY_NAME`: optional teacher display name
 - `NODE_ENV`: `production`
 - `OPENAI_API_KEY`: enables teacher-only inside-cleat artwork generation
+- `ESPN_NFL_STANDINGS`: set to `true` to pilot ESPN standings behind the backend cache
+- `ESPN_NFL_SCHEDULE`: set to `true` to pilot ESPN schedules behind the backend cache
 
 Do not share the teacher PIN with students.
+
+ESPN flags are off by default. Enable them one at a time after deployment and monitor the Super Admin API Usage panel. ESPN is an undocumented public API, so the app keeps SportsData as an automatic fallback and serves the last cached result when an upstream request fails.
 
 ## 3. Deploy
 

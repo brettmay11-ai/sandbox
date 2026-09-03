@@ -1,7 +1,10 @@
 const SPORTS_DATA_KEY = process.env.SPORTSDATA_IO_KEY || process.env.SPORTSDATA_API_KEY || 'ec29dd369c2544a980efca06d3e5b4ad';
 const BASE_URL = 'https://api.sportsdata.io/v3';
+const ESPN_CORE_BASE_URL = 'https://site.api.espn.com/apis/v2';
 const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
 const SPORTS_DATA_REFRESH_DAYS = new Set(['Monday','Tuesday','Friday']);
+const ESPN_STANDINGS_ENABLED = process.env.ESPN_NFL_STANDINGS === 'true';
+const ESPN_SCHEDULE_ENABLED = process.env.ESPN_NFL_SCHEDULE === 'true';
 
 async function initSportsDataCache(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
@@ -43,12 +46,12 @@ function routeToSportsData(pathname) {
     if (parts[3] === 'schedule') {
       const season = seasonValue(parts[4]);
       if (!season) return { error:'Choose a valid NFL season.' };
-      return { sport, apiPath:`scores/json/Schedules/${season}`, ttlSeconds:24 * 60 * 60 };
+      return { sport, apiPath:`scores/json/Schedules/${season}`, ttlSeconds:24 * 60 * 60, espnEnabled:ESPN_SCHEDULE_ENABLED };
     }
     if (parts[3] === 'standings') {
       const season = seasonValue(parts[4]);
       if (!season) return { error:'Choose a valid NFL season.' };
-      return { sport, apiPath:`scores/json/Standings/${season}`, ttlSeconds:24 * 60 * 60 };
+      return { sport, apiPath:`scores/json/Standings/${season}`, ttlSeconds:24 * 60 * 60, espnEnabled:ESPN_STANDINGS_ENABLED };
     }
     if (parts[3] === 'current-season') {
       return { sport, apiPath:'scores/json/CurrentSeason', ttlSeconds:24 * 60 * 60 };
@@ -89,6 +92,57 @@ async function fetchSportsData(sport, apiPath) {
   }
 }
 
+function espnStat(entry, ...names) {
+  const stat = (entry?.stats || []).find(item => names.includes(item.name) || names.includes(item.abbreviation));
+  return stat?.value ?? stat?.displayValue ?? 0;
+}
+
+function normalizeEspnStandings(payload) {
+  const rows = [];
+  const walk = (group, conference, division) => {
+    const name = String(group?.name || group?.abbreviation || division || conference || 'NFL');
+    const split = name.match(/(AFC|NFC)\s+(East|North|South|West)/i);
+    const resolvedConference = split ? split[1].toUpperCase() : (/^(AFC|NFC)$/i.test(name) ? name.toUpperCase() : conference || 'NFL');
+    const resolvedDivision = split ? `${resolvedConference} ${split[2][0].toUpperCase()}${split[2].slice(1).toLowerCase()}` : division || name;
+    (group?.standings?.entries || []).forEach(entry => {
+      const team = entry.team || {}, abbr = String(team.abbreviation || '').toUpperCase();
+      if (!abbr) return;
+      const wins = Number(espnStat(entry, 'wins', 'W')) || 0, losses = Number(espnStat(entry, 'losses', 'L')) || 0, ties = Number(espnStat(entry, 'ties', 'T')) || 0;
+      rows.push({ Key:abbr, Team:abbr, Name:team.displayName || team.name || abbr, Wins:wins, Losses:losses, Ties:ties,
+        WinPercentage:Number(espnStat(entry, 'winPercent', 'winningPercentage')) || ((wins + ties * .5) / Math.max(1, wins + losses + ties)),
+        PointsFor:Number(espnStat(entry, 'pointsFor', 'PF')) || 0, PointsAgainst:Number(espnStat(entry, 'pointsAgainst', 'PA')) || 0,
+        DivisionWins:Number(espnStat(entry, 'divisionWins')) || 0, DivisionLosses:Number(espnStat(entry, 'divisionLosses')) || 0, DivisionTies:Number(espnStat(entry, 'divisionTies')) || 0,
+        Conference:resolvedConference, Division:resolvedDivision, CurrentStreak:espnStat(entry, 'streak') || '—' });
+    });
+    (group?.children || []).forEach(child => walk(child, resolvedConference, name));
+  };
+  (payload?.children || []).forEach(group => walk(group, null, null));
+  return rows;
+}
+
+function normalizeEspnSchedule(payload, season) {
+  return (payload?.events || []).map(event => {
+    const competitors = event.competitions?.[0]?.competitors || [], away = competitors.find(item => item.homeAway === 'away')?.team || {}, home = competitors.find(item => item.homeAway === 'home')?.team || {};
+    if (!away.abbreviation || !home.abbreviation) return null;
+    return { GameKey:String(event.id), Week:Number(event.week?.number || 0), Season:season, DateTimeUTC:event.date, Status:event.status?.type?.name,
+      AwayTeam:String(away.abbreviation).toUpperCase(), HomeTeam:String(home.abbreviation).toUpperCase(), AwayTeamName:away.displayName, HomeTeamName:home.displayName,
+      Stadium:event.competitions?.[0]?.venue?.fullName || '' };
+  }).filter(Boolean);
+}
+
+async function fetchEspn(route) {
+  const season = Number(route.apiPath.match(/(?:Schedules|Standings)\/(\d{4})/)?.[1]);
+  const schedule = route.apiPath.includes('Schedules');
+  const url = schedule ? `${ESPN_CORE_BASE_URL}/sports/football/leagues/nfl/events?limit=1000&dates=${season}` : `${ESPN_CORE_BASE_URL}/sports/football/nfl/standings`;
+  const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(url, { signal:controller.signal, headers:{Accept:'application/json'} });
+    if (!response.ok) { const error = new Error(`ESPN returned ${response.status}`); error.statusCode = response.status; throw error; }
+    const payload = await response.json();
+    return { data:schedule ? normalizeEspnSchedule(payload, season) : normalizeEspnStandings(payload), statusCode:response.status, provider:'espn', externalPath:url };
+  } finally { clearTimeout(timeout); }
+}
+
 async function cachedSportsData(pool, route) {
   const cacheKey = `sportsdata:${route.sport}:${route.apiPath}`;
   const cached = await pool.query('SELECT data,fetched_at,expires_at FROM sportsdata_cache WHERE cache_key=$1', [cacheKey]);
@@ -98,9 +152,14 @@ async function cachedSportsData(pool, route) {
   const requestedAt=Date.now();
   let externalCallCompleted=false;
   try {
-    const result = await fetchSportsData(route.sport, route.apiPath);
+    let result;
+    if (route.espnEnabled) {
+      try { result = await fetchEspn(route); }
+      catch (error) { console.warn(`ESPN ${route.apiPath} request failed; using SportsData fallback.`, error); }
+    }
+    if (!result) result = await fetchSportsData(route.sport, route.apiPath);
     externalCallCompleted=true;
-    await recordSportsDataCall(pool,route,{statusCode:result.statusCode,succeeded:true,durationMs:Date.now()-requestedAt});
+    await recordSportsDataCall(pool,route,{statusCode:result.statusCode,succeeded:true,durationMs:Date.now()-requestedAt,provider:result.provider,externalPath:result.externalPath});
     await pool.query(
       `INSERT INTO sportsdata_cache(cache_key,data,expires_at)
        VALUES($1,$2,NOW()+($3 || ' seconds')::interval)
@@ -131,8 +190,9 @@ function scheduledRefreshNeeded(row) {
 
 async function recordSportsDataCall(pool,route,details) {
   try {
+    const apiPath = details.provider === 'espn' ? `espn:${details.externalPath}` : route.apiPath;
     await pool.query(`INSERT INTO sportsdata_usage(sport,api_path,cache_key,status_code,succeeded,duration_ms,error_message) VALUES($1,$2,$3,$4,$5,$6,$7)`,[
-      route.sport,route.apiPath,`sportsdata:${route.sport}:${route.apiPath}`,details.statusCode||null,Boolean(details.succeeded),details.durationMs||null,details.errorMessage||null
+      route.sport,apiPath,`sportsdata:${route.sport}:${route.apiPath}`,details.statusCode||null,Boolean(details.succeeded),details.durationMs||null,details.errorMessage||null
     ]);
   } catch(error) {
     console.warn('SportsData usage log write failed.',error);
