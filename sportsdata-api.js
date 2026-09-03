@@ -10,6 +10,17 @@ async function initSportsDataCache(pool) {
     fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_usage(
+    id BIGSERIAL PRIMARY KEY,
+    sport VARCHAR(12) NOT NULL,
+    api_path TEXT NOT NULL,
+    cache_key TEXT NOT NULL,
+    status_code INTEGER,
+    succeeded BOOLEAN NOT NULL DEFAULT FALSE,
+    duration_ms INTEGER,
+    error_message TEXT,
+    requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );CREATE INDEX IF NOT EXISTS sportsdata_usage_requested_idx ON sportsdata_usage(requested_at DESC);CREATE INDEX IF NOT EXISTS sportsdata_usage_endpoint_idx ON sportsdata_usage(sport,api_path,requested_at DESC)`);
 }
 
 function seasonValue(value) {
@@ -96,8 +107,12 @@ async function fetchSportsData(sport, apiPath) {
   try {
     const separator = apiPath.includes('?') ? '&' : '?';
     const response = await fetch(`${BASE_URL}/${sport}/${apiPath}${separator}key=${SPORTS_DATA_KEY}`, { signal:controller.signal });
-    if (!response.ok) throw new Error(`SportsData returned ${response.status}`);
-    return await response.json();
+    if (!response.ok) {
+      const error = new Error(`SportsData returned ${response.status}`);
+      error.statusCode = response.status;
+      throw error;
+    }
+    return { data:await response.json(), statusCode:response.status };
   } finally {
     clearTimeout(timeout);
   }
@@ -109,21 +124,36 @@ async function cachedSportsData(pool, route) {
   const row = cached.rows[0];
   if (row && new Date(row.expires_at).getTime() > Date.now()) return row.data;
 
+  const requestedAt=Date.now();
+  let externalCallCompleted=false;
   try {
-    const data = await fetchSportsData(route.sport, route.apiPath);
+    const result = await fetchSportsData(route.sport, route.apiPath);
+    externalCallCompleted=true;
+    await recordSportsDataCall(pool,route,{statusCode:result.statusCode,succeeded:true,durationMs:Date.now()-requestedAt});
     await pool.query(
       `INSERT INTO sportsdata_cache(cache_key,data,expires_at)
        VALUES($1,$2,NOW()+($3 || ' seconds')::interval)
        ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`,
-      [cacheKey, JSON.stringify(data), route.ttlSeconds]
+      [cacheKey, JSON.stringify(result.data), route.ttlSeconds]
     );
-    return data;
+    return result.data;
   } catch (error) {
+    if(!externalCallCompleted) await recordSportsDataCall(pool,route,{statusCode:error.statusCode||null,succeeded:false,durationMs:Date.now()-requestedAt,errorMessage:error.message});
     if (row) {
       console.warn(`Serving stale SportsData cache for ${cacheKey}.`, error);
       return row.data;
     }
     throw error;
+  }
+}
+
+async function recordSportsDataCall(pool,route,details) {
+  try {
+    await pool.query(`INSERT INTO sportsdata_usage(sport,api_path,cache_key,status_code,succeeded,duration_ms,error_message) VALUES($1,$2,$3,$4,$5,$6,$7)`,[
+      route.sport,route.apiPath,`sportsdata:${route.sport}:${route.apiPath}`,details.statusCode||null,Boolean(details.succeeded),details.durationMs||null,details.errorMessage||null
+    ]);
+  } catch(error) {
+    console.warn('SportsData usage log write failed.',error);
   }
 }
 

@@ -224,6 +224,23 @@ async function handleAdminRefreshData(request, response, pathname) {
   return true;
 }
 
+async function handleAdminSportsDataUsage(request,response,pathname) {
+  if(pathname!=='/api/admin/sportsdata-usage')return false;
+  const user=await getSessionUser(request);
+  if(!user){sendJson(response,401,{error:'Please sign in.'});return true;}
+  if(user.role!=='super_admin'){sendJson(response,403,{error:'Super admin access required.'});return true;}
+  if(request.method!=='GET'){sendJson(response,405,{error:'Method not allowed.'});return true;}
+  await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_usage(
+    id BIGSERIAL PRIMARY KEY,sport VARCHAR(12) NOT NULL,api_path TEXT NOT NULL,cache_key TEXT NOT NULL,status_code INTEGER,succeeded BOOLEAN NOT NULL DEFAULT FALSE,duration_ms INTEGER,error_message TEXT,requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  const [summary,byEndpoint,recent]=await Promise.all([
+    pool.query(`SELECT COUNT(*)::int AS total,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS last_24_hours,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '7 days')::int AS last_7_days,COUNT(*) FILTER(WHERE NOT succeeded)::int AS failures FROM sportsdata_usage`),
+    pool.query(`SELECT sport,api_path,COUNT(*)::int AS calls,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS calls_24h,MAX(requested_at) AS last_requested,ROUND(AVG(duration_ms))::int AS average_duration_ms FROM sportsdata_usage GROUP BY sport,api_path ORDER BY calls DESC,last_requested DESC LIMIT 100`),
+    pool.query(`SELECT id,sport,api_path,status_code,succeeded,duration_ms,error_message,requested_at FROM sportsdata_usage ORDER BY requested_at DESC LIMIT 100`)
+  ]);
+  sendJson(response,200,{summary:summary.rows[0],byEndpoint:byEndpoint.rows,recent:recent.rows});return true;
+}
+
 const originalCreateServer = http.createServer.bind(http);
 http.createServer = function createServerWithTeacherDashboard(listener) {
   return originalCreateServer(async (request, response) => {
@@ -231,6 +248,7 @@ http.createServer = function createServerWithTeacherDashboard(listener) {
       const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
       const pathname = decodeURIComponent(url.pathname);
       if (await handleAdminRefreshData(request, response, pathname)) return;
+      if (await handleAdminSportsDataUsage(request,response,pathname)) return;
       if ((pathname === '/teacher' || pathname === '/teacher.html') && request.method === 'GET') {
         const user = await getSessionUser(request);
         if (!user) return redirect(response, '/login');
