@@ -223,6 +223,7 @@ async function handleAdminRefreshData(request, response, pathname) {
   });
   return true;
 }
+const CLEAN_TEACHER_PAGES = new Set(['dashboard','students','progress','featured','coach','writing','cleats']);
 
 async function handleAdminSportsDataUsage(request,response,pathname) {
   if(pathname!=='/api/admin/sportsdata-usage')return false;
@@ -249,7 +250,7 @@ http.createServer = function createServerWithTeacherDashboard(listener) {
       const pathname = decodeURIComponent(url.pathname);
       if (await handleAdminRefreshData(request, response, pathname)) return;
       if (await handleAdminSportsDataUsage(request,response,pathname)) return;
-      if ((pathname === '/teacher' || pathname === '/teacher.html') && request.method === 'GET') {
+      if ((pathname === '/teacher' || pathname === '/teacher.html' || (pathname.startsWith('/teacher/') && CLEAN_TEACHER_PAGES.has(pathname.slice('/teacher/'.length)))) && request.method === 'GET') {
         const user = await getSessionUser(request);
         if (!user) return redirect(response, '/login');
         if (user.role !== 'teacher' && user.role !== 'super_admin') return redirect(response, '/');
