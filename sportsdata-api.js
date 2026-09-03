@@ -1,6 +1,8 @@
 const SPORTS_DATA_KEY = process.env.SPORTSDATA_IO_KEY || process.env.SPORTSDATA_API_KEY || 'ec29dd369c2544a980efca06d3e5b4ad';
 const BASE_URL = 'https://api.sportsdata.io/v3';
 const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
+const NEWS_CACHE_TTL_SECONDS = 24 * 60 * 60;
+const inFlightRequests = new Map();
 
 async function initSportsDataCache(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
@@ -66,10 +68,11 @@ function routeToSportsData(pathname) {
     if (parts[3] === 'news' && parts[4] === 'team') {
       const team = teamValue(parts[5], NFL_TEAMS);
       if (!team) return { error:'Choose a valid NFL team.' };
-      return { sport, apiPath:`news-rotoballer/json/RotoBallerPremiumNewsByTeam/${team}`, ttlSeconds:24 * 60 * 60 };
+      // Keep legacy callers on the single league-wide news cache.
+      return { sport, apiPath:'news-rotoballer/json/RotoBallerPremiumNews', ttlSeconds:NEWS_CACHE_TTL_SECONDS };
     }
     if (parts[3] === 'news') {
-      return { sport, apiPath:'news-rotoballer/json/RotoBallerPremiumNews', ttlSeconds:24 * 60 * 60 };
+      return { sport, apiPath:'news-rotoballer/json/RotoBallerPremiumNews', ttlSeconds:NEWS_CACHE_TTL_SECONDS };
     }
   }
 
@@ -100,6 +103,23 @@ async function cachedSportsData(pool, route) {
   const row = cached.rows[0];
   if (row && new Date(row.expires_at).getTime() > Date.now()) return row.data;
 
+  // Share one refresh promise across simultaneous page loads after expiry.
+  if (inFlightRequests.has(cacheKey)) return inFlightRequests.get(cacheKey);
+  const refresh = refreshSportsDataCache(pool, route, cacheKey, row);
+  inFlightRequests.set(cacheKey, refresh);
+  try {
+    return await refresh;
+  } finally {
+    inFlightRequests.delete(cacheKey);
+  }
+}
+
+async function refreshSportsDataCache(pool, route, cacheKey, staleRow) {
+  // Re-check after another request may have refreshed the cache before this one acquired the guard.
+  const latest = await pool.query('SELECT data,expires_at FROM sportsdata_cache WHERE cache_key=$1', [cacheKey]);
+  const latestRow = latest.rows[0];
+  if (latestRow && new Date(latestRow.expires_at).getTime() > Date.now()) return latestRow.data;
+
   const requestedAt=Date.now();
   let externalCallCompleted=false;
   try {
@@ -115,9 +135,9 @@ async function cachedSportsData(pool, route) {
     return result.data;
   } catch (error) {
     if(!externalCallCompleted) await recordSportsDataCall(pool,route,{statusCode:error.statusCode||null,succeeded:false,durationMs:Date.now()-requestedAt,errorMessage:error.message});
-    if (row) {
+    if (staleRow || latestRow) {
       console.warn(`Serving stale SportsData cache for ${cacheKey}.`, error);
-      return row.data;
+      return (latestRow || staleRow).data;
     }
     throw error;
   }
