@@ -48,7 +48,7 @@ async function handleRssNews({ pool, req, res, path, user, sendJson }) {
   if (!path.startsWith('/api/nfl-news/')) return false;
   if (!user) return sendJson(res, 401, { error:'Please sign in.' }), true;
   if (req.method !== 'GET') return sendJson(res, 405, { error:'Method not allowed.' }), true;
-  const parts = path.split('/').filter(Boolean), team = parts[1] === 'team' ? validTeam(parts[2]) : null;
+  const parts = path.split('/').filter(Boolean), team = parts[2] === 'team' ? validTeam(parts[3]) : null;
   if (!team) return sendJson(res, 404, { error:'Choose a valid NFL team.' }), true;
   try { return sendJson(res, 200, await cachedTeamNews(pool, team)), true; }
   catch (error) { console.error(`NFL RSS feed failed for ${team}.`, error); return sendJson(res, 502, { error:'Team news is temporarily unavailable.' }), true; }
