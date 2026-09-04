@@ -163,8 +163,9 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
       FROM writing_entries w
       JOIN users u ON u.id=w.user_id
       WHERE w.status IN('submitted','revision','complete','reviewed')
+        AND u.role='student' AND u.class_id=$1
       ORDER BY CASE WHEN w.status='submitted' THEN 0 WHEN w.status='revision' THEN 1 ELSE 2 END,w.submitted_at DESC,w.updated_at DESC
-    `)).rows;
+    `, [user.class_id])).rows;
     sendJson(res, 200, { submissions:rows });
     return true;
   }
@@ -180,8 +181,8 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
       return true;
     }
     const result = await pool.query(
-      "UPDATE writing_entries SET teacher_feedback=$1,status=$2,reviewed_at=NOW(),updated_at=NOW() WHERE id=$3 AND status IN('submitted','revision','complete','reviewed') RETURNING id",
-      [feedback, status, match[1]]
+      "UPDATE writing_entries SET teacher_feedback=$1,status=$2,reviewed_at=NOW(),updated_at=NOW() WHERE id=$3 AND status IN('submitted','revision','complete','reviewed') AND user_id IN (SELECT id FROM users WHERE role='student' AND class_id=$4) RETURNING id",
+      [feedback, status, match[1], user.class_id]
     );
     if (!result.rowCount) { sendJson(res, 404, { error:'Submission not found.' }); return true; }
     sendJson(res, 200, { ok:true });
