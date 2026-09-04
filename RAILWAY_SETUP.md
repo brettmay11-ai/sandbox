@@ -20,6 +20,7 @@ Add these variables to the NFL web service:
 
 Do not share the teacher PIN with students.
 
+
 ## 3. Deploy
 
 Redeploy the NFL web service. On startup, the app creates its database tables, creates the first teacher account if it does not already exist, and prepares the math game leaderboard.
@@ -33,9 +34,8 @@ The app stores only:
 - Teacher-created username and display name
 - Securely hashed PIN
 - Selected NFL team
-- Pages viewed and time spent
 - Pages marked complete
 - Math game XP, progress, answers, and leaderboard results
-- Last login/activity time
+- Last login time
 
 No student email addresses are collected.

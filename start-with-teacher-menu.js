@@ -98,9 +98,32 @@ function installCleatProductionNotice(){
   notice.innerHTML='<div class="flex items-start gap-3"><iconify-icon icon="lucide:construction" class="text-2xl text-amber-300"></iconify-icon><div><strong class="block text-sm uppercase tracking-[.18em] text-amber-200">Still in production</strong><p class="mt-1 text-sm text-amber-100/85">Cleat Studio is not live yet. This page is for internal previewing and testing only.</p></div></div>';
   page.prepend(notice);
 }
+function removeLegacyProgressTrackingColumns(){
+  document.querySelectorAll('table').forEach(table=>{
+    const headers=[...table.querySelectorAll('thead th')];
+    const indexes=headers
+      .map((header,index)=>({index,label:(header.textContent||'').trim().toLowerCase()}))
+      .filter(item=>item.label==='views'||item.label==='time')
+      .map(item=>item.index)
+      .sort((a,b)=>b-a);
+    if(!indexes.length)return;
+    table.querySelectorAll('tr').forEach(row=>{
+      const cells=[...row.children];
+      indexes.forEach(index=>cells[index]?.remove());
+    });
+  });
+}
+function watchProgressTable(){
+  removeLegacyProgressTrackingColumns();
+  const main=document.querySelector('main');
+  if(!main)return;
+  const observer=new MutationObserver(removeLegacyProgressTrackingColumns);
+  observer.observe(main,{childList:true,subtree:true});
+}
 window.addEventListener('DOMContentLoaded',()=>{
   loadTeacherDashboardClassName();
   installCleatProductionNotice();
+  watchProgressTable();
 });
 </script>`;
 }
@@ -167,14 +190,14 @@ function transformAdminHtml(html) {
 function serveTeacherPortal(response) {
   const file = path.join(__dirname, 'teacher.html');
   const html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   response.end(html);
 }
 
 function serveAdminPortal(response) {
   const file = path.join(__dirname, 'admin.html');
   const html = transformAdminHtml(fs.readFileSync(file, 'utf8'));
-  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   response.end(html);
 }
 
@@ -200,6 +223,24 @@ async function handleAdminRefreshData(request, response, pathname) {
   });
   return true;
 }
+const CLEAN_TEACHER_PAGES = new Set(['dashboard','students','progress','featured','coach','writing','cleats']);
+
+async function handleAdminSportsDataUsage(request,response,pathname) {
+  if(pathname!=='/api/admin/sportsdata-usage')return false;
+  const user=await getSessionUser(request);
+  if(!user){sendJson(response,401,{error:'Please sign in.'});return true;}
+  if(user.role!=='super_admin'){sendJson(response,403,{error:'Super admin access required.'});return true;}
+  if(request.method!=='GET'){sendJson(response,405,{error:'Method not allowed.'});return true;}
+  await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_usage(
+    id BIGSERIAL PRIMARY KEY,sport VARCHAR(12) NOT NULL,api_path TEXT NOT NULL,provider VARCHAR(20) NOT NULL DEFAULT 'sportsdata',cache_key TEXT NOT NULL,status_code INTEGER,succeeded BOOLEAN NOT NULL DEFAULT FALSE,duration_ms INTEGER,error_message TEXT,requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );ALTER TABLE sportsdata_usage ADD COLUMN IF NOT EXISTS provider VARCHAR(20) NOT NULL DEFAULT 'sportsdata'`);
+  const [summary,byEndpoint,recent]=await Promise.all([
+    pool.query(`SELECT COUNT(*)::int AS total,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS last_24_hours,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '7 days')::int AS last_7_days,COUNT(*) FILTER(WHERE NOT succeeded)::int AS failures FROM sportsdata_usage`),
+    pool.query(`SELECT sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END AS provider,api_path,COUNT(*)::int AS calls,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS calls_24h,MAX(requested_at) AS last_requested,ROUND(AVG(duration_ms))::int AS average_duration_ms FROM sportsdata_usage GROUP BY sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END,api_path ORDER BY calls DESC,last_requested DESC LIMIT 100`),
+    pool.query(`SELECT id,sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END AS provider,api_path,status_code,succeeded,duration_ms,error_message,requested_at FROM sportsdata_usage ORDER BY requested_at DESC LIMIT 100`)
+  ]);
+  sendJson(response,200,{summary:summary.rows[0],byEndpoint:byEndpoint.rows,recent:recent.rows});return true;
+}
 
 const originalCreateServer = http.createServer.bind(http);
 http.createServer = function createServerWithTeacherDashboard(listener) {
@@ -208,7 +249,8 @@ http.createServer = function createServerWithTeacherDashboard(listener) {
       const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
       const pathname = decodeURIComponent(url.pathname);
       if (await handleAdminRefreshData(request, response, pathname)) return;
-      if ((pathname === '/teacher' || pathname === '/teacher.html') && request.method === 'GET') {
+      if (await handleAdminSportsDataUsage(request,response,pathname)) return;
+      if ((pathname === '/teacher' || pathname === '/teacher.html' || (pathname.startsWith('/teacher/') && CLEAN_TEACHER_PAGES.has(pathname.slice('/teacher/'.length)))) && request.method === 'GET') {
         const user = await getSessionUser(request);
         if (!user) return redirect(response, '/login');
         if (user.role !== 'teacher' && user.role !== 'super_admin') return redirect(response, '/');

@@ -24,6 +24,7 @@
       <button class="tab btn btn-ghost" data-tab="classes">Classes</button>
       <button class="tab btn btn-ghost" data-tab="teachers">Teachers</button>
       <button class="tab btn btn-ghost" data-tab="students">Students</button>
+      <button class="tab btn btn-ghost" data-tab="api-usage">API Usage</button>
     </nav>
     <div class="flex items-center gap-2 account-actions">
       <a href="/teacher" class="btn btn-ghost">Teacher View</a>
@@ -55,6 +56,15 @@
       <div class="flex items-center justify-between gap-4 mb-5"><h2 class="text-3xl">Class Snapshot</h2><span class="badge">Seeded Classes</span></div>
       <div id="class-cards" class="grid md:grid-cols-2 xl:grid-cols-4 gap-4"></div>
     </div>
+  </section>
+
+  <section id="api-usage-panel" class="panel panel-hidden space-y-8">
+    <div class="glass rounded-[28px] p-6">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-5"><div><p class="text-xs uppercase tracking-[.2em] text-blue-300 font-black">Outbound requests only</p><h2 class="text-3xl mt-1">Sports API Usage</h2><p class="text-sm text-white/45 mt-2">Cache hits do not count here. Each row shows which provider received the request.</p></div><button id="usage-refresh" class="btn btn-ghost"><iconify-icon icon="lucide:refresh-cw"></iconify-icon>Refresh Log</button></div>
+      <div id="usage-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+    </div>
+    <div class="glass rounded-[28px] p-6 overflow-x-auto"><h2 class="text-3xl mb-5">Calls by Endpoint</h2><table class="w-full min-w-[820px]"><thead><tr><th>Provider</th><th>Sport</th><th>Endpoint</th><th>Total Calls</th><th>Last 24 Hours</th><th>Avg. Duration</th><th>Last Requested</th></tr></thead><tbody id="usage-endpoints"></tbody></table></div>
+    <div class="glass rounded-[28px] p-6 overflow-x-auto"><h2 class="text-3xl mb-5">Recent Outbound Calls</h2><table class="w-full min-w-[980px]"><thead><tr><th>Time</th><th>Provider</th><th>Endpoint</th><th>Status</th><th>Result</th><th>Duration</th><th>Error</th></tr></thead><tbody id="usage-recent"></tbody></table></div>
   </section>
 
   <section id="classes-panel" class="panel panel-hidden space-y-8">
@@ -115,7 +125,7 @@
 </main>
 
 <script>
-let state={user:null,classes:[],teachers:[],students:[]};
+let state={user:null,classes:[],teachers:[],students:[],usage:null};
 const $=id=>document.getElementById(id);
 const activeClasses=()=>state.classes.filter(c=>c.active);
 function escapeHtml(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
@@ -123,6 +133,15 @@ function toast(message,isError=false){const node=$('toast');node.textContent=mes
 async function api(url,options={}){const response=await fetch(url,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});let data={};try{data=await response.json()}catch(error){}if(response.status===401){window.location.href='/login';throw new Error('Please sign in.')}if(!response.ok)throw new Error(data.error||'Request failed.');return data}
 function setTab(name){document.querySelectorAll('.tab').forEach(btn=>btn.setAttribute('aria-selected',String(btn.dataset.tab===name)));document.querySelectorAll('.panel').forEach(panel=>panel.classList.add('panel-hidden'));$(name+'-panel').classList.remove('panel-hidden')}
 function formatDate(value){return value?new Date(value).toLocaleDateString(): '—'}
+function formatDateTime(value){return value?new Date(value).toLocaleString(): '—'}
+function renderUsage(data){
+  state.usage=data;const summary=data.summary||{};
+  $('usage-summary').innerHTML=[['Total Calls',summary.total||0,'text-blue-300'],['Last 24 Hours',summary.last_24_hours||0,'text-yellow-300'],['Last 7 Days',summary.last_7_days||0,'text-green-300'],['Failures',summary.failures||0,'text-red-300']].map(([label,value,color])=>`<article class="rounded-2xl border border-white/10 bg-white/[.035] p-4"><p class="text-xs text-white/45">${label}</p><strong class="block text-3xl mt-2 ${color}">${Number(value).toLocaleString()}</strong></article>`).join('');
+  const providerLabel=row=>row.provider==='espn'?'ESPN':'SportsData.io';
+  $('usage-endpoints').innerHTML=(data.byEndpoint||[]).map(row=>`<tr><td><span class="badge">${providerLabel(row)}</span></td><td>${escapeHtml(row.sport)}</td><td class="font-mono text-xs">${escapeHtml(row.api_path)}</td><td>${row.calls}</td><td>${row.calls_24h}</td><td>${row.average_duration_ms||'—'} ms</td><td>${formatDateTime(row.last_requested)}</td></tr>`).join('')||'<tr><td colspan="7" class="text-white/45">No outbound API calls have been recorded yet.</td></tr>';
+  $('usage-recent').innerHTML=(data.recent||[]).map(row=>`<tr><td>${formatDateTime(row.requested_at)}</td><td><span class="badge">${providerLabel(row)}</span></td><td class="font-mono text-xs">${escapeHtml(row.api_path)}</td><td>${row.status_code||'—'}</td><td><span class="badge">${row.succeeded?'Success':'Failed'}</span></td><td>${row.duration_ms||'—'} ms</td><td class="text-red-200/70 text-xs">${escapeHtml(row.error_message||'—')}</td></tr>`).join('')||'<tr><td colspan="7" class="text-white/45">No outbound API calls have been recorded yet.</td></tr>';
+}
+async function loadUsage(){try{renderUsage(await api('/api/admin/sportsdata-usage'))}catch(error){toast(error.message,true)}}
 function classOptions(selected=''){return activeClasses().map(c=>`<option value="${c.id}" ${String(c.id)===String(selected)?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
 function renderClasses(){
   $('metric-classes').textContent=activeClasses().length;
@@ -150,7 +169,8 @@ async function loadAll(){
   $('metric-admins').textContent='1';
   renderClasses();renderTeachers();renderStudents();
 }
-document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{setTab(btn.dataset.tab);if(btn.dataset.tab==='api-usage')loadUsage()}));
+$('usage-refresh').addEventListener('click',loadUsage);
 $('filter-class').addEventListener('change',renderStudents);
 $('logout').addEventListener('click',async()=>{await api('/api/logout',{method:'POST'});window.location.href='/login'});
 $('class-form').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/admin/classes',{method:'POST',body:JSON.stringify({name:$('class-name').value,schoolYear:$('class-year').value,targetStudentCount:Number($('class-target').value)||0})});$('class-name').value='';toast('Class created.');await loadAll();setTab('classes')}catch(error){toast(error.message,true)}});

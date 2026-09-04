@@ -31,6 +31,7 @@ const CLASS_SEEDS = [
   { slug:'bolger', name:'Bolger Class', targetStudentCount:20 },
   { slug:'mccullough', name:'McCullough Class', targetStudentCount:19 }
 ];
+const CLEAN_STUDENT_PAGES = new Set(['dashboard','profile','teams','matchups','stats','players','travel','math','writing','cities']);
 
 function normalizeUsername(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 32); }
 function normalizeSlug(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
@@ -40,7 +41,16 @@ function tokenHash(token) { return crypto.createHash('sha256').update(token).dig
 function isTeacherLike(user) { return user && (user.role === 'teacher' || user.role === 'super_admin'); }
 function isSuperAdmin(user) { return user && user.role === 'super_admin'; }
 function safeText(value, max = 80) { return String(value || '').trim().replace(/\s+/g, ' ').slice(0, max); }
-function redirectPathFor(user) { if (!user) return '/login'; if (user.role === 'super_admin') return '/admin'; if (user.role === 'teacher') return '/teacher'; return user.class_id ? `/class/${user.class_id}/dashboard` : '/'; }
+function studentPagePath(page = 'dashboard') {
+  const allowed = new Set(['home', 'dashboard', 'profile', 'teams', 'matchups', 'stats', 'players', 'travel', 'math', 'writing', 'cities', 'tcu']);
+  const safePage = allowed.has(String(page || '').toLowerCase()) ? String(page).toLowerCase() : 'dashboard';
+  return safePage === 'home' ? '/' : `/${safePage}`;
+}
+function legacyClassRedirect(pathname) {
+  const parts = String(pathname || '').split('/').filter(Boolean);
+  return studentPagePath(parts[2] || 'dashboard');
+}
+function redirectPathFor(user) { if (!user) return '/login'; if (user.role === 'super_admin') return '/admin'; if (user.role === 'teacher') return '/teacher'; return studentPagePath('dashboard'); }
 
 function hashPin(pin, salt = crypto.randomBytes(16).toString('hex')) {
   return new Promise((resolve, reject) => crypto.scrypt(String(pin), salt, 64, (error, key) => error ? reject(error) : resolve(`${salt}:${key.toString('hex')}`)));
@@ -137,7 +147,7 @@ async function initDatabase() {
     console.warn('Set SUPER_ADMIN_USERNAME and a 4-8 digit SUPER_ADMIN_PIN, or use TEACHER_USERNAME/TEACHER_PIN as the bootstrap super admin.');
   }
 
-  if (process.env.SEED_CLASS_STUDENTS !== 'false') {
+  if (process.env.SEED_CLASS_STUDENTS === 'true') {
     for (let classIndex = 0; classIndex < CLASS_SEEDS.length; classIndex += 1) {
       const item = CLASS_SEEDS[classIndex];
       const classResult = await pool.query('SELECT id FROM classes WHERE slug=$1', [item.slug]);
@@ -354,9 +364,7 @@ async function handleApi(request, response, pathname, user) {
   if (pathname === '/api/me' && request.method === 'GET') return sendJson(response, 200, { user:publicUser(user), redirectPath:redirectPathFor(user) });
 
   if (pathname === '/api/engagement' && request.method === 'POST') {
-    const body = await readJson(request);
-    await pool.query('INSERT INTO engagement_events(user_id,page,event_type,duration_seconds) VALUES($1,$2,$3,$4)', [user.id, String(body.page || 'home').slice(0,32), String(body.event || 'page_view').slice(0,32), Math.max(0, Math.min(7200, Number(body.durationSeconds) || 0))]);
-    return sendJson(response, 201, { ok:true });
+    return sendJson(response, 200, { ok:true, tracked:false });
   }
 
   if (pathname === '/api/progress' && request.method === 'GET') {
@@ -378,13 +386,10 @@ async function handleApi(request, response, pathname, user) {
     let classFilter = '';
     if (user.role === 'teacher' && user.class_id) { params.push(user.class_id); classFilter = `AND u.class_id=$${params.length}`; }
     const result = await pool.query(
-      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at,
-              COUNT(e.id)::int AS page_views,MAX(e.created_at) AS last_activity
+      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at
        FROM users u
        LEFT JOIN classes c ON c.id=u.class_id
-       LEFT JOIN engagement_events e ON e.user_id=u.id AND e.event_type='page_view'
        WHERE u.role='student' ${classFilter}
-       GROUP BY u.id,c.name
        ORDER BY c.name NULLS LAST,u.display_name`,
       params
     );
@@ -444,7 +449,8 @@ async function route(request, response) {
     if (pathname === '/login' || pathname === '/login.html') return user ? redirect(response, redirectPathFor(user)) : serveFile(response, 'login.html');
     if (pathname === '/admin' || pathname === '/admin.html') return !user ? redirect(response, '/login') : !isSuperAdmin(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'admin.html');
     if (pathname === '/teacher' || pathname === '/teacher.html') return !user ? redirect(response, '/login') : !isTeacherLike(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'teacher.html');
-    if (pathname.startsWith('/class/')) return !user ? redirect(response, '/login') : serveFile(response, 'index.html');
+    if (pathname.startsWith('/class/')) return !user ? redirect(response, '/login') : redirect(response, legacyClassRedirect(pathname));
+    if (CLEAN_STUDENT_PAGES.has(pathname.slice(1))) return !user ? redirect(response, '/login') : user.role === 'super_admin' ? redirect(response, '/admin') : serveFile(response, 'index.html');
     if (pathname === '/' || pathname === '/index.html') return !user ? redirect(response, '/login') : user.role === 'super_admin' ? redirect(response, '/admin') : serveFile(response, 'index.html');
     return serveFile(response, pathname);
   } catch (error) {

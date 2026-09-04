@@ -29,9 +29,20 @@ const OFF_TOPIC_PATTERNS = [
   /\b(tell me a joke|make me laugh|random question|not school|not about school)\b/i
 ];
 
+function isStadiumAddressQuestion(text) {
+  const asksForAddress = /\b(address|located|location|where is|where are|where do .* play|directions to)\b/i.test(text);
+  const stadiumRelated = /\b(stadium|field|dome|center|arena|venue|home field|home stadium)\b/i.test(text);
+  const teamRelated = Object.entries(TEAM_NAMES).some(([abbr, name]) => {
+    const terms = [abbr, ...name.split(/\s+/)].filter(term => term.length >= 3 && !['the', 'new', 'san', 'los'].includes(term.toLowerCase()));
+    return terms.some(term => new RegExp('\\b' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(text));
+  });
+  return asksForAddress && (stadiumRelated || teamRelated);
+}
+
 function classifySafety(message) {
   const text = String(message || '').trim();
   if (!text) return { blocked:false };
+  if (isStadiumAddressQuestion(text)) return { blocked:false };
   for (const rule of SAFETY_RULES) {
     if (rule.patterns.some(pattern => pattern.test(text))) return { blocked:true, category:rule.category, severity:rule.severity, message:rule.message };
   }

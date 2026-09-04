@@ -55,12 +55,10 @@
     return window[key];
   }
   async function scopeRows(scope, team) {
-    if (scope === 'team') return team ? await teamStats(team) : [];
     if (window.NFL_LEAGUE_PLAYER_STATS_2026) return window.NFL_LEAGUE_PLAYER_STATS_2026;
-    const results = await Promise.allSettled(TEAMS.map(teamStats));
-    const rows = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
-    window.NFL_LEAGUE_PLAYER_STATS_2026 = rows;
-    return rows;
+    const rows = await api(`/api/sportsdata/nfl/player-season-stats/${SEASON}`);
+    window.NFL_LEAGUE_PLAYER_STATS_2026 = Array.isArray(rows) ? rows : [];
+    return window.NFL_LEAGUE_PLAYER_STATS_2026;
   }
   function leaders(rows, category) {
     return rows.map(player => ({ player, value:numberValue(player, category.fields) }))
@@ -116,7 +114,8 @@
       if (selectWrap) selectWrap.hidden = scope !== 'team';
       status.textContent = scope === 'team' ? `Loading ${teamName(team)} leaders...` : 'Loading league leaders...';
       grid.innerHTML = '';
-      const rows = await scopeRows(scope, team);
+      const allRows = await scopeRows(scope, team);
+      const rows = scope === 'team' ? allRows.filter(player => playerTeam(player) === teamCode(team)) : allRows;
       const top = leaders(rows, category);
       title.textContent = scope === 'team' ? `${teamName(team)} Leaders` : 'League Top 10';
       subtitle.textContent = scope === 'team' ? `Top ${teamName(team)} players for ${category.label.toLowerCase()}.` : `Top NFL players for ${category.label.toLowerCase()}.`;

@@ -128,7 +128,7 @@
               </div>
             </div>
           </div>
-          <a href="index.html?page=math" class="sd-cta inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white shrink-0"><iconify-icon icon="lucide:play"></iconify-icon>Play Math Game</a>
+          <a href="/math" class="sd-cta inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white shrink-0"><iconify-icon icon="lucide:play"></iconify-icon>Play Math Game</a>
         </div>
       </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -142,8 +142,8 @@
         <div class="sd-card"><div class="p-5 border-b border-white/8"><div class="text-[10px] uppercase tracking-wider text-white/35 font-bold">Current Drive</div><h2 class="text-xl font-black mt-1">${profile.drive_yards || 0} of 100 yards</h2></div><div class="p-5">${fieldProgress(profile.drive_yards || 0, 'h-48')}</div></div>
       </div>
       <div class="grid lg:grid-cols-2 gap-6">
-        <div class="sd-card"><div class="p-5 border-b border-white/8 flex items-center gap-2"><iconify-icon icon="lucide:flame" class="text-brand-400"></iconify-icon><h2 class="font-bold">Weekly Leaders</h2></div><div class="p-3">${leaderRows(game.weekly, 'xp', user.username)}</div></div>
-        <div class="sd-card"><div class="p-5 border-b border-white/8 flex items-center gap-2"><iconify-icon icon="lucide:crown" class="text-brand-400"></iconify-icon><h2 class="font-bold">Season Leaders</h2></div><div class="p-3">${leaderRows(game.allTime, 'total_xp', user.username)}</div></div>
+        <div class="sd-card"><div class="p-5 border-b border-white/8 flex items-center gap-2"><iconify-icon icon="lucide:flame" class="text-brand-400"></iconify-icon><h2 class="font-bold">Weekly Class Leaders</h2></div><div class="p-3">${leaderRows(game.weekly, 'xp', user.username)}</div></div>
+        <div class="sd-card"><div class="p-5 border-b border-white/8 flex items-center gap-2"><iconify-icon icon="lucide:crown" class="text-brand-400"></iconify-icon><h2 class="font-bold">Season Class Leaders</h2></div><div class="p-3">${leaderRows(game.allTime, 'total_xp', user.username)}</div></div>
       </div>`;
     document.getElementById('sd-loading').remove();
     content.classList.remove('hidden');

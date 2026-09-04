@@ -443,8 +443,8 @@ select option{background:#111827;color:#fff}
           <div class="inline-flex items-center gap-2 px-3 py-1.5 border border-white/15 bg-black/25 text-[10px] uppercase tracking-[.24em] text-white/65 font-black mb-5">
             <span class="w-2 h-2 rounded-full bg-white"></span> Fort Worth Game Day
           </div>
-          <h2 id="tcu-team-name" class="text-5xl md:text-7xl font-black leading-none tracking-tight text-white">Loading TCU Data...</h2>
-          <p id="tcu-team-subtitle" class="text-white/60 text-sm md:text-base mt-5 max-w-2xl">Fetching from SportsData.io...</p>
+          <h2 id="tcu-team-name" class="text-5xl md:text-7xl font-black leading-none tracking-tight text-white">TCU Horned Frogs</h2>
+          <p id="tcu-team-subtitle" class="text-white/60 text-sm md:text-base mt-5 max-w-2xl">Fort Worth, TX • Amon G. Carter Stadium • Big 12 Conference</p>
           <div class="grid sm:grid-cols-3 gap-3 mt-8 max-w-3xl">
             <div class="tcu-stat-card p-4"><div class="text-[9px] uppercase tracking-widest text-white/35 font-black">Colors</div><div class="flex items-center gap-2 mt-2"><span class="w-8 h-8 bg-[#4D1979] border border-white/20"></span><span class="w-8 h-8 bg-white border border-white/20"></span><span class="w-8 h-8 bg-[#8BA8C4] border border-white/20"></span></div></div>
             <div class="tcu-stat-card p-4"><div class="text-[9px] uppercase tracking-widest text-white/35 font-black">Home</div><div class="text-lg font-black mt-1">Amon G. Carter</div></div>
@@ -505,7 +505,7 @@ select option{background:#111827;color:#fff}
     <div id="travel-modal-content"></div>
   </div>
 </div>
-<div id="team-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
+<div id="team-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeTeamModal()">
   <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
     <button onclick="closeTeamModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
     <div id="team-modal-content"></div>
@@ -2243,37 +2243,30 @@ function toggleCompareTeam(abbr){
 /* ===== CACHED NEWS API ===== */
 async function fetchTeamNews(teamAbbr) {
   try {
-    const res = await fetch(`/api/sportsdata/nfl/news/team/${teamAbbr}`);
-    
-    if (res.ok) {
-      const data = await res.json();
-      
-      if (data && data.length > 0) {
-        return data.slice(0, 3).map(a => ({
-          title: a.Title || 'NFL News',
-          // Strip HTML tags from the content and truncate it
-          description: a.Content ? a.Content.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 'Click to read the full article.',
-          link: a.Url || '#'
-        }));
-      }
-    } else {
-      console.warn("SportsData API returned status:", res.status);
+    const response = await fetch(`/api/nfl-news/team/${encodeURIComponent(teamAbbr)}`);
+    const stripHtml = value => String(value || '').replace(/<[^>]*>?/gm, ' ');
+    if (response.ok) {
+      const data = await response.json();
+      const articles = (Array.isArray(data) ? data : []).slice(0, 3);
+      if (articles.length) return articles.map(a => ({
+        title: a.title || a.Title || 'Team News',
+        description: (a.description || a.Content) ? stripHtml(a.description || a.Content).replace(/\s+/g, ' ').trim().substring(0, 120) + '...' : 'Click to read the full article.',
+        link: a.link || a.Url || '#'
+      }));
     }
-
-    const genRes = await fetch('/api/sportsdata/nfl/news');
-    if (genRes.ok) {
-      const genData = await genRes.json();
-      if (genData && genData.length > 0) {
-        return genData.slice(0, 3).map(a => ({
-          title: a.Title || 'NFL News',
-          description: a.Content ? a.Content.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...' : 'Click to read the full article.',
-          link: a.Url || '#'
-        }));
-      }
+    console.warn("Team RSS feed returned status:", response.status, "using cached news fallback.");
+    const legacyResponse = await fetch(`/api/sportsdata/nfl/news/team/${encodeURIComponent(teamAbbr)}`);
+    if (legacyResponse.ok) {
+      const legacyData = await legacyResponse.json();
+      if (Array.isArray(legacyData) && legacyData.length) return legacyData.slice(0, 3).map(a => ({
+        title: a.Title || 'NFL News',
+        description: a.Content ? stripHtml(a.Content).replace(/\s+/g, ' ').trim().substring(0, 120) + '...' : 'Click to read the full article.',
+        link: a.Url || '#'
+      }));
     }
 
   } catch (e) {
-    console.warn("SportsData API fetch failed, using educational fallback.", e);
+    console.warn("Team RSS news fetch failed, using educational fallback.", e);
   }
 
   // Attempt 3: Educational Fallback (If API limits are hit or network blocks it)
@@ -2297,47 +2290,7 @@ async function fetchTeamNews(teamAbbr) {
   ];
 }
 
-/* ===== CACHED CFB API ===== */
-async function fetchTCUProfile() {
-  try {
-    const res = await fetch('/api/sportsdata/cfb/team/TCU');
-    
-    if (!res.ok) throw new Error(`API returned status: ${res.status}`);
-    
-    const tcu = await res.json();
-    
-    // The singular endpoint usually returns the team object directly, 
-    // but sometimes it returns an array with one item. We'll handle both.
-    const teamData = Array.isArray(tcu) ? tcu[0] : tcu;
-
-    if (teamData && teamData.School) {
-      console.log("TCU Data Found:", teamData);
-      
-      // Update the UI with live data
-      document.getElementById('tcu-team-name').textContent = `${teamData.School} ${teamData.Name}`;
-      
-      const stadiumName = teamData.Stadium ? teamData.Stadium.Name : 'Amon G. Carter Stadium';
-      const subtitle = `${teamData.City || 'Fort Worth'}, ${teamData.State || 'TX'} • ${stadiumName} • ${teamData.Conference || 'Big 12'}`;
-      document.getElementById('tcu-team-subtitle').textContent = subtitle;
-      
-      return teamData; 
-    } else {
-      throw new Error("TCU data was empty or formatted unexpectedly.");
-    }
-
-  } catch (e) {
-    console.warn("CFB API fetch failed, using fallback TCU data.", e);
-    
-    // Fallback if API fails
-    const nameEl = document.getElementById('tcu-team-name');
-    const subEl = document.getElementById('tcu-team-subtitle');
-    if (nameEl) nameEl.textContent = "TCU Horned Frogs";
-    if (subEl) subEl.textContent = "Fort Worth, TX • Amon G. Carter Stadium • Big 12 Conference";
-    
-    return null;
-  }
-}
-  /* ===== TCU HORNED FROGS DATA ===== */
+/* ===== TCU HORNED FROGS DATA ===== */
 const TCU_TEAM_INFO = { color: "#4D1979", secColor: "#8BA8C4" };
 
 const TCU_STATS = {
@@ -2387,10 +2340,7 @@ const TCU_SCHEDULE_2024 = [
 let currentTCUTab = 'passing';
 
 async function renderTCUSection() {
-  // 1. Fetch live team profile from SportsData.io
-  await fetchTCUProfile();
-
-  // 2. Render Schedule (Existing code)
+  // Render the local educational snapshot.
   const schedList = document.getElementById('tcu-schedule-list');
   if (schedList) {
     schedList.innerHTML = TCU_SCHEDULE_2024.map(g => {

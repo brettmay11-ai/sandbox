@@ -12,18 +12,19 @@
     ['writing', 'Writing Reviews', 'notebook-pen'],
     ['cleats', 'Cleat Studio', 'footprints']
   ];
-  const requested = new URLSearchParams(location.search).get('page');
+  const cleanPath = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
+  const requested = cleanPath[0] === 'teacher' ? cleanPath[1] : new URLSearchParams(location.search).get('page');
   const current = pages.some(([id]) => id === requested) ? requested : 'dashboard';
+  const teacherPageUrl = id => `/teacher/${id}`;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
   const teamName = abbr => (typeof getNFLTeamBrand === 'function' ? getNFLTeamBrand(abbr)?.name : abbr) || abbr || 'Unassigned';
-  const dateValue = value => value ? new Date(value).getTime() : 0;
-
   const nav = document.createElement('nav');
   nav.id = 'teacher-page-nav';
   nav.className = 'max-w-7xl mx-auto px-5 pt-6';
-  nav.innerHTML = `<div class="flex gap-1 overflow-x-auto border-b border-white/10">${pages.map(([id, label, icon]) => `<a href="/teacher?page=${id}" data-teacher-link="${id}" class="relative shrink-0 flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 ${id === current ? 'border-blue-400 text-white bg-white/[.03]' : 'border-transparent text-white/45 hover:text-white'}"><iconify-icon icon="lucide:${icon}"></iconify-icon>${label}${id === 'writing' ? '<span data-writing-count class="hidden min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black items-center justify-center"></span>' : ''}${id === 'coach' ? '<span data-safety-count class="hidden min-w-5 h-5 px-1 rounded-full bg-amber-500 text-black text-[10px] font-black items-center justify-center"></span>' : ''}</a>`).join('')}</div>`;
+  nav.innerHTML = `<div class="flex gap-1 overflow-x-auto border-b border-white/10">${pages.map(([id, label, icon]) => `<a href="${teacherPageUrl(id)}" data-teacher-link="${id}" class="relative shrink-0 flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 ${id === current ? 'border-blue-400 text-white bg-white/[.03]' : 'border-transparent text-white/45 hover:text-white'}"><iconify-icon icon="lucide:${icon}"></iconify-icon>${label}${id === 'writing' ? '<span data-writing-count class="hidden min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black items-center justify-center"></span>' : ''}${id === 'coach' ? '<span data-safety-count class="hidden min-w-5 h-5 px-1 rounded-full bg-amber-500 text-black text-[10px] font-black items-center justify-center"></span>' : ''}</a>`).join('')}</div>`;
+  document.querySelectorAll('a[href^="/teacher?page="]').forEach(link => { const id = new URL(link.href).searchParams.get('page'); if (pages.some(([page]) => page === id)) link.href = teacherPageUrl(id); });
   header.after(nav);
 
   const headingPage = text => text.includes('Featured Game of the Week') ? 'featured' : text.includes('Team Research Coach') ? 'coach' : text.includes('Student Progress and Rankings') ? 'progress' : text.includes('Writing Review Queue') ? 'writing' : null;
@@ -64,13 +65,13 @@
   bell.title = 'Writing submissions waiting for feedback';
   bell.className = 'relative w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 grid place-items-center';
   bell.innerHTML = '<iconify-icon icon="lucide:bell"></iconify-icon><span id="teacher-bell-count" class="hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black items-center justify-center"></span>';
-  bell.onclick = () => location.href = '/teacher?page=writing';
+  bell.onclick = () => location.href = teacherPageUrl('writing');
   const shield = document.createElement('button');
   shield.type = 'button';
   shield.title = 'Coach safety flags waiting for review';
   shield.className = 'relative w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 grid place-items-center';
   shield.innerHTML = '<iconify-icon icon="lucide:shield-alert"></iconify-icon><span id="teacher-safety-count" class="hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-amber-500 text-black text-[10px] font-black items-center justify-center"></span>';
-  shield.onclick = () => location.href = '/teacher?page=coach';
+  shield.onclick = () => location.href = teacherPageUrl('coach');
   headerActions?.prepend(bell);
   headerActions?.prepend(shield);
 
@@ -89,13 +90,18 @@
     const writingCount = submissions.filter(item => item.status === 'submitted').length;
     const safetyCount = Number(data.safety?.unreadCount || 0);
     const students = data.analytics?.students || data.students?.students || [];
-    const supportCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const supportCount = students.filter(student => student.active && dateValue(student.last_activity || student.last_login_at) < supportCutoff).length;
+    const supportCount = students.filter(student => {
+      if (!student.active) return false;
+      const answers = Number(student.questions_answered || 0);
+      const accuracy = Number(student.accuracy || 0);
+      const totalXp = Number(student.total_xp || 0) + Number(student.writing_xp || 0);
+      return (answers >= 3 && accuracy < 70) || totalXp === 0;
+    }).length;
     const featured = data.featured?.featuredGame;
     const featuredLabel = featured ? `${teamName(featured.away)} at ${teamName(featured.home)}` : 'Needs setup';
     setCard('writing', writingCount, writingCount ? 'Ready for your feedback' : 'Nothing waiting right now', writingCount ? 'accent' : 'success');
     setCard('safety', safetyCount, safetyCount ? 'Review before the next class' : 'No unread reports', safetyCount ? 'alert' : 'success');
-    setCard('support', supportCount, supportCount ? 'A quick check-in may help' : 'Everyone is recently active', supportCount ? 'warning' : 'success');
+    setCard('support', supportCount, supportCount ? 'A quick check-in may help' : 'Progress looks steady', supportCount ? 'warning' : 'success');
     setCard('featured', featured ? `Week ${featured.week || '?'}` : 'Setup', featuredLabel, featured ? 'accent' : 'warning');
 
     const achievements = document.getElementById('teacher-achievements');
@@ -124,7 +130,7 @@
       console.warn('Could not load teacher notifications.', error);
       setCard('writing', '—', 'Unable to load this queue');
       setCard('safety', '—', 'Unable to load this queue');
-      setCard('support', '—', 'Unable to load class activity');
+      setCard('support', '—', 'Unable to load class progress');
       setCard('featured', '—', 'Unable to load game setup');
     }
   };
