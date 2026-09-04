@@ -170,6 +170,7 @@ function adminRefreshScript() {
 
 function transformTeacherHtml(html) {
   let output = html;
+  output = output.replace(/(href|src)="(visual-system\.css|team-branding\.js|teacher-cleats\.js)/g, '$1="/$2');
   output = output.replace('id="teacher-command-center" data-teacher-page="students"', 'id="teacher-command-center" data-teacher-page="dashboard"');
   output = output.replace('<details class="teacher-secondary-panel" data-teacher-page="students">', '<details id="student-management" open class="teacher-secondary-panel" data-teacher-page="students">');
   output = output.replace('Manage students</span><small>Create accounts, assign teams, and update access</small>', 'Students <span id="teacher-dashboard-panel-class-name" class="text-blue-300 text-sm ml-2">Class</span></span><small>Create accounts, assign teams, and update access</small>');
