@@ -207,6 +207,16 @@ function serveAdminPortal(response) {
   response.end(html);
 }
 
+function serveStudentPortal(response) {
+  const file = path.join(__dirname, 'index.html');
+  let html = fs.readFileSync(file, 'utf8');
+  const banner = '<div id="student-impersonation-banner" style="position:sticky;top:0;z-index:40;padding:10px 18px;background:#172554;color:#dbeafe;border-bottom:1px solid rgba(96,165,250,.45);font:700 12px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:12px;text-align:center">Viewing as a student <button id="stop-student-impersonation" style="border:1px solid rgba(147,197,253,.4);border-radius:6px;padding:6px 10px;background:rgba(255,255,255,.08);color:#fff;font:800 11px Inter,system-ui,sans-serif;cursor:pointer">Return to Super Admin</button></div>';
+  html = html.replace(/<body([^>]*)>/i, '<body$1>' + banner);
+  html = html.replace('</body>', '<script>document.getElementById("stop-student-impersonation")?.addEventListener("click",async()=>{const button=document.getElementById("stop-student-impersonation");button.disabled=true;const response=await fetch("/api/admin/stop-impersonation",{method:"POST"});const data=await response.json().catch(()=>({}));if(response.ok)location.href=data.redirectPath||"/admin";else{button.disabled=false;alert(data.error||"Could not return to Super Admin.")}});</script></body>');
+  response.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' });
+  response.end(html);
+}
+
 async function handleAdminRefreshData(request, response, pathname) {
   if (pathname !== '/api/admin/refresh-data') return false;
   const user = await getSessionUser(request);
@@ -230,6 +240,7 @@ async function handleAdminRefreshData(request, response, pathname) {
   return true;
 }
 const CLEAN_TEACHER_PAGES = new Set(['dashboard','students','progress','featured','coach','writing','cleats']);
+const CLEAN_STUDENT_PAGES = new Set(['dashboard','profile','teams','matchups','stats','players','travel','math','writing','cities']);
 
 async function handleAdminSportsDataUsage(request,response,pathname) {
   if(pathname!=='/api/admin/sportsdata-usage')return false;
@@ -267,6 +278,10 @@ http.createServer = function createServerWithTeacherDashboard(listener) {
         if (!user) return redirect(response, '/login');
         if (user.role !== 'super_admin') return redirect(response, '/');
         return serveAdminPortal(response);
+      }
+      if (CLEAN_STUDENT_PAGES.has(pathname.slice(1)) && request.method === 'GET' && parseCookies(request).nfl_admin_session) {
+        const user = await getSessionUser(request);
+        if (user?.role === 'student') return serveStudentPortal(response);
       }
       if (url.searchParams.get('page') === 'tcu' && request.method === 'GET') {
         return redirect(response, '/');

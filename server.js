@@ -281,6 +281,17 @@ async function handleAdminApi(request, response, pathname, user) {
     return sendJson(response, 200, { ok:true, teacher:{ id:teacher.id, displayName:teacher.display_name, username:teacher.username }, redirectPath:'/teacher/dashboard' }), true;
   }
 
+  const studentImpersonateMatch = pathname.match(/^\/api\/admin\/students\/(\d+)\/impersonate$/);
+  if (studentImpersonateMatch && request.method === 'POST') {
+    const result = await pool.query("SELECT id,display_name,username FROM users WHERE id=$1 AND role='student' AND active=TRUE", [studentImpersonateMatch[1]]);
+    const student = result.rows[0];
+    if (!student) return sendJson(response, 404, { error:'Active student not found.' }), true;
+    const adminToken = parseCookies(request).nfl_session;
+    await createSession(response, student.id);
+    setAdminReturnCookie(response, adminToken);
+    return sendJson(response, 200, { ok:true, student:{ id:student.id, displayName:student.display_name, username:student.username }, redirectPath:'/dashboard' }), true;
+  }
+
   if (pathname === '/api/admin/classes' && request.method === 'GET') {
     return sendJson(response, 200, { classes:await adminClassRows() }), true;
   }
