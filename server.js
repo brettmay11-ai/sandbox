@@ -33,6 +33,7 @@ const CLASS_SEEDS = [
 ];
 const CLEAN_STUDENT_PAGES = new Set(['dashboard','profile','teams','matchups','stats','players','travel','math','writing','cities']);
 const CLEAN_TEACHER_PAGES = new Set(['dashboard','students','progress','featured','coach','writing','cleats']);
+const TEACHER_ASSETS = new Set(['team-branding.js','teacher-navigation.js','teacher-featured-game.js','teacher-coach-settings.js','teacher-analytics.js','teacher-writing.js','teacher-teks.js','teacher-cleats.js','visual-system.css']);
 
 function normalizeUsername(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 32); }
 function normalizeSlug(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
@@ -527,6 +528,7 @@ async function route(request, response) {
     if (pathname === '/teacher' || pathname === '/teacher.html') return !user ? redirect(response, '/login') : !isTeacherLike(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'teacher.html');
     if (pathname.startsWith('/teacher/')) {
       const page = pathname.slice('/teacher/'.length).replace(/\/+$/, '');
+      if (TEACHER_ASSETS.has(page)) return serveFile(response, page);
       return !user ? redirect(response, '/login') : !isTeacherLike(user) ? redirect(response, redirectPathFor(user)) : CLEAN_TEACHER_PAGES.has(page) ? serveFile(response, 'teacher.html') : sendJson(response, 404, { error:'Teacher page not found.' });
     }
     if (pathname.startsWith('/class/')) return !user ? redirect(response, '/login') : redirect(response, legacyClassRedirect(pathname));
