@@ -20,6 +20,10 @@ function tokenHash(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+function randomToken() {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
 function hashPin(pin, salt = crypto.randomBytes(16).toString('hex')) {
   return new Promise((resolve, reject) => {
     crypto.scrypt(String(pin), salt, 64, (error, key) => {
@@ -213,10 +217,36 @@ function installAdminTeacherApi() {
     return user;
   }
 
+  function setSessionCookie(response, token) {
+    response.setHeader('Set-Cookie', `nfl_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+  }
+
+  function appendCookie(response, cookie) {
+    const existing = response.getHeader('Set-Cookie');
+    response.setHeader('Set-Cookie', existing ? [...(Array.isArray(existing) ? existing : [existing]), cookie] : cookie);
+  }
+
   async function handleTeacherApi(request, response, pathname) {
     if (!pathname.startsWith('/api/admin/teachers')) return false;
     const admin = await requireSuperAdmin(request, response);
     if (!admin) return true;
+
+    const impersonateMatch = pathname.match(/^\/api\/admin\/teachers\/(\d+)\/impersonate$/);
+    if (impersonateMatch && request.method === 'POST') {
+      const result = await apiPool.query("SELECT id,display_name,username FROM users WHERE id=$1 AND role='teacher' AND active=TRUE", [impersonateMatch[1]]);
+      const teacher = result.rows[0];
+      if (!teacher) {
+        sendJson(response, 404, { error:'Active teacher not found.' });
+        return true;
+      }
+      const adminToken = parseCookies(request).nfl_session;
+      const teacherToken = randomToken();
+      await apiPool.query('INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,NOW()+INTERVAL \'7 days\')', [tokenHash(teacherToken), teacher.id]);
+      setSessionCookie(response, teacherToken);
+      appendCookie(response, `nfl_admin_session=${encodeURIComponent(adminToken)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
+      sendJson(response, 200, { ok:true, teacher:{ id:teacher.id, displayName:teacher.display_name, username:teacher.username }, redirectPath:'/teacher/dashboard' });
+      return true;
+    }
 
     if (pathname === '/api/admin/teachers' && request.method === 'GET') {
       const result = await apiPool.query(
