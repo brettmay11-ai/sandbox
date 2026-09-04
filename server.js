@@ -512,6 +512,7 @@ function serveFile(response, relative) {
   if (!file.startsWith(root)) return sendJson(response, 403, { error:'Forbidden' });
   fs.readFile(file, (error, content) => {
     if (error) { response.writeHead(404, { 'Content-Type':'text/plain; charset=utf-8' }); return response.end('Not found'); }
+    if (relative === 'teacher.html') content = content.toString().replace(/(href|src)="(visual-system\.css|team-branding\.js|teacher-cleats\.js)/g, '$1="/$2');
     const contentType=mimeTypes[path.extname(file).toLowerCase()] || 'application/octet-stream';
     response.writeHead(200, { 'Content-Type':contentType, 'Cache-Control':file.endsWith('.html')?'no-store':'no-cache' });
     response.end(content);
