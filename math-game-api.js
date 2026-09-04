@@ -48,6 +48,33 @@ async function initMathGame(pool){
     ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS total_xp INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS touchdowns INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS drive_yards INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS correct_answers INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS questions_answered INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS current_streak INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS best_streak INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
     ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS explanation TEXT NOT NULL DEFAULT '';ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS difficulty VARCHAR(24) NOT NULL DEFAULT 'Starter';ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 10;ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS yards INTEGER NOT NULL DEFAULT 10;ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();ALTER TABLE math_challenges ADD COLUMN IF NOT EXISTS answered_at TIMESTAMPTZ;
     ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS week_start DATE NOT NULL DEFAULT CURRENT_DATE;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS correct_answers INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS questions_answered INTEGER NOT NULL DEFAULT 0;ALTER TABLE math_weekly_stats ADD COLUMN IF NOT EXISTS touchdowns INTEGER NOT NULL DEFAULT 0;`);
+  await reconcileMathSchema(pool);
+}
+
+// The migration above adds any columns an older Railway database is missing, but
+// ADD COLUMN IF NOT EXISTS can't fix a column that already exists at the wrong
+// width or type. A challenge id left at VARCHAR(32) by an early schema (ids are
+// now 48 hex chars) still overflows on every "choose a play" insert and returns
+// a 500. This reconciles those in-place: each step checks information_schema and
+// only issues an ALTER when the column actually differs, so it is a cheap no-op
+// on an already-correct schema.
+async function reconcileMathSchema(pool){
+  const columnType=async (table,column)=>(await pool.query(
+    `SELECT data_type,character_maximum_length FROM information_schema.columns WHERE table_name=$1 AND column_name=$2`,
+    [table,column]
+  )).rows[0]||null;
+  const widenVarchar=async (table,column,length)=>{
+    const info=await columnType(table,column);
+    if(info&&info.data_type==='character varying'&&(info.character_maximum_length===null||info.character_maximum_length>=length))return;
+    if(!info)return;
+    await pool.query(`ALTER TABLE ${table} ALTER COLUMN ${column} TYPE VARCHAR(${length})`);
+  };
+  await widenVarchar('math_challenges','id',64);
+  await widenVarchar('math_challenges','difficulty',24);
+  const answer=await columnType('math_challenges','answer');
+  if(answer&&answer.data_type!=='numeric'){
+    await pool.query('ALTER TABLE math_challenges ALTER COLUMN answer TYPE NUMERIC USING answer::numeric');
+  }
 }
 
 function classScopeFor(user, alias = 'u') {
