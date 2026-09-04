@@ -577,6 +577,7 @@ function serveFile(response, relative) {
   fs.readFile(file, (error, content) => {
     if (error) { response.writeHead(404, { 'Content-Type':'text/plain; charset=utf-8' }); return response.end('Not found'); }
     if (relative === 'teacher.html') content = content.toString().replace('team-branding.js?v=3', 'team-branding.js?v=4').replace(/(href|src)="(visual-system\.css|team-branding\.js|teacher-cleats\.js)/g, '$1="/$2');
+    if (relative === 'admin.html') content = content.toString().replace('</head>', '<link rel="stylesheet" href="/admin-portal-fixes.css?v=1"></head>');
     const contentType=mimeTypes[path.extname(file).toLowerCase()] || 'application/octet-stream';
     response.writeHead(200, { 'Content-Type':contentType, 'Cache-Control':file.endsWith('.html')?'no-store':'no-cache' });
     response.end(content);

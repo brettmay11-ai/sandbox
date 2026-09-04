@@ -182,6 +182,8 @@ function transformTeacherHtml(html) {
 
 function transformAdminHtml(html) {
   let output = html;
+  const adminStyles = '<link rel="stylesheet" href="/admin-portal-fixes.css?v=1">';
+  if (!output.includes('admin-portal-fixes.css')) output = output.replace('</head>', `${adminStyles}</head>`);
   const teacherTeamScript = '<script defer src="/admin-teacher-team.js?v=1"></script>';
   if (!output.includes('admin-teacher-team.js')) output = output.replace('</head>', `${teacherTeamScript}</head>`);
   output = output.replace('</body></html>', `${adminRefreshScript()}</body></html>`);

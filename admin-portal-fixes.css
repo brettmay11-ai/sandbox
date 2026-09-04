@@ -1,0 +1,54 @@
+/* Keep dense admin controls readable without letting table rows collapse. */
+.admin-action-cell,
+#teachers-table td:last-child,
+#students-table td:last-child {
+  display: table-cell !important;
+  min-width: 280px;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+#teachers-table td:last-child .btn,
+#students-table td:last-child .btn {
+  margin: 2px 4px 2px 0;
+  padding: .5rem .7rem;
+  border-radius: 10px;
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
+#classes-table td:last-child .btn {
+  padding: .5rem .7rem;
+  border-radius: 10px;
+  font-size: .72rem;
+}
+
+#class-form .btn,
+#teacher-form .btn,
+#student-form .btn {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.topbar .tab {
+  min-height: 40px;
+  padding: .55rem .8rem;
+  font-size: .78rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .topbar .nav-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .35rem; }
+  .topbar .tab { padding: .55rem .25rem; font-size: .68rem; }
+  #teachers-table td:last-child,
+  #students-table td:last-child { min-width: 240px; }
+}
+
+@media (max-width: 560px) {
+  .topbar .nav-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .topbar .tab { font-size: .72rem; }
+  main { padding-left: 1rem !important; padding-right: 1rem !important; }
+  main > section > div,
+  main > section { border-radius: 20px !important; }
+}
