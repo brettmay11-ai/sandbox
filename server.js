@@ -530,6 +530,28 @@ async function handleApi(request, response, pathname, user) {
     }
   }
 
+  const identityMatch = pathname.match(/^\/api\/teacher\/students\/(\d+)$/);
+  if (identityMatch && request.method === 'PATCH') {
+    const body = await readJson(request);
+    const username = normalizeUsername(body.username);
+    const displayName = safeText(body.displayName, 80);
+    if (username.length < 2 || !displayName) return sendJson(response, 400, { error:'Enter a valid username and display name.' });
+    try {
+      const result = await pool.query(
+        `UPDATE users
+         SET username=$2,display_name=$3
+         WHERE id=$1 AND role='student' AND ($4::boolean OR class_id=$5)
+         RETURNING id,username,display_name,selected_team,active,class_id`,
+        [identityMatch[1], username, displayName, isSuperAdmin(user), user.class_id]
+      );
+      if (!result.rowCount) return sendJson(response, 404, { error:'Student not found in your class.' });
+      return sendJson(response, 200, { student:result.rows[0] });
+    } catch (error) {
+      if (error.code === '23505') return sendJson(response, 409, { error:'That username already exists.' });
+      throw error;
+    }
+  }
+
   const pinMatch = pathname.match(/^\/api\/teacher\/students\/(\d+)\/pin$/);
   if (pinMatch && request.method === 'PATCH') {
     const body = await readJson(request);
