@@ -64,7 +64,10 @@ async function verifyPin(pin, stored) {
   return crypto.timingSafeEqual(Buffer.from(actual), Buffer.from(stored));
 }
 function parseCookies(request) { return Object.fromEntries(String(request.headers.cookie || '').split(';').map(value => value.trim().split('=').map(decodeURIComponent)).filter(parts => parts.length === 2)); }
+function appendCookie(response, cookie) { const existing = response.getHeader('Set-Cookie'); response.setHeader('Set-Cookie', existing ? [...(Array.isArray(existing) ? existing : [existing]), cookie] : cookie); }
 function setSessionCookie(response, token) { response.setHeader('Set-Cookie', `nfl_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 86400}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`); }
+function setAdminReturnCookie(response, token) { appendCookie(response, `nfl_admin_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`); }
+function clearAdminReturnCookie(response) { appendCookie(response, 'nfl_admin_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0'); }
 function clearSessionCookie(response) { response.setHeader('Set-Cookie', 'nfl_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0'); }
 function sendJson(response, status, data) { response.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' }); response.end(JSON.stringify(data)); }
 function redirect(response, location) { response.writeHead(302, { Location:location, 'Cache-Control':'no-store' }); response.end(); }
@@ -243,6 +246,21 @@ async function requireAdmin(response, user) {
 }
 async function handleAdminApi(request, response, pathname, user) {
   if (!pathname.startsWith('/api/admin/')) return false;
+  if (pathname === '/api/admin/stop-impersonation' && request.method === 'POST') {
+    const cookies = parseCookies(request);
+    const adminToken = cookies.nfl_admin_session;
+    if (!adminToken) return sendJson(response, 400, { error:'No active teacher view found.' }), true;
+    const adminResult = await pool.query(
+      `SELECT u.id FROM sessions s JOIN users u ON u.id=s.user_id
+       WHERE s.token_hash=$1 AND s.expires_at>NOW() AND u.role='super_admin' AND u.active=TRUE`,
+      [tokenHash(adminToken)]
+    );
+    if (!adminResult.rowCount) return sendJson(response, 401, { error:'The original admin session is no longer valid.' }), true;
+    if (cookies.nfl_session) await pool.query('DELETE FROM sessions WHERE token_hash=$1', [tokenHash(cookies.nfl_session)]);
+    setSessionCookie(response, adminToken);
+    clearAdminReturnCookie(response);
+    return sendJson(response, 200, { ok:true, redirectPath:'/admin' }), true;
+  }
   if (!await requireAdmin(response, user)) return true;
 
   if (pathname === '/api/admin/summary' && request.method === 'GET') {
@@ -250,6 +268,17 @@ async function handleAdminApi(request, response, pathname, user) {
     const users = await pool.query("SELECT role,COUNT(*)::int AS count FROM users WHERE active=TRUE GROUP BY role");
     const totals = Object.fromEntries(users.rows.map(row => [row.role, row.count]));
     return sendJson(response, 200, { classes, totals:{ classes:classes.filter(row => row.active).length, students:totals.student || 0, teachers:totals.teacher || 0, superAdmins:totals.super_admin || 0 } }), true;
+  }
+
+  const impersonateMatch = pathname.match(/^\/api\/admin\/teachers\/(\d+)\/impersonate$/);
+  if (impersonateMatch && request.method === 'POST') {
+    const result = await pool.query("SELECT id,display_name,username FROM users WHERE id=$1 AND role='teacher' AND active=TRUE", [impersonateMatch[1]]);
+    const teacher = result.rows[0];
+    if (!teacher) return sendJson(response, 404, { error:'Active teacher not found.' }), true;
+    const adminToken = parseCookies(request).nfl_session;
+    const teacherToken = await createSession(response, teacher.id);
+    setAdminReturnCookie(response, adminToken);
+    return sendJson(response, 200, { ok:true, teacher:{ id:teacher.id, displayName:teacher.display_name, username:teacher.username }, redirectPath:'/teacher/dashboard' }), true;
   }
 
   if (pathname === '/api/admin/classes' && request.method === 'GET') {
@@ -368,9 +397,11 @@ async function handleApi(request, response, pathname, user) {
   }
 
   if (pathname === '/api/logout' && request.method === 'POST') {
-    const token = parseCookies(request).nfl_session;
+    const cookies = parseCookies(request);
+    const token = cookies.nfl_session;
     if (token) await pool.query('DELETE FROM sessions WHERE token_hash=$1', [tokenHash(token)]);
     clearSessionCookie(response);
+    if (cookies.nfl_admin_session) { await pool.query('DELETE FROM sessions WHERE token_hash=$1', [tokenHash(cookies.nfl_admin_session)]); clearAdminReturnCookie(response); }
     return sendJson(response, 200, { ok:true });
   }
 

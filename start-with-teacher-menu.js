@@ -188,9 +188,14 @@ function transformAdminHtml(html) {
   return output;
 }
 
-function serveTeacherPortal(response) {
+function serveTeacherPortal(response, impersonating = false) {
   const file = path.join(__dirname, 'teacher.html');
-  const html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
+  let html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
+  if (impersonating) {
+    const banner = '<div id="teacher-impersonation-banner" style="position:sticky;top:0;z-index:40;padding:10px 18px;background:#451a03;color:#fef3c7;border-bottom:1px solid rgba(251,191,36,.45);font:700 12px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:12px;text-align:center">Viewing as a teacher <button id="stop-teacher-impersonation" style="border:1px solid rgba(253,230,138,.4);border-radius:6px;padding:6px 10px;background:rgba(255,255,255,.08);color:#fff;font:800 11px Inter,system-ui,sans-serif;cursor:pointer">Return to Super Admin</button></div>';
+    html = html.replace('<body class="teacher-portal">', `<body class="teacher-portal">${banner}`);
+    html = html.replace('</body></html>', '<script>document.getElementById("stop-teacher-impersonation")?.addEventListener("click",async()=>{const button=document.getElementById("stop-teacher-impersonation");button.disabled=true;const response=await fetch("/api/admin/stop-impersonation",{method:"POST"});const data=await response.json().catch(()=>({}));if(response.ok)location.href=data.redirectPath||"/admin";else{button.disabled=false;alert(data.error||"Could not return to Super Admin.")}});</script></body></html>');
+  }
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   response.end(html);
 }
@@ -255,7 +260,7 @@ http.createServer = function createServerWithTeacherDashboard(listener) {
         const user = await getSessionUser(request);
         if (!user) return redirect(response, '/login');
         if (user.role !== 'teacher' && user.role !== 'super_admin') return redirect(response, '/');
-        return serveTeacherPortal(response);
+        return serveTeacherPortal(response, Boolean(parseCookies(request).nfl_admin_session));
       }
       if ((pathname === '/admin' || pathname === '/admin.html') && request.method === 'GET') {
         const user = await getSessionUser(request);
