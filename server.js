@@ -32,6 +32,7 @@ const CLASS_SEEDS = [
   { slug:'mccullough', name:'McCullough Class', targetStudentCount:19 }
 ];
 const CLEAN_STUDENT_PAGES = new Set(['dashboard','profile','teams','matchups','stats','players','travel','math','writing','cities']);
+const CLEAN_TEACHER_PAGES = new Set(['dashboard','students','progress','featured','coach','writing','cleats']);
 
 function normalizeUsername(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 32); }
 function normalizeSlug(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
@@ -524,6 +525,10 @@ async function route(request, response) {
     if (pathname === '/login' || pathname === '/login.html') return user ? redirect(response, redirectPathFor(user)) : serveFile(response, 'login.html');
     if (pathname === '/admin' || pathname === '/admin.html') return !user ? redirect(response, '/login') : !isSuperAdmin(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'admin.html');
     if (pathname === '/teacher' || pathname === '/teacher.html') return !user ? redirect(response, '/login') : !isTeacherLike(user) ? redirect(response, redirectPathFor(user)) : serveFile(response, 'teacher.html');
+    if (pathname.startsWith('/teacher/')) {
+      const page = pathname.slice('/teacher/'.length).replace(/\/+$/, '');
+      return !user ? redirect(response, '/login') : !isTeacherLike(user) ? redirect(response, redirectPathFor(user)) : CLEAN_TEACHER_PAGES.has(page) ? serveFile(response, 'teacher.html') : sendJson(response, 404, { error:'Teacher page not found.' });
+    }
     if (pathname.startsWith('/class/')) return !user ? redirect(response, '/login') : redirect(response, legacyClassRedirect(pathname));
     if (CLEAN_STUDENT_PAGES.has(pathname.slice(1))) return !user ? redirect(response, '/login') : user.role === 'super_admin' ? redirect(response, '/admin') : serveFile(response, 'index.html');
     if (pathname === '/' || pathname === '/index.html') return !user ? redirect(response, '/login') : user.role === 'super_admin' ? redirect(response, '/admin') : serveFile(response, 'index.html');

@@ -31,7 +31,7 @@
   function applyPages() {
     [...main.children].forEach((child, index) => {
       if (index === 0) { child.style.display = ''; return; }
-      let page = child.dataset.teacherPage;
+      let page = child.id === 'teacher-command-center' ? 'dashboard' : child.dataset.teacherPage;
       if (!page) {
         page = headingPage(child.textContent) || ((child.querySelector('#create-form') || child.querySelector('#student-list')) ? 'students' : null);
         if (page) child.dataset.teacherPage = page;
