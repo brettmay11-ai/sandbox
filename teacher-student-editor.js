@@ -1,7 +1,8 @@
 (() => {
-  const tbody = document.getElementById('student-list');
-  if (!tbody) return;
-  const escapeValue = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[character]));
+  function initialize() {
+    const tbody = document.getElementById('student-list');
+    if (!tbody) return;
+    const escapeValue = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[character]));
 
   const inputClass = 'mt-1 w-full min-w-[145px] border border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none bg-white/5 text-white placeholder:text-white/30 focus:border-cyan-300/60';
 
@@ -63,6 +64,10 @@
     });
   }
 
-  new MutationObserver(enhanceRows).observe(tbody, { childList:true, subtree:true });
-  enhanceRows();
+    new MutationObserver(enhanceRows).observe(tbody, { childList:true, subtree:true });
+    enhanceRows();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize);
+  else initialize();
 })();
