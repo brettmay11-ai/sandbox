@@ -15,7 +15,7 @@ tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['J
 </script>
 <script>
 (() => {
-  const pages = ['home', 'dashboard', 'profile', 'teams', 'matchups', 'stats', 'players', 'travel', 'math', 'writing', 'cities', 'tcu'];
+  const pages = ['home', 'dashboard', 'profile', 'teams', 'matchups', 'stats', 'players', 'travel', 'math', 'writing', 'cities'];
   const requested = new URLSearchParams(window.location.search).get('page');
   document.documentElement.dataset.portalPage = pages.includes(requested) ? requested : 'home';
 })();
@@ -200,7 +200,6 @@ select option{background:#111827;color:#fff}
       <a href="#writing" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Writing</a>
       <a href="#cities" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Cities</a>
       <a href="#facts" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">Fun Facts</a>
-      <a href="#TCU" class="px-3 py-1.5 text-xs text-white/60 hover:text-white transition-colors rounded-lg hover:bg-white/5">TCU</a>
     </div>
     <button onclick="openCompareModal()" id="compare-nav-btn" class="hidden items-center gap-2 text-[11px] px-3 py-1.5 rounded-lg border border-nfl-blue/40 bg-nfl-blue/10 text-brand-400 hover:bg-nfl-blue/20 transition uppercase tracking-wider font-semibold">
       <iconify-icon icon="lucide:git-compare" class="text-sm"></iconify-icon> Compare 2 Teams
