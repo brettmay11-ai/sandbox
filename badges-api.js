@@ -3,8 +3,8 @@ const BADGES = [
   { id:'first_down', title:'First Down', description:'Get a math play correct.', category:'Math', rarity:'Common', icon:'move-right', accent:'#22c55e' },
   { id:'touchdown_math', title:'Math Touchdown', description:'Score your first touchdown in Road to the Super Bowl.', category:'Math', rarity:'Rare', icon:'trophy', accent:'#facc15' },
   { id:'hot_streak', title:'Hot Streak', description:'Build a 3-answer math streak.', category:'Math', rarity:'Rare', icon:'flame', accent:'#fb923c' },
-  { id:'starter_level', title:'Starter Level', description:'Reach Starter level with 250 math XP.', category:'Math', rarity:'Common', icon:'badge-check', accent:'#38bdf8' },
-  { id:'captain_level', title:'Team Captain', description:'Reach Captain level with 750 math XP.', category:'Math', rarity:'Epic', icon:'shield', accent:'#a78bfa' },
+  { id:'starter_level', title:'Starter Level', description:'Reach Starter level with 500 math XP.', category:'Math', rarity:'Common', icon:'badge-check', accent:'#38bdf8' },
+  { id:'captain_level', title:'Team Captain', description:'Reach Captain level with 1,500 math XP.', category:'Math', rarity:'Epic', icon:'shield', accent:'#a78bfa' },
   { id:'all_pro_accuracy', title:'All-Pro Accuracy', description:'Answer 10 or more math questions with at least 80% accuracy.', category:'Math', rarity:'Epic', icon:'target', accent:'#f472b6' },
   { id:'press_pass', title:'Press Pass', description:'Submit your first writing assignment.', category:'Writing', rarity:'Common', icon:'newspaper', accent:'#34d399' },
   { id:'postgame_reporter', title:'Postgame Reporter', description:'Submit a postgame report.', category:'Writing', rarity:'Rare', icon:'mic-2', accent:'#60a5fa' },
@@ -71,8 +71,8 @@ async function awardMathBadges(pool, userId, profile, context = {}) {
   if (correct >= 1) ids.push('first_down');
   if (Number(profile.touchdowns || 0) >= 1) ids.push('touchdown_math');
   if (Number(profile.best_streak || 0) >= 3) ids.push('hot_streak');
-  if (totalXp >= 250) ids.push('starter_level');
-  if (totalXp >= 750) ids.push('captain_level');
+  if (totalXp >= 500) ids.push('starter_level');
+  if (totalXp >= 1500) ids.push('captain_level');
   if (answered >= 10 && accuracy >= 80) ids.push('all_pro_accuracy');
   return awardBadges(pool, userId, ids, { source:'math', ...context });
 }

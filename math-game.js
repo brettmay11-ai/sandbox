@@ -40,7 +40,7 @@
     <div class="border-y border-white/10 bg-white/[.025]">
       <div class="px-5 py-5 md:px-7 flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div><div class="text-[10px] uppercase tracking-[.2em] text-brand-400 font-bold mb-2">Math Competition</div><h2 class="text-2xl md:text-3xl font-black">Road to the Super Bowl</h2><p class="text-xs text-white/45 mt-2">Solve NFL math plays, move down the field, and score touchdowns.</p></div>
-        <div class="flex gap-2"><span id="mg-level" class="px-3 py-2 border border-brand-400/30 bg-brand-500/10 text-brand-400 text-xs font-bold">Rookie</span><span id="mg-next" class="px-3 py-2 border border-white/10 text-white/45 text-xs">250 XP to Starter</span></div>
+        <div class="flex gap-2"><span id="mg-level" class="px-3 py-2 border border-brand-400/30 bg-brand-500/10 text-brand-400 text-xs font-bold">Rookie</span><span id="mg-next" class="px-3 py-2 border border-white/10 text-white/45 text-xs">500 XP to Starter</span></div>
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 border-y border-white/10">
         <div class="p-4 md:p-5 border-r border-b md:border-b-0 border-white/10"><div class="text-[10px] uppercase text-white/35 font-bold">Season XP</div><div id="mg-xp" class="text-2xl font-black mt-1">0</div></div>
