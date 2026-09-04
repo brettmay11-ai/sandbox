@@ -122,6 +122,19 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY(user_id,page)
     );
+    CREATE TABLE IF NOT EXISTS xp_adjustments(
+      id BIGSERIAL PRIMARY KEY,
+      student_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      teacher_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      action VARCHAR(12) NOT NULL CHECK(action IN('deduct','reset')),
+      amount INTEGER NOT NULL DEFAULT 0,
+      previous_total_xp INTEGER NOT NULL,
+      new_total_xp INTEGER NOT NULL,
+      previous_weekly_xp INTEGER NOT NULL DEFAULT 0,
+      new_weekly_xp INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS xp_adjustments_student_idx ON xp_adjustments(student_id,created_at DESC);
   `);
 
   for (const item of CLASS_SEEDS) {
@@ -380,6 +393,68 @@ async function handleApi(request, response, pathname, user) {
   }
 
   if (!isTeacherLike(user)) return sendJson(response, 403, { error:'Teacher access required.' });
+
+  const xpMatch = pathname.match(/^\/api\/teacher\/students\/(\d+)\/xp$/);
+  if (xpMatch && request.method === 'PATCH') {
+    const body = await readJson(request);
+    const action = body.action === 'reset' ? 'reset' : 'deduct';
+    const amount = Number(body.amount);
+    if (action === 'deduct' && (!Number.isSafeInteger(amount) || amount < 1 || amount > 100000)) {
+      return sendJson(response, 400, { error:'Enter an XP amount between 1 and 100,000.' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const studentResult = await client.query(
+        `SELECT u.id,u.class_id,COALESCE(p.total_xp,0)::int AS total_xp
+         FROM users u
+         LEFT JOIN math_profiles p ON p.user_id=u.id
+         WHERE u.id=$1 AND u.role='student'
+         FOR UPDATE OF u`,
+        [xpMatch[1]]
+      );
+      const student = studentResult.rows[0];
+      if (!student || (user.role === 'teacher' && String(student.class_id) !== String(user.class_id))) {
+        await client.query('ROLLBACK');
+        return sendJson(response, 404, { error:'Student not found in your class.' });
+      }
+
+      await client.query('INSERT INTO math_profiles(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING', [student.id]);
+      const weeklyResult = await client.query(
+        `SELECT xp::int FROM math_weekly_stats
+         WHERE user_id=$1 AND week_start=date_trunc('week',CURRENT_DATE)::date
+         FOR UPDATE`,
+        [student.id]
+      );
+      const previousTotalXp = Number(student.total_xp || 0);
+      const previousWeeklyXp = Number(weeklyResult.rows[0]?.xp || 0);
+      const newTotalXp = action === 'reset' ? 0 : Math.max(0, previousTotalXp - amount);
+      const newWeeklyXp = action === 'reset' ? 0 : Math.max(0, previousWeeklyXp - amount);
+      const actualAmount = action === 'reset' ? previousTotalXp : previousTotalXp - newTotalXp;
+
+      await client.query('UPDATE math_profiles SET total_xp=$1,updated_at=NOW() WHERE user_id=$2', [newTotalXp, student.id]);
+      if (weeklyResult.rowCount) {
+        await client.query(
+          `UPDATE math_weekly_stats SET xp=$1
+           WHERE user_id=$2 AND week_start=date_trunc('week',CURRENT_DATE)::date`,
+          [newWeeklyXp, student.id]
+        );
+      }
+      await client.query(
+        `INSERT INTO xp_adjustments(student_id,teacher_id,action,amount,previous_total_xp,new_total_xp,previous_weekly_xp,new_weekly_xp)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [student.id, user.id, action, actualAmount, previousTotalXp, newTotalXp, previousWeeklyXp, newWeeklyXp]
+      );
+      await client.query('COMMIT');
+      return sendJson(response, 200, { ok:true, studentId:student.id, action, amount:actualAmount, totalXp:newTotalXp, weeklyXp:newWeeklyXp });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 
   if (pathname === '/api/teacher/students' && request.method === 'GET') {
     const params = [];
