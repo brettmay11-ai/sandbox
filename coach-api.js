@@ -118,15 +118,18 @@ function safetyPayload(flag, safety) {
   return { safety:{ blocked:true, category:flag.category, severity:flag.severity, message:safety.message } };
 }
 
-async function safetyFlags(pool) {
+const { classroomScope } = require('./classroom-access');
+async function safetyFlags(pool, user) {
+  const scope = classroomScope(user);
   const rows = (await pool.query(`
     SELECT f.id,f.page,f.message,f.category,f.severity,f.reviewed_at,f.created_at,u.display_name,u.username,u.selected_team
     FROM coach_safety_flags f
     LEFT JOIN users u ON u.id=f.user_id
+    WHERE u.role='student' ${scope.clause}
     ORDER BY f.reviewed_at NULLS FIRST,f.created_at DESC
     LIMIT 50
-  `)).rows;
-  const unreadCount = Number((await pool.query('SELECT COUNT(*)::int AS count FROM coach_safety_flags WHERE reviewed_at IS NULL')).rows[0]?.count || 0);
+  `, scope.params)).rows;
+  const unreadCount = Number((await pool.query(`SELECT COUNT(*)::int AS count FROM coach_safety_flags f JOIN users u ON u.id=f.user_id WHERE f.reviewed_at IS NULL AND u.role='student' ${scope.clause}`, scope.params)).rows[0]?.count || 0);
   return { flags:rows, unreadCount };
 }
 
@@ -135,7 +138,7 @@ async function handleCoach({ pool, req, res, path, user, sendJson, readJson }) {
   if (!user) { sendJson(res, 401, { error:'Please sign in.' }); return true; }
 
   if (path === '/api/coach/context' && req.method === 'GET') {
-    const setting = (await pool.query("SELECT setting_value FROM classroom_settings WHERE setting_key='coach_focus'")).rows[0]?.setting_value || null;
+    const setting = user.class_id ? (await pool.query('SELECT setting_value FROM classroom_settings WHERE setting_key=$1', [`coach_focus:${user.class_id}`])).rows[0]?.setting_value || null : null;
     sendJson(res, 200, { focus:setting, assignedTeam:user.selected_team || null });
     return true;
   }
@@ -144,29 +147,33 @@ async function handleCoach({ pool, req, res, path, user, sendJson, readJson }) {
     if (user.role !== 'teacher') { sendJson(res, 403, { error:'Teacher access required.' }); return true; }
     const body = await readJson(req);
     const focus = { prompt:String(body.prompt || '').trim().slice(0, 500) };
-    await pool.query("INSERT INTO classroom_settings(setting_key,setting_value,updated_by) VALUES('coach_focus',$1,$2) ON CONFLICT(setting_key) DO UPDATE SET setting_value=EXCLUDED.setting_value,updated_by=EXCLUDED.updated_by,updated_at=NOW()", [focus, user.id]);
+    if (!user.class_id) { sendJson(res, 403, { error:'A classroom assignment is required.' }); return true; }
+    await pool.query('INSERT INTO classroom_settings(setting_key,setting_value,updated_by) VALUES($1,$2,$3) ON CONFLICT(setting_key) DO UPDATE SET setting_value=EXCLUDED.setting_value,updated_by=EXCLUDED.updated_by,updated_at=NOW()', [`coach_focus:${user.class_id}`, focus, user.id]);
     sendJson(res, 200, { focus });
     return true;
   }
 
   if (path === '/api/coach/questions' && req.method === 'GET') {
     if (user.role !== 'teacher') { sendJson(res, 403, { error:'Teacher access required.' }); return true; }
-    const questions = (await pool.query(`SELECT question,COUNT(*)::int AS count,MAX(created_at) AS last_asked FROM coach_question_log WHERE created_at>NOW()-INTERVAL '30 days' GROUP BY question ORDER BY count DESC,last_asked DESC LIMIT 10`)).rows;
+    const scope = classroomScope(user);
+    const questions = (await pool.query(`SELECT q.question,COUNT(*)::int AS count,MAX(q.created_at) AS last_asked FROM coach_question_log q JOIN users u ON u.id=q.user_id WHERE q.created_at>NOW()-INTERVAL '30 days' AND u.role='student' ${scope.clause} GROUP BY q.question ORDER BY count DESC,last_asked DESC LIMIT 10`, scope.params)).rows;
     sendJson(res, 200, { questions });
     return true;
   }
 
   if (path === '/api/coach/safety-flags' && req.method === 'GET') {
     if (user.role !== 'teacher') { sendJson(res, 403, { error:'Teacher access required.' }); return true; }
-    sendJson(res, 200, await safetyFlags(pool));
+    sendJson(res, 200, await safetyFlags(pool, user));
     return true;
   }
 
   const reviewMatch = path.match(/^\/api\/coach\/safety-flags\/(\d+)\/review$/);
   if (reviewMatch && req.method === 'PATCH') {
     if (user.role !== 'teacher') { sendJson(res, 403, { error:'Teacher access required.' }); return true; }
-    await pool.query('UPDATE coach_safety_flags SET reviewed_at=NOW(),reviewed_by=$2 WHERE id=$1', [reviewMatch[1], user.id]);
-    sendJson(res, 200, { ok:true, ...(await safetyFlags(pool)) });
+    const scope = classroomScope(user, { offset:2 });
+    const result = await pool.query(`UPDATE coach_safety_flags SET reviewed_at=NOW(),reviewed_by=$2 WHERE id=$1 AND user_id IN (SELECT u.id FROM users u WHERE u.role='student' ${scope.clause}) RETURNING id`, [reviewMatch[1], user.id, ...scope.params]);
+    if (!result.rowCount) { sendJson(res, 404, { error:'Flag not found.' }); return true; }
+    sendJson(res, 200, { ok:true, ...(await safetyFlags(pool, user)) });
     return true;
   }
 

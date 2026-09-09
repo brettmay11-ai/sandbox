@@ -65,6 +65,7 @@
   }
 
   function matchupFocus() {
+    if(!window.NFLFeeds?.schedule)return focusCard({eyebrow:'Your Team',title:'Schedule unavailable',subtitle:'Waiting for the scheduled update.',insights:[],actions:[]});
     const week = WEEKS[currentWeek];
     const game = week?.games?.find(item => item.away === assignedTeam.abbr || item.home === assignedTeam.abbr);
     if (!game) {
@@ -84,16 +85,20 @@
     const isAway = game.away === assignedTeam.abbr;
     const opponent = getTeam(isAway ? game.home : game.away);
     const venue = getTeam(game.home);
-    const distance = isAway ? Math.round(haversine(assignedTeam.lat, assignedTeam.lng, opponent.lat, opponent.lng)) : 0;
+    const international=getInternationalGame(week.week,game.away,game.home);
+    const destination=international||venue;
+    const venueName=game.stadium||international?.stadium||venue.stadium;
+    const venueCity=game.city?[game.city,game.state,game.country].filter(Boolean).join(', '):international?`${international.city}, ${international.country}`:`${venue.city}, ${venue.state}`;
+    const distance = Math.round(haversine(assignedTeam.lat, assignedTeam.lng, destination.lat, destination.lng));
     const cleanDay = String(game.day || 'Game Day').replace(/'/g, '');
     return focusCard({
       eyebrow:`Your Week ${week.week} Matchup`,
       title:`${assignedTeam.name} ${isAway ? 'at' : 'vs'} ${opponent.name}`,
-      subtitle:isAway ? `Road game in ${opponent.city}` : `Home game at ${assignedTeam.stadium}`,
+      subtitle:international ? `International game in ${venueCity}` : isAway ? `Road game in ${opponent.city}` : `Home game at ${assignedTeam.stadium}`,
       insights:[
         { label:'Opponent', value:fullName(opponent), note:opponent.div, icon:'lucide:swords' },
-        { label:'Kickoff', value:`${game.day} ${game.time}`, note:isAway ? `${distance.toLocaleString()} miles away` : 'Home game', icon:'lucide:clock-3' },
-        { label:'Venue', value:venue.stadium, note:`${venue.city}, ${venue.state}`, icon:'lucide:map-pin' }
+        { label:'Kickoff', value:`${game.day} ${game.date} ${game.time}`, note:isAway||international ? `${distance.toLocaleString()} mi, one-way straight-line estimate` : 'Home game', icon:'lucide:clock-3' },
+        { label:'Venue', value:venueName, note:venueCity, icon:'lucide:map-pin' }
       ],
       actions:[{ label:'Open Matchup', icon:'lucide:arrow-up-right', onclick:`showMatchupModal('${game.away}','${game.home}',${week.week},'${cleanDay}')` }]
     });
@@ -156,7 +161,7 @@
       subtitle:`Starting from ${assignedTeam.city}, ${assignedTeam.state}`,
       insights:[
         { label:'Road Games', value:String(trips.length), note:'Season travel stops', icon:'lucide:calendar-range' },
-        { label:'Total Travel', value:`${formatNumber(Math.round(total))} mi`, note:'Approximate road distance', icon:'lucide:plane' },
+        { label:'Total Travel', value:`${formatNumber(Math.round(total))} mi`, note:'Sum of one-way, straight-line trips from home stadium', icon:'lucide:plane' },
         { label:'Longest Trip', value:farthest ? `${formatNumber(Math.round(farthest.distance))} mi` : 'No trips', note:farthest ? `${farthest.city}, ${farthest.state}` : 'Home schedule', icon:'lucide:route' }
       ],
       actions:[{ label:'Show My Team', icon:'lucide:locate-fixed', onclick:'showAssignedTeamTravel()' }]

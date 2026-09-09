@@ -1,4 +1,6 @@
 const http = require('http');
+const { classroomScope, updateClassroomStudent } = require('./classroom-access');
+const { resolveFeaturedGame } = require('./featured-game-data');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const { initMathGame, handleMathGame } = require('./math-game-api');
@@ -7,7 +9,7 @@ const { handleTeacherAnalytics } = require('./teacher-analytics-api');
 const { initWriting, handleWriting } = require('./writing-api');
 const { initSocialStudies, handleSocialStudies } = require('./social-studies-api');
 const { initBadges, handleBadges, badgeProfile } = require('./badges-api');
-const { initSportsDataCache, handleSportsData } = require('./sportsdata-api');
+const { initSportsDataCache, handleSportsData, startSportsDataRefresh } = require('./sportsdata-api');
 const { initRssNewsCache, handleRssNews } = require('./rss-news-api');
 const { handleCleatGeneration } = require('./cleat-generation-api');
 
@@ -39,13 +41,14 @@ async function handleFeaturedGame(request,response,pathname,user){
   if(!user)return sendJson(response,401,{error:'Please sign in.'}),true;
   if(request.method==='GET'){
     const result=await pool.query("SELECT setting_value,updated_at FROM classroom_settings WHERE setting_key='featured_game'");
-    return sendJson(response,200,{featuredGame:result.rows[0]?.setting_value||null,updatedAt:result.rows[0]?.updated_at||null}),true;
+    return sendJson(response,200,{featuredGame:await resolveFeaturedGame(pool,result.rows[0]?.setting_value),updatedAt:result.rows[0]?.updated_at||null}),true;
   }
   if(request.method!=='PATCH')return sendJson(response,405,{error:'Method not allowed.'}),true;
   if(!isStaff(user))return sendJson(response,403,{error:'Teacher access required.'}),true;
   const body=await readJson(request),week=Math.max(1,Math.min(18,Number(body.week)||1)),away=String(body.away||'').toUpperCase(),home=String(body.home||'').toUpperCase();
   if(!NFL_TEAMS.has(away)||!NFL_TEAMS.has(home)||away===home)return sendJson(response,400,{error:'Choose two different NFL teams.'}),true;
-  const featuredGame={week,away,home,day:String(body.day||'Sunday').slice(0,20),time:String(body.time||'1:00 PM ET').slice(0,30),discussion:String(body.discussion||'').slice(0,1000)};
+  const featuredGame=await resolveFeaturedGame(pool,{week,away,home,season:body.season,discussion:String(body.discussion||'').slice(0,1000)});
+  if(!featuredGame?.scheduled)return sendJson(response,409,{error:'Choose a game from the stored season schedule. It may be waiting for its scheduled update.'}),true;
   await pool.query("INSERT INTO classroom_settings(setting_key,setting_value,updated_by) VALUES('featured_game',$1,$2) ON CONFLICT(setting_key) DO UPDATE SET setting_value=EXCLUDED.setting_value,updated_by=EXCLUDED.updated_by,updated_at=NOW()",[featuredGame,user.id]);
   sendJson(response,200,{featuredGame});return true;
 }
@@ -65,10 +68,8 @@ async function handleClassmateProfiles(request,response,pathname,user){
   if(pathname!=='/api/classmates/profiles')return false;
   if(!user)return sendJson(response,401,{error:'Please sign in.'}),true;
   if(request.method!=='GET')return sendJson(response,405,{error:'Method not allowed.'}),true;
-  const params=[];
-  let classFilter='';
-  if(user.role==='student' && user.class_id){params.push(user.class_id);classFilter=`AND class_id=$${params.length}`;}
-  const result=await pool.query(`SELECT id,display_name,selected_team,nickname,jersey_number,favorite_position,team_role FROM users WHERE role='student' AND active=TRUE ${classFilter} ORDER BY display_name`,params);
+  const scope=classroomScope(user);
+  const result=await pool.query(`SELECT id,display_name,selected_team,nickname,jersey_number,favorite_position,team_role FROM users u WHERE role='student' AND active=TRUE ${scope.clause} ORDER BY display_name`,scope.params);
   const students=[];
   for(const row of result.rows){const profile=await badgeProfile(pool,row.id),earned=profile.earned.slice(0,12);students.push({id:row.id,displayName:row.display_name,selectedTeam:row.selected_team,identity:studentIdentity(row),badges:earned,earnedCount:profile.earnedCount,totalBadges:profile.total,isMe:row.id===user.id});}
   sendJson(response,200,{students});return true;
@@ -80,9 +81,9 @@ async function handleTeamAssignment(request,response,pathname,user){
   if(!isStaff(user))return sendJson(response,403,{error:'Teacher access required.'}),true;
   const body=await readJson(request),team=String(body.team||'').toUpperCase();
   if(team&&!NFL_TEAMS.has(team))return sendJson(response,400,{error:'Choose a valid NFL team.'}),true;
-  const result=await pool.query("UPDATE users SET selected_team=$1 WHERE id=$2 AND role='student' RETURNING id,selected_team",[team||null,match[1]]);
-  if(!result.rowCount)return sendJson(response,404,{error:'Student not found.'}),true;
-  sendJson(response,200,{student:result.rows[0]});return true;
+  const student=await updateClassroomStudent(pool,user,match[1],'selected_team',team||null);
+  if(!student)return sendJson(response,404,{error:'Student not found.'}),true;
+  sendJson(response,200,{student});return true;
 }
 async function handleStudentProgress(request,response,pathname,user){
   if(pathname!=='/api/progress'||request.method!=='POST')return false;
@@ -100,6 +101,7 @@ async function handleStudentProgress(request,response,pathname,user){
   await initCoach(pool);
   await initWriting(pool);
   await initSocialStudies(pool);
+  startSportsDataRefresh(pool);
   const createServer=http.createServer.bind(http);
   http.createServer=function classroomGameServer(originalListener){
     return createServer(async(request,response)=>{

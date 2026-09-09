@@ -131,7 +131,7 @@
 
   function renderProfile() {
     const s = stateOf(selected);
-    const items = [['NFL City', selected.city, 'lucide:building-2'], ['State Capital', s.capital, 'lucide:landmark'], ['U.S. Region', s.region, 'lucide:map'], ['Landmark', s.landmark, 'lucide:camera']];
+    const items = [['NFL City', selected.city, 'lucide:building-2'], ['State Capital', s.capital, 'lucide:landmark'], ['U.S. Region', s.region, 'lucide:map'], ['State Landmark', s.landmark, 'lucide:camera']];
     $('cs-profile').innerHTML = items.map(([label, value, icon]) => `<div class="cs-tile p-4"><div class="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-white/35 font-bold"><iconify-icon icon="${icon}" class="text-brand-400 text-xs"></iconify-icon>${label}</div><div class="text-sm font-black mt-2 leading-tight">${esc(value)}</div></div>`).join('');
     const xpEl = $('cs-xp'); xpEl.dataset.countup = profile.socialXp || 0; delete xpEl.dataset.countupDone; if (typeof runCountUps === 'function') runCountUps(xpEl.parentElement); else xpEl.textContent = profile.socialXp || 0;
     const completed = profile.completed || 0;
@@ -207,9 +207,9 @@
     const a = stateOf(selected), b = stateOf(other);
     const aPop = popNum(a.pop), bPop = popNum(b.pop);
     const total = aPop + bPop || 1;
-    const cell = (team, st, win) => `<div class="p-3 rounded-xl border ${win ? 'border-amber-400/40 bg-amber-500/8' : 'border-white/10 bg-white/[.03]'}"><div class="font-black text-sm flex items-center gap-1.5">${esc(team.city)}${win ? '<iconify-icon icon="lucide:crown" class="text-amber-300 text-xs"></iconify-icon>' : ''}</div><div class="text-[10px] text-white/45 mt-2 leading-5">${st.region}<br>Pop: ${st.pop}<br>${st.landmark}</div></div>`;
+    const cell = (team, st, win) => `<div class="p-3 rounded-xl border ${win ? 'border-amber-400/40 bg-amber-500/8' : 'border-white/10 bg-white/[.03]'}"><div class="font-black text-sm flex items-center gap-1.5">${esc(team.city)}${win ? '<iconify-icon icon="lucide:crown" class="text-amber-300 text-xs"></iconify-icon>' : ''}</div><div class="text-[10px] text-white/45 mt-2 leading-5">${st.region}<br>Approx. state population (${esc(team.state)}): ${st.pop}<br>State landmark: ${st.landmark}</div></div>`;
     $('cs-compare').innerHTML = `<div class="grid grid-cols-2 gap-2">${cell(selected, a, aPop >= bPop)}${cell(other, b, bPop > aPop)}</div>
-      <div class="mt-3"><div class="flex justify-between text-[9px] uppercase text-white/35 font-bold mb-1"><span>Population</span><span>${a.pop} vs ${b.pop}</span></div>
+      <div class="mt-3"><div class="flex justify-between text-[9px] uppercase text-white/35 font-bold mb-1"><span>Approximate State Populations</span><span>${a.pop} vs ${b.pop}</span></div>
       <div class="cs-battle-bar flex"><div style="width:${aPop / total * 100}%;background:linear-gradient(90deg,var(--student-team-primary,#013369),var(--student-team-secondary,#D50A0A))"></div><div style="width:${bPop / total * 100}%;background:rgba(255,255,255,.18)"></div></div></div>`;
   }
 

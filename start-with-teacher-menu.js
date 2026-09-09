@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const { versionHtml, renderStudentHtml } = require('./portal-assets');
+const { sportsDataHealth } = require('./sportsdata-api');
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is required. Add PostgreSQL to the Railway project.');
@@ -12,26 +14,6 @@ const pool = new Pool({
   ...(process.env.PGSSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {})
 });
 
-function installStudentPortalAssetInjection() {
-  if (fs.__studentPortalAssetInjectionInstalled) return;
-  fs.__studentPortalAssetInjectionInstalled = true;
-  const originalReadFile = fs.readFile.bind(fs);
-  const assetMarkup = '<link rel="stylesheet" href="/student-portal-fixes.css?v=1"><link rel="stylesheet" href="/standings-integration.css?v=2"><link rel="stylesheet" href="/player-leaders-toggle.css?v=1"><script defer src="/standings-integration.js?v=2"></script><script defer src="/student-portal-fixes.js?v=1"></script><script defer src="/player-leaders-toggle.js?v=2"></script><script defer src="/international-matchup-fixes.js?v=3"></script><script defer src="/central-time-display.js?v=1"></script>';
-  fs.readFile = function readFileWithStudentAssets(file, options, callback) {
-    const done = typeof options === 'function' ? options : callback;
-    const opts = typeof options === 'function' ? undefined : options;
-    return originalReadFile(file, opts, (error, content) => {
-      if (error || typeof done !== 'function') return done && done(error, content);
-      const filePath = String(file || '');
-      if (!filePath.endsWith(`${path.sep}index.html`) && !filePath.endsWith('/index.html') && !filePath.endsWith('index.html')) return done(error, content);
-      const asString = Buffer.isBuffer(content) ? content.toString('utf8') : String(content);
-      if (asString.includes('student-portal-fixes.js')) return done(error, content);
-      const patched = asString.replace('</head>', `${assetMarkup}</head>`);
-      return done(error, Buffer.isBuffer(content) ? Buffer.from(patched, 'utf8') : patched);
-    });
-  };
-}
-installStudentPortalAssetInjection();
 
 function parseCookies(request) {
   return Object.fromEntries(
@@ -161,7 +143,7 @@ function adminRefreshScript() {
     const button=document.getElementById('refresh');
     if(!button||button.dataset.siteRefreshInstalled)return;
     button.dataset.siteRefreshInstalled='true';
-    button.title='Clear cached sports data so stats, schedules, news, standings, and featured-game details reload fresh.';
+    button.title='Reload portal data without clearing the scheduled sports cache.';
     button.addEventListener('click',event=>{event.preventDefault();refreshSiteData();},{capture:true});
   });
 })();
@@ -193,7 +175,7 @@ function transformAdminHtml(html) {
 
 function serveTeacherPortal(response, impersonating = false) {
   const file = path.join(__dirname, 'teacher.html');
-  let html = transformTeacherHtml(fs.readFileSync(file, 'utf8'));
+  let html = versionHtml(transformTeacherHtml(fs.readFileSync(file, 'utf8')));
   if (impersonating) {
     const banner = '<div id="teacher-impersonation-banner" style="position:sticky;top:0;z-index:40;padding:10px 18px;background:#451a03;color:#fef3c7;border-bottom:1px solid rgba(251,191,36,.45);font:700 12px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:12px;text-align:center">Viewing as a teacher <button id="stop-teacher-impersonation" style="border:1px solid rgba(253,230,138,.4);border-radius:6px;padding:6px 10px;background:rgba(255,255,255,.08);color:#fff;font:800 11px Inter,system-ui,sans-serif;cursor:pointer">Return to Super Admin</button></div>';
     html = html.replace('<body class="teacher-portal">', `<body class="teacher-portal">${banner}`);
@@ -205,14 +187,14 @@ function serveTeacherPortal(response, impersonating = false) {
 
 function serveAdminPortal(response) {
   const file = path.join(__dirname, 'admin.html');
-  const html = transformAdminHtml(fs.readFileSync(file, 'utf8'));
+  const html = versionHtml(transformAdminHtml(fs.readFileSync(file, 'utf8')));
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   response.end(html);
 }
 
 function serveStudentPortal(response) {
   const file = path.join(__dirname, 'index.html');
-  let html = fs.readFileSync(file, 'utf8');
+  let html = renderStudentHtml(fs.readFileSync(file, 'utf8'));
   const banner = '<div id="student-impersonation-banner" role="status" style="position:relative;z-index:2;margin-top:64px;min-height:52px;padding:10px 18px;background:#172554;color:#dbeafe;border-bottom:1px solid rgba(96,165,250,.65);font:700 12px Inter,system-ui,sans-serif;display:flex !important;visibility:visible !important;align-items:center;justify-content:center;gap:12px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3)">Viewing as a student <button id="stop-student-impersonation" style="border:1px solid rgba(147,197,253,.55);border-radius:6px;padding:6px 10px;background:rgba(255,255,255,.12);color:#fff;font:800 11px Inter,system-ui,sans-serif;cursor:pointer">Return to Super Admin</button></div>';
   html = html.replace(/<body([^>]*)>/i, '<body$1>' + banner);
   html = html.replace('</body>', '<script>document.getElementById("stop-student-impersonation")?.addEventListener("click",async()=>{const button=document.getElementById("stop-student-impersonation");button.disabled=true;const response=await fetch("/api/admin/stop-impersonation",{method:"POST"});const data=await response.json().catch(()=>({}));if(response.ok)location.href=data.redirectPath||"/admin";else{button.disabled=false;alert(data.error||"Could not return to Super Admin.")}});</script></body>');
@@ -233,12 +215,13 @@ async function handleAdminRefreshData(request, response, pathname) {
     fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL
   )`);
-  const deleted = await pool.query('DELETE FROM sportsdata_cache');
+  const budget = await sportsDataHealth(pool);
   sendJson(response, 200, {
     ok: true,
     refreshedAt: new Date().toISOString(),
-    cacheEntriesCleared: deleted.rowCount || 0,
-    message: 'Sports data cache cleared. Fresh stats, standings, schedules, news, and featured-game details will reload on the next site requests.'
+    budget,
+    cacheEntriesCleared: 0,
+    message: 'Portal data reloaded. Sports feeds update in the background with at most 5 attempts per rolling 24 hours.'
   });
   return true;
 }
@@ -259,7 +242,7 @@ async function handleAdminSportsDataUsage(request,response,pathname) {
     pool.query(`SELECT sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END AS provider,api_path,COUNT(*)::int AS calls,COUNT(*) FILTER(WHERE requested_at>=NOW()-INTERVAL '24 hours')::int AS calls_24h,MAX(requested_at) AS last_requested,ROUND(AVG(duration_ms))::int AS average_duration_ms FROM sportsdata_usage GROUP BY sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END,api_path ORDER BY calls DESC,last_requested DESC LIMIT 100`),
     pool.query(`SELECT id,sport,CASE WHEN api_path LIKE 'espn:%' THEN 'espn' ELSE COALESCE(provider,'sportsdata') END AS provider,api_path,status_code,succeeded,duration_ms,error_message,requested_at FROM sportsdata_usage ORDER BY requested_at DESC LIMIT 100`)
   ]);
-  sendJson(response,200,{summary:summary.rows[0],byEndpoint:byEndpoint.rows,recent:recent.rows});return true;
+  sendJson(response,200,{summary:summary.rows[0],byEndpoint:byEndpoint.rows,recent:recent.rows,budget:await sportsDataHealth(pool)});return true;
 }
 
 const originalCreateServer = http.createServer.bind(http);

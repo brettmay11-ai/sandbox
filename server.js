@@ -1,4 +1,6 @@
 const http = require('http');
+const { versionHtml, renderStudentHtml } = require('./portal-assets');
+const { classroomScope, updateClassroomStudent } = require('./classroom-access');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -459,7 +461,7 @@ async function handleApi(request, response, pathname, user) {
         [xpMatch[1]]
       );
       const student = studentResult.rows[0];
-      if (!student || (user.role === 'teacher' && String(student.class_id) !== String(user.class_id))) {
+      if (!student || (user.role === 'teacher' && (!user.class_id || String(student.class_id) !== String(user.class_id)))) {
         await client.query('ROLLBACK');
         return sendJson(response, 404, { error:'Student not found in your class.' });
       }
@@ -503,7 +505,9 @@ async function handleApi(request, response, pathname, user) {
   if (pathname === '/api/teacher/students' && request.method === 'GET') {
     const params = [];
     let classFilter = '';
-    if (user.role === 'teacher' && user.class_id) { params.push(user.class_id); classFilter = `AND u.class_id=$${params.length}`; }
+    const scope = classroomScope(user, { offset:params.length, allowAdmin:true });
+    params.push(...scope.params);
+    classFilter = scope.clause;
     const result = await pool.query(
       `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at
        FROM users u
@@ -520,6 +524,7 @@ async function handleApi(request, response, pathname, user) {
     const username = normalizeUsername(body.username);
     const displayName = safeText(body.displayName || username, 80);
     const classId = isSuperAdmin(user) ? (Number(body.classId) || user.class_id || null) : user.class_id;
+    if (user.role === 'teacher' && !classId) return sendJson(response, 403, { error:'A classroom assignment is required.' });
     if (username.length < 2 || !validPin(body.pin) || !displayName) return sendJson(response, 400, { error:'Enter a username, display name, and 4-8 digit PIN.' });
     try {
       const result = await pool.query('INSERT INTO users(username,display_name,pin_hash,role,class_id) VALUES($1,$2,$3,$4,$5) RETURNING id,username,display_name,class_id', [username, displayName, await hashPin(body.pin), 'student', classId]);
@@ -556,7 +561,8 @@ async function handleApi(request, response, pathname, user) {
   if (pinMatch && request.method === 'PATCH') {
     const body = await readJson(request);
     if (!validPin(body.pin)) return sendJson(response, 400, { error:'PIN must contain 4-8 digits.' });
-    await pool.query("UPDATE users SET pin_hash=$1 WHERE id=$2 AND role='student'", [await hashPin(body.pin), pinMatch[1]]);
+    const student = await updateClassroomStudent(pool, user, pinMatch[1], 'pin_hash', await hashPin(body.pin));
+    if (!student) return sendJson(response, 404, { error:'Student not found.' });
     await pool.query('DELETE FROM sessions WHERE user_id=$1', [pinMatch[1]]);
     return sendJson(response, 200, { ok:true });
   }
@@ -564,7 +570,8 @@ async function handleApi(request, response, pathname, user) {
   const statusMatch = pathname.match(/^\/api\/teacher\/students\/(\d+)\/status$/);
   if (statusMatch && request.method === 'PATCH') {
     const body = await readJson(request);
-    await pool.query("UPDATE users SET active=$1 WHERE id=$2 AND role='student'", [Boolean(body.active), statusMatch[1]]);
+    const student = await updateClassroomStudent(pool, user, statusMatch[1], 'active', Boolean(body.active));
+    if (!student) return sendJson(response, 404, { error:'Student not found.' });
     return sendJson(response, 200, { ok:true });
   }
 
@@ -579,6 +586,7 @@ function serveFile(response, relative) {
     if (relative === 'teacher.html') content = content.toString().replace('team-branding.js?v=3', 'team-branding.js?v=4').replace(/(href|src)="(visual-system\.css|team-branding\.js|teacher-cleats\.js)/g, '$1="/$2');
     if (relative === 'admin.html') content = content.toString().replace('</head>', '<link rel="stylesheet" href="/admin-portal-fixes.css?v=1"></head>');
     const contentType=mimeTypes[path.extname(file).toLowerCase()] || 'application/octet-stream';
+    if (file.endsWith('.html')) content = path.basename(file) === 'index.html' ? renderStudentHtml(content.toString()) : versionHtml(content.toString());
     response.writeHead(200, { 'Content-Type':contentType, 'Cache-Control':file.endsWith('.html')?'no-store':'no-cache' });
     response.end(content);
   });

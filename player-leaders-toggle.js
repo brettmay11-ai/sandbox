@@ -1,5 +1,4 @@
 (() => {
-  const SEASON = 2026;
   const TEAMS = ['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS'];
   const TEAM_NAMES = { ARI:'Arizona Cardinals', ATL:'Atlanta Falcons', BAL:'Baltimore Ravens', BUF:'Buffalo Bills', CAR:'Carolina Panthers', CHI:'Chicago Bears', CIN:'Cincinnati Bengals', CLE:'Cleveland Browns', DAL:'Dallas Cowboys', DEN:'Denver Broncos', DET:'Detroit Lions', GB:'Green Bay Packers', HOU:'Houston Texans', IND:'Indianapolis Colts', JAX:'Jacksonville Jaguars', KC:'Kansas City Chiefs', LV:'Las Vegas Raiders', LAC:'Los Angeles Chargers', LAR:'Los Angeles Rams', MIA:'Miami Dolphins', MIN:'Minnesota Vikings', NE:'New England Patriots', NO:'New Orleans Saints', NYG:'New York Giants', NYJ:'New York Jets', PHI:'Philadelphia Eagles', PIT:'Pittsburgh Steelers', SF:'San Francisco 49ers', SEA:'Seattle Seahawks', TB:'Tampa Bay Buccaneers', TEN:'Tennessee Titans', WAS:'Washington Commanders' };
   const aliases = { JAC:'JAX', LA:'LAR', WSH:'WAS' };
@@ -22,6 +21,7 @@
       return Number(player.ReceivingTouchdowns || 0) + Number(player.RushingTouchdowns || 0) + Number(player.PassingTouchdowns || 0) + Number(player.ReturnTouchdowns || 0);
     }
     for (const field of fields) {
+      if (player[field] == null) continue;
       const value = Number(player[field]);
       if (Number.isFinite(value)) return value;
     }
@@ -45,20 +45,10 @@
       return '';
     }
   }
-  async function teamStats(team) {
-    const normalizedTeam = teamCode(team);
-    if (!normalizedTeam) return [];
-    const key = `NFL_PLAYER_STATS_${SEASON}_${normalizedTeam}`;
-    if (window[key]) return window[key];
-    const rows = await api(`/api/sportsdata/nfl/player-season-stats-by-team/${SEASON}/${normalizedTeam}`);
-    window[key] = Array.isArray(rows) ? rows : [];
-    return window[key];
-  }
-  async function scopeRows(scope, team) {
-    if (window.NFL_LEAGUE_PLAYER_STATS_2026) return window.NFL_LEAGUE_PLAYER_STATS_2026;
-    const rows = await api(`/api/sportsdata/nfl/player-season-stats/${SEASON}`);
-    window.NFL_LEAGUE_PLAYER_STATS_2026 = Array.isArray(rows) ? rows : [];
-    return window.NFL_LEAGUE_PLAYER_STATS_2026;
+  async function scopeRows() {
+    await window.portalDataReady;
+    if(!window.NFLFeeds.players)throw new Error('Stored stats unavailable');
+    return window.NFLFeeds.players.data;
   }
   function leaders(rows, category) {
     return rows.map(player => ({ player, value:numberValue(player, category.fields) }))
@@ -68,7 +58,7 @@
   }
   function cardHtml(item, index, category) {
     const team = playerTeam(item.player);
-    return `<article class="player-leader-card"><div class="player-leader-rank">#${index + 1}</div><div class="player-leader-name"><strong>${esc(playerName(item.player))}</strong><small>${esc(team || 'NFL')} · ${esc(playerPosition(item.player))}</small></div><div class="player-leader-stat">${Math.round(item.value).toLocaleString()}<span>${esc(category.statLabel)}</span></div></article>`;
+    return `<article class="player-leader-card"><div class="player-leader-rank">#${index + 1}</div><div class="player-leader-name"><strong>${esc(playerName(item.player))}</strong><small>${esc(team || 'NFL')} · ${esc(playerPosition(item.player))}</small></div><div class="player-leader-stat">${item.value.toLocaleString(undefined,{maximumFractionDigits:1})}<span>${esc(category.statLabel)}</span></div></article>`;
   }
   function hideDuplicateLeaderSections(page, panel) {
     const duplicatePattern = /league\s+top\s*10|league\s+leaders|top\s+10\s+nfl|passing\s+leaders|rushing\s+leaders|receiving\s+leaders|touchdown\s+leaders|defensive\s+leaders|sack\s+leaders|interception\s+leaders/i;
@@ -83,6 +73,7 @@
     });
   }
   function installPanel() {
+    if(document.documentElement.dataset.portalPage!=='players')return;
     const page = document.getElementById('players');
     if (!page || document.getElementById('player-leaders-toggle-panel')) return;
     const panel = document.createElement('section');
@@ -114,12 +105,13 @@
       if (selectWrap) selectWrap.hidden = scope !== 'team';
       status.textContent = scope === 'team' ? `Loading ${teamName(team)} leaders...` : 'Loading league leaders...';
       grid.innerHTML = '';
-      const allRows = await scopeRows(scope, team);
+      let allRows;
+      try { allRows = await scopeRows(); } catch(error) {status.textContent='Player statistics are unavailable until the scheduled update.';return}
       const rows = scope === 'team' ? allRows.filter(player => playerTeam(player) === teamCode(team)) : allRows;
       const top = leaders(rows, category);
       title.textContent = scope === 'team' ? `${teamName(team)} Leaders` : 'League Top 10';
       subtitle.textContent = scope === 'team' ? `Top ${teamName(team)} players for ${category.label.toLowerCase()}.` : `Top NFL players for ${category.label.toLowerCase()}.`;
-      status.textContent = top.length ? `${category.label} · ${scope === 'team' ? teamName(team) : 'League Top 10'}` : 'No player stats found for this view yet.';
+      status.textContent = (top.length ? `${category.label} | ` : 'No season statistics yet. ') + window.NFLFeeds.label(window.NFLFeeds.players,window.NFLFeeds.season);
       grid.innerHTML = top.map((item, index) => cardHtml(item, index, category)).join('');
     }
     panel.addEventListener('click', event => {
@@ -149,5 +141,5 @@
       status.textContent = 'Player leaders are temporarily unavailable.';
     });
   }
-  window.addEventListener('DOMContentLoaded', installPanel);
+  window.addEventListener('portal-page-ready', installPanel);
 })();

@@ -16,13 +16,14 @@ tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['J
 <script>
 (() => {
   const pages = ['home', 'dashboard', 'profile', 'teams', 'matchups', 'stats', 'players', 'travel', 'math', 'writing', 'cities'];
-  const requested = new URLSearchParams(window.location.search).get('page');
+  const requested = window.location.pathname.replace(/^\/+|\/+$/g,'') || new URLSearchParams(window.location.search).get('page');
   document.documentElement.dataset.portalPage = pages.includes(requested) ? requested : 'home';
 })();
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--student-team-accent:#5b9bd5}
+.sports-data-status{font-size:12px;color:#cbd5e1;padding:10px 0;margin-bottom:16px;line-height:1.6}
 body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow-x:hidden;padding-bottom:1.75rem}
 html[data-portal-page] body>section{display:none}
 html[data-portal-page="home"] body>#featured,
@@ -569,13 +570,7 @@ select option{background:#111827;color:#fff}
    FEATURED GAME OF THE WEEK
    ============================================================ */
 const FEATURED_GAME={
-  week:12,
-  away:"KC",
-  home:"BUF",
-  day:"Thursday",
-  date:"Nov 26",
-  time:"8:20 PM ET",
-  discussion:"The Chiefs travel to Buffalo — that's about 976 miles! If their plane flies at 500 mph, how long is the flight? Buffalo is in New York, but the Bills don't play in New York City. What city do they play in, and how is it different from NYC?"
+  week:null, away:null, home:null, day:'Date TBD', date:'', time:'Time TBD', discussion:''
 };
 
 const STADIUM_IMAGES={
@@ -662,306 +657,19 @@ function mapAccent(team){
 }
 
 const PLAYER_STATS={
-  passing:{headers:["Rank","Player","Team","Cmp","Att","Yds","TD","INT","QBR"],keyIndex:5,players:[[1,"Joe Burrow","CIN",363,528,4089,28,8,108.2],[2,"Patrick Mahomes","KC",345,510,3890,25,9,102.7],[3,"Jared Goff","DET",342,512,3775,22,10,95.3],[4,"Lamar Jackson","BAL",314,464,3678,24,4,113.5],[5,"Dak Prescott","DAL",322,488,3567,22,8,100.4],[6,"Josh Allen","BUF",301,489,3548,26,7,105.3],[7,"C.J. Stroud","HOU",318,492,3427,20,12,96.5],[8,"Jordan Love","GB",306,498,3389,21,11,93.7],[9,"Tua Tagovailoa","MIA",305,458,3312,21,7,99.8],[10,"Brock Purdy","SF",295,438,3212,19,7,92.4]]},
-  rushing:{headers:["Rank","Player","Team","Att","Yds","Avg","TD","Lng","FUM"],keyIndex:4,players:[[1,"Saquon Barkley","PHI",312,1648,5.3,11,72,2],[2,"Derrick Henry","BAL",298,1578,5.3,14,87,3],[3,"Josh Jacobs","GB",284,1328,4.7,12,65,4],[4,"Bijan Robinson","ATL",274,1282,4.7,9,63,3],[5,"Jonathan Taylor","IND",262,1218,4.6,8,66,2],[6,"Kyren Williams","LAR",268,1212,4.5,11,49,3],[7,"De'Von Achane","MIA",248,1182,4.8,9,76,3],[8,"James Cook","BUF",242,1126,4.7,8,57,1],[9,"Jahmyr Gibbs","DET",228,1086,4.8,10,70,2],[10,"Christian McCaffrey","SF",198,942,4.8,7,58,2]]},
-  receiving:{headers:["Rank","Player","Team","Rec","Tgt","Yds","Avg","TD","Lng"],keyIndex:5,players:[[1,"Ja'Marr Chase","CIN",100,153,1382,13.8,12,70],[2,"Tyreek Hill","MIA",98,143,1342,13.7,8,78],[3,"CeeDee Lamb","DAL",101,148,1289,12.8,9,72],[4,"Amon-Ra St. Brown","DET",112,148,1263,11.3,8,56],[5,"A.J. Brown","PHI",86,132,1186,13.8,7,68],[6,"Nico Collins","HOU",82,127,1092,13.3,7,65],[7,"Davante Adams","NYJ",89,140,1082,12.2,8,61],[8,"George Pickens","PIT",87,138,1062,12.2,5,58],[9,"DK Metcalf","SEA",78,126,982,12.6,6,64],[10,"Brandon Aiyuk","SF",75,118,962,12.8,6,60]]},
-  defense:{headers:["Rank","Player","Team","Tkl","Sck","INT","FF","PD","TD"],keyIndex:4,players:[[1,"T.J. Watt","PIT",68,14.5,2,4,18,1],[2,"Myles Garrett","CLE",52,13,1,3,14,0],[3,"Micah Parsons","DAL",64,12,1,3,15,0],[4,"Nick Bosa","SF",58,11.5,1,2,16,0],[5,"Maxx Crosby","LV",72,11,1,3,14,0],[6,"Chris Jones","KC",62,10.5,0,2,12,0],[7,"Fred Warner","SF",132,4,2,3,12,1],[8,"Demario Davis","NO",128,3.5,1,2,10,0],[9,"Derwin James","LAC",108,3.5,2,4,11,1],[10,"Sauce Gardner","NYJ",62,1,4,2,22,0]]}
+  passing:{headers:["Rank","Player","Team","Cmp","Att","Yds","TD","INT","Passer Rating"],keyIndex:5,players:[]},
+  rushing:{headers:["Rank","Player","Team","Att","Yds","Avg","TD","Lng","FUM"],keyIndex:4,players:[]},
+  receiving:{headers:["Rank","Player","Team","Rec","Tgt","Yds","Avg","TD","Lng"],keyIndex:5,players:[]},
+  defense:{headers:["Rank","Player","Team","Solo Tkl","Sck","INT","FF","PD","TD"],keyIndex:4,players:[]}
 };
-
-const TEAM_STATS={offensive:[
-  {stat:"Points per Game",data:[{team:"BAL",val:29.8},{team:"DET",val:28.4},{team:"MIA",val:27.6},{team:"SF",val:27.2},{team:"BUF",val:26.8},{team:"DAL",val:26.4},{team:"PHI",val:26.1},{team:"KC",val:25.8},{team:"CIN",val:25.3},{team:"GB",val:24.9},{team:"HOU",val:24.1},{team:"ATL",val:23.7},{team:"MIN",val:23.4},{team:"SEA",val:22.8},{team:"IND",val:22.5},{team:"LAR",val:22.2},{team:"TB",val:21.8},{team:"NYJ",val:21.3},{team:"LV",val:20.9},{team:"PIT",val:20.6},{team:"JAX",val:20.2},{team:"NO",val:19.8},{team:"CHI",val:19.5},{team:"DEN",val:19.1},{team:"CLE",val:18.8},{team:"ARI",val:18.4},{team:"TEN",val:18.1},{team:"LAC",val:17.8},{team:"NYG",val:17.4},{team:"WAS",val:17.1},{team:"NE",val:16.7},{team:"CAR",val:16.3}]},
-  {stat:"Total Yards per Game",data:[{team:"MIA",val:401.3},{team:"DET",val:398.2},{team:"SF",val:392.7},{team:"DAL",val:384.1},{team:"BUF",val:378.5},{team:"BAL",val:374.8},{team:"CIN",val:370.2},{team:"KC",val:365.9},{team:"PHI",val:362.4},{team:"GB",val:358.7},{team:"HOU",val:352.1},{team:"ATL",val:348.6},{team:"MIN",val:344.2},{team:"SEA",val:340.8},{team:"IND",val:337.5},{team:"LAR",val:334.2},{team:"TB",val:330.1},{team:"NYJ",val:326.7},{team:"PIT",val:322.4},{team:"LV",val:318.9},{team:"JAX",val:314.5},{team:"NO",val:310.2},{team:"CHI",val:306.8},{team:"CLE",val:302.4},{team:"DEN",val:298.1},{team:"ARI",val:294.7},{team:"TEN",val:290.3},{team:"NYG",val:286.9},{team:"LAC",val:283.5},{team:"WAS",val:280.1},{team:"NE",val:276.4},{team:"CAR",val:272.8}]},
-  {stat:"Passing Yards per Game",data:[{team:"MIA",val:278.4},{team:"CIN",val:268.9},{team:"SF",val:264.2},{team:"DET",val:260.7},{team:"DAL",val:256.3},{team:"BUF",val:252.1},{team:"KC",val:248.6},{team:"GB",val:244.2},{team:"ATL",val:240.8},{team:"PHI",val:236.5},{team:"MIN",val:232.1},{team:"SEA",val:228.7},{team:"HOU",val:225.3},{team:"TB",val:221.9},{team:"LAR",val:218.5},{team:"IND",val:215.2},{team:"NYJ",val:211.8},{team:"PIT",val:208.4},{team:"CHI",val:205.1},{team:"NO",val:201.7},{team:"LV",val:198.3},{team:"CLE",val:194.9},{team:"JAX",val:191.6},{team:"DEN",val:188.2},{team:"ARI",val:184.8},{team:"LAC",val:181.5},{team:"TEN",val:178.1},{team:"NYG",val:174.8},{team:"WAS",val:171.4},{team:"NE",val:168.0},{team:"CAR",val:164.7},{team:"BAL",val:161.3}]},
-  {stat:"Rushing Yards per Game",data:[{team:"BAL",val:213.5},{team:"PHI",val:192.8},{team:"DET",val:137.5},{team:"SF",val:128.5},{team:"DAL",val:127.8},{team:"HOU",val:126.8},{team:"BUF",val:126.4},{team:"MIA",val:122.9},{team:"JAX",val:122.9},{team:"IND",val:122.3},{team:"LV",val:120.6},{team:"LAR",val:115.7},{team:"NYJ",val:114.9},{team:"PIT",val:114.0},{team:"TEN",val:112.2},{team:"SEA",val:112.1},{team:"MIN",val:112.1},{team:"NYG",val:112.1},{team:"NO",val:108.5},{team:"DEN",val:109.9},{team:"ATL",val:107.8},{team:"CLE",val:107.5},{team:"TB",val:108.2},{team:"WAS",val:108.7},{team:"NE",val:108.4},{team:"CAR",val:108.1},{team:"ARI",val:109.9},{team:"CIN",val:101.3},{team:"CHI",val:101.7},{team:"LAC",val:102.0},{team:"KC",val:117.2},{team:"GB",val:114.5}]}
-],defensive:[
-  {stat:"Points Allowed per Game",data:[{team:"CLE",val:16.8},{team:"NYJ",val:17.2},{team:"SF",val:17.8},{team:"PIT",val:18.3},{team:"BAL",val:18.9},{team:"DAL",val:19.4},{team:"BUF",val:19.8},{team:"KC",val:20.3},{team:"MIA",val:20.8},{team:"MIN",val:21.2},{team:"HOU",val:21.7},{team:"DEN",val:22.1},{team:"DET",val:22.5},{team:"SEA",val:23.0},{team:"GB",val:23.4},{team:"PHI",val:23.8},{team:"NO",val:24.3},{team:"LAR",val:24.7},{team:"TB",val:25.1},{team:"ATL",val:25.6},{team:"IND",val:26.0},{team:"CHI",val:26.4},{team:"CIN",val:26.9},{team:"LAC",val:27.3},{team:"NYG",val:27.7},{team:"LV",val:28.2},{team:"JAX",val:28.6},{team:"WAS",val:29.1},{team:"NE",val:29.5},{team:"ARI",val:29.9},{team:"CAR",val:30.4},{team:"TEN",val:30.8}]},
-  {stat:"Yards Allowed per Game",data:[{team:"CLE",val:270.2},{team:"NYJ",val:278.4},{team:"SF",val:284.6},{team:"DAL",val:290.1},{team:"PIT",val:295.8},{team:"BAL",val:301.2},{team:"MIA",val:305.7},{team:"KC",val:308.3},{team:"BUF",val:310.9},{team:"MIN",val:313.5},{team:"HOU",val:316.2},{team:"SEA",val:318.8},{team:"DET",val:321.4},{team:"DEN",val:324.0},{team:"GB",val:326.7},{team:"PHI",val:329.3},{team:"LAR",val:331.9},{team:"TB",val:334.6},{team:"ATL",val:337.2},{team:"NO",val:339.8},{team:"CIN",val:342.5},{team:"IND",val:345.1},{team:"CHI",val:347.8},{team:"LAC",val:350.4},{team:"NYG",val:353.0},{team:"LV",val:355.7},{team:"JAX",val:358.3},{team:"WAS",val:360.9},{team:"ARI",val:363.6},{team:"NE",val:366.2},{team:"CAR",val:368.8},{team:"TEN",val:371.5}]},
-  {stat:"Sacks",data:[{team:"PIT",val:52},{team:"CLE",val:49},{team:"SF",val:48},{team:"DAL",val:46},{team:"BAL",val:45},{team:"KC",val:43},{team:"BUF",val:42},{team:"NYJ",val:41},{team:"MIA",val:39},{team:"HOU",val:38},{team:"DET",val:37},{team:"MIN",val:36},{team:"GB",val:35},{team:"DEN",val:34},{team:"SEA",val:33},{team:"PHI",val:32},{team:"LAR",val:31},{team:"NO",val:30},{team:"TB",val:29},{team:"ATL",val:28},{team:"CIN",val:27},{team:"CHI",val:26},{team:"IND",val:25},{team:"LV",val:24},{team:"LAC",val:23},{team:"NYG",val:22},{team:"JAX",val:21},{team:"WAS",val:20},{team:"NE",val:19},{team:"ARI",val:18},{team:"CAR",val:17},{team:"TEN",val:16}]},
-  {stat:"Interceptions",data:[{team:"SF",val:20},{team:"BUF",val:18},{team:"BAL",val:17},{team:"DAL",val:16},{team:"PIT",val:15},{team:"CLE",val:14},{team:"MIN",val:14},{team:"NYJ",val:13},{team:"KC",val:12},{team:"MIA",val:12},{team:"HOU",val:11},{team:"DET",val:11},{team:"GB",val:10},{team:"SEA",val:10},{team:"DEN",val:9},{team:"PHI",val:9},{team:"LAR",val:8},{team:"TB",val:8},{team:"NO",val:8},{team:"ATL",val:7},{team:"CIN",val:7},{team:"CHI",val:7},{team:"IND",val:6},{team:"LV",val:6},{team:"LAC",val:6},{team:"NYG",val:5},{team:"JAX",val:5},{team:"WAS",val:5},{team:"NE",val:5},{team:"ARI",val:4},{team:"CAR",val:4},{team:"TEN",val:4}]}
-]};
-
-const SCHED_2026_RAW={ARI:['@LAC','SEA','@SF','@NYG','DET','@LAR','DEN','@DAL','@SEA','LAR','@KC','WAS','PHI','BYE','NYJ','@NO','LV','SF'],ATL:['@PIT','CAR','@GB','@NO','BAL','CHI','SF','@TB','CIN','KC','BYE','@MIN','DET','@CLE','@WAS','TB','NO','@CAR'],BAL:['@IND','NO','@DAL','TEN','@ATL','@CLE','CIN','@BUF','JAX','LAC','@CAR','@HOU','BYE','TB','@PIT','CLE','@CIN','PIT'],BUF:['@HOU','DET','LAC','NE','@LAR','@LV','BYE','BAL','@MIN','@NYJ','MIA','KC','@NE','@GB','CHI','@DEN','@MIA','NYJ'],CAR:['CHI','@ATL','@CLE','DET','BYE','@PHI','TB','@GB','DEN','@NO','BAL','@TB','@MIN','NO','CIN','@PIT','SEA','ATL'],CHI:['@CAR','MIN','PHI','NYJ','@GB','@ATL','NE','@SEA','TB','BYE','NO','@DET','JAX','@MIA','@BUF','GB','DET','@MIN'],CIN:['TB','@HOU','@PIT','JAX','@MIA','BYE','@BAL','TEN','@ATL','PIT','@WAS','NO','@CLE','KC','@CAR','@IND','BAL','CLE'],CLE:['@JAX','@TB','CAR','PIT','@NYJ','BAL','@TEN','@PIT','@NO','HOU','BYE','LV','CIN','ATL','@NYG','@BAL','IND','@CIN'],DAL:['@NYG','WAS','BAL','@HOU','TB','@GB','@PHI','ARI','@IND','SF','TEN','PHI','@SEA','BYE','@LAR','JAX','NYG','@WAS'],DEN:['@KC','JAX','LAR','@SF','@LAC','SEA','@ARI','KC','@CAR','BYE','LV','@PIT','MIA','@NYJ','@LV','BUF','@NE','LAC'],DET:['NO','@BUF','NYJ','@CAR','@ARI','BYE','GB','MIN','@MIA','NE','TB','CHI','@ATL','TEN','@MIN','NYG','@CHI','@GB'],GB:['@MIN','@NYJ','ATL','@TB','CHI','DAL','@DET','CAR','@NE','MIN','BYE','@LAR','@NO','BUF','MIA','@CHI','HOU','DET'],HOU:['BUF','CIN','@IND','DAL','@TEN','@JAX','NYG','BYE','@LAC','@CLE','IND','BAL','@PIT','@WAS','JAX','@PHI','@GB','TEN'],IND:['BAL','@KC','HOU','@WAS','@PIT','TEN','@MIN','@JAX','DAL','MIA','@HOU','NYG','BYE','@PHI','@TEN','CIN','@CLE','JAX'],JAX:['CLE','@DEN','NE','@CIN','PHI','HOU','BYE','IND','@BAL','@TEN','@NYG','TEN','@CHI','PIT','@HOU','@DAL','WAS','@IND'],KC:['DEN','IND','@MIA','@LV','BYE','LAC','@SEA','@DEN','NYJ','@ATL','ARI','@BUF','@LAR','@CIN','NE','SF','@LAC','LV'],LV:['MIA','@LAC','@NO','KC','@NE','BUF','LAR','@NYJ','@SF','SEA','@DEN','@CLE','BYE','LAC','DEN','TEN','@ARI','@KC'],LAC:['ARI','LV','@BUF','@SEA','DEN','@KC','BYE','@LAR','HOU','@BAL','NYJ','NE','@TB','@LV','SF','@MIA','KC','@DEN'],LAR:['SF','NYG','@DEN','@PHI','BUF','ARI','@LV','LAC','@WAS','@ARI','BYE','GB','KC','@SF','DAL','@SEA','@TB','SEA'],MIA:['@LV','@SF','KC','@MIN','CIN','BYE','@NYJ','NE','DET','@IND','@BUF','NYJ','@DEN','CHI','@GB','LAC','BUF','@NE'],MIN:['GB','@CHI','@TB','MIA','@NO','BYE','IND','@DET','BUF','@GB','@SF','ATL','CAR','@NE','DET','WAS','@NYJ','CHI'],NE:['@SEA','PIT','@JAX','@BUF','LV','NYJ','@CHI','@MIA','GB','@DET','BYE','@LAC','BUF','MIN','@KC','@NYJ','DEN','MIA'],NO:['@DET','@BAL','LV','ATL','MIN','@NYG','PIT','BYE','CLE','CAR','@CHI','@CIN','GB','@CAR','@TB','ARI','@ATL','TB'],NYG:['DAL','@LAR','TEN','ARI','@WAS','NO','@HOU','BYE','@PHI','WAS','JAX','@IND','SF','@SEA','CLE','@DET','@DAL','PHI'],NYJ:['@TEN','GB','@DET','@CHI','CLE','@NE','MIA','LV','@KC','BUF','@LAC','@MIA','BYE','DEN','@ARI','NE','MIN','@BUF'],PHI:['WAS','@TEN','@CHI','LAR','@JAX','CAR','DAL','@WAS','NYG','BYE','PIT','@DAL','@ARI','IND','SEA','HOU','@SF','@NYG'],PIT:['ATL','@NE','CIN','@CLE','IND','@TB','@NO','CLE','BYE','@CIN','@PHI','DEN','HOU','@JAX','BAL','CAR','@TEN','@BAL'],SF:['@LAR','MIA','ARI','DEN','@SEA','WAS','@ATL','BYE','LV','@DAL','MIN','SEA','@NYG','LAR','@LAC','@KC','PHI','@ARI'],SEA:['NE','@ARI','@WAS','LAC','SF','@DEN','KC','CHI','ARI','@LV','BYE','@SF','DAL','NYG','@PHI','LAR','@CAR','@LAR'],TB:['@CIN','CLE','MIN','GB','@DAL','PIT','@CAR','ATL','@CHI','BYE','@DET','CAR','LAC','@BAL','NO','@ATL','LAR','@NO'],TEN:['NYJ','PHI','@NYG','@BAL','HOU','@IND','CLE','@CIN','BYE','JAX','@DAL','@JAX','WAS','@DET','IND','@LV','PIT','@HOU'],WAS:['@PHI','@DAL','SEA','IND','NYG','@SF','BYE','PHI','LAR','@NYG','CIN','@ARI','@TEN','HOU','ATL','@MIN','@JAX','DAL']};
-
-const REAL_GAME_TIMES={
-"1_NE_SEA":{day:"Wednesday",date:"Sep 9",time:"8:20 PM",iso:"2026-09-09"},
-"1_SF_LAR":{day:"Thursday",date:"Sep 10",time:"8:35 PM",iso:"2026-09-10"},
-"1_CHI_CAR":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_TB_CIN":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_NO_DET":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_BUF_HOU":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_BAL_IND":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_CLE_JAX":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_ATL_PIT":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_NYJ_TEN":{day:"Sunday",date:"Sep 13",time:"1:00 PM",iso:"2026-09-13"},
-"1_ARI_LAC":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
-"1_MIA_LV":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
-"1_GB_MIN":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
-"1_WAS_PHI":{day:"Sunday",date:"Sep 13",time:"4:25 PM",iso:"2026-09-13"},
-"1_DAL_NYG":{day:"Sunday",date:"Sep 13",time:"8:20 PM",iso:"2026-09-13"},
-"1_DEN_KC":{day:"Monday",date:"Sep 14",time:"8:15 PM",iso:"2026-09-14"},
-"2_DET_BUF":{day:"Thursday",date:"Sep 17",time:"8:15 PM",iso:"2026-09-17"},
-"2_CAR_ATL":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_NO_BAL":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_MIN_CHI":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_CIN_HOU":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_PIT_NE":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_GB_NYJ":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_CLE_TB":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_PHI_TEN":{day:"Sunday",date:"Sep 20",time:"1:00 PM",iso:"2026-09-20"},
-"2_JAX_DEN":{day:"Sunday",date:"Sep 20",time:"4:05 PM",iso:"2026-09-20"},
-"2_LV_LAC":{day:"Sunday",date:"Sep 20",time:"4:05 PM",iso:"2026-09-20"},
-"2_SEA_ARI":{day:"Sunday",date:"Sep 20",time:"4:25 PM",iso:"2026-09-20"},
-"2_WAS_DAL":{day:"Sunday",date:"Sep 20",time:"4:25 PM",iso:"2026-09-20"},
-"2_MIA_SF":{day:"Sunday",date:"Sep 20",time:"4:25 PM",iso:"2026-09-20"},
-"2_IND_KC":{day:"Sunday",date:"Sep 20",time:"8:20 PM",iso:"2026-09-20"},
-"2_NYG_LAR":{day:"Monday",date:"Sep 21",time:"8:15 PM",iso:"2026-09-21"},
-"3_ATL_GB":{day:"Thursday",date:"Sep 24",time:"8:15 PM",iso:"2026-09-24"},
-"3_LAC_BUF":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_CAR_CLE":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_NYJ_DET":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_HOU_IND":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_NE_JAX":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_KC_MIA":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_TEN_NYG":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_CIN_PIT":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_SEA_WAS":{day:"Sunday",date:"Sep 27",time:"1:00 PM",iso:"2026-09-27"},
-"3_ARI_SF":{day:"Sunday",date:"Sep 27",time:"4:05 PM",iso:"2026-09-27"},
-"3_MIN_TB":{day:"Sunday",date:"Sep 27",time:"4:05 PM",iso:"2026-09-27"},
-"3_BAL_DAL":{day:"Sunday",date:"Sep 27",time:"4:25 PM",iso:"2026-09-27"},
-"3_LV_NO":{day:"Sunday",date:"Sep 27",time:"4:25 PM",iso:"2026-09-27"},
-"3_LAR_DEN":{day:"Sunday",date:"Sep 27",time:"8:20 PM",iso:"2026-09-27"},
-"3_PHI_CHI":{day:"Monday",date:"Sep 28",time:"8:15 PM",iso:"2026-09-28"},
-"4_PIT_CLE":{day:"Thursday",date:"Oct 1",time:"8:15 PM",iso:"2026-10-01"},
-"4_IND_WAS":{day:"Sunday",date:"Oct 4",time:"9:30 AM",iso:"2026-10-04"},
-"4_TEN_BAL":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_NE_BUF":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_NYJ_CHI":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_JAX_CIN":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_DAL_HOU":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_ARI_NYG":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_LAR_PHI":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_GB_TB":{day:"Sunday",date:"Oct 4",time:"1:00 PM",iso:"2026-10-04"},
-"4_MIA_MIN":{day:"Sunday",date:"Oct 4",time:"4:05 PM",iso:"2026-10-04"},
-"4_KC_LV":{day:"Sunday",date:"Oct 4",time:"4:25 PM",iso:"2026-10-04"},
-"4_LAC_SEA":{day:"Sunday",date:"Oct 4",time:"4:25 PM",iso:"2026-10-04"},
-"4_DEN_SF":{day:"Sunday",date:"Oct 4",time:"4:25 PM",iso:"2026-10-04"},
-"4_DET_CAR":{day:"Sunday",date:"Oct 4",time:"8:20 PM",iso:"2026-10-04"},
-"4_ATL_NO":{day:"Monday",date:"Oct 5",time:"8:15 PM",iso:"2026-10-05"},
-"5_TB_DAL":{day:"Thursday",date:"Oct 8",time:"8:15 PM",iso:"2026-10-08"},
-"5_PHI_JAX":{day:"Sunday",date:"Oct 11",time:"9:30 AM",iso:"2026-10-11"},
-"5_CIN_MIA":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
-"5_LV_NE":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
-"5_MIN_NO":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
-"5_CLE_NYJ":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
-"5_IND_PIT":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
-"5_HOU_TEN":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
-"5_NYG_WAS":{day:"Sunday",date:"Oct 11",time:"1:00 PM",iso:"2026-10-11"},
-"5_DEN_LAC":{day:"Sunday",date:"Oct 11",time:"4:05 PM",iso:"2026-10-11"},
-"5_DET_ARI":{day:"Sunday",date:"Oct 11",time:"4:25 PM",iso:"2026-10-11"},
-"5_CHI_GB":{day:"Sunday",date:"Oct 11",time:"4:25 PM",iso:"2026-10-11"},
-"5_SF_SEA":{day:"Sunday",date:"Oct 11",time:"4:25 PM",iso:"2026-10-11"},
-"5_BAL_ATL":{day:"Sunday",date:"Oct 11",time:"8:20 PM",iso:"2026-10-11"},
-"5_BUF_LAR":{day:"Monday",date:"Oct 12",time:"8:15 PM",iso:"2026-10-12"},
-"6_SEA_DEN":{day:"Thursday",date:"Oct 15",time:"8:15 PM",iso:"2026-10-15"},
-"6_HOU_JAX":{day:"Sunday",date:"Oct 18",time:"9:30 AM",iso:"2026-10-18"},
-"6_CHI_ATL":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
-"6_BAL_CLE":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
-"6_TEN_IND":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
-"6_NYJ_NE":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
-"6_NO_NYG":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
-"6_CAR_PHI":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
-"6_PIT_TB":{day:"Sunday",date:"Oct 18",time:"1:00 PM",iso:"2026-10-18"},
-"6_ARI_LAR":{day:"Sunday",date:"Oct 18",time:"4:05 PM",iso:"2026-10-18"},
-"6_LAC_KC":{day:"Sunday",date:"Oct 18",time:"4:25 PM",iso:"2026-10-18"},
-"6_BUF_LV":{day:"Sunday",date:"Oct 18",time:"4:25 PM",iso:"2026-10-18"},
-"6_DAL_GB":{day:"Sunday",date:"Oct 18",time:"8:20 PM",iso:"2026-10-18"},
-"6_WAS_SF":{day:"Monday",date:"Oct 19",time:"8:15 PM",iso:"2026-10-19"},
-"7_NE_CHI":{day:"Thursday",date:"Oct 22",time:"8:15 PM",iso:"2026-10-22"},
-"7_PIT_NO":{day:"Sunday",date:"Oct 25",time:"9:30 AM",iso:"2026-10-25"},
-"7_SF_ATL":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
-"7_CIN_BAL":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
-"7_TB_CAR":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
-"7_NYG_HOU":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
-"7_IND_MIN":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
-"7_MIA_NYJ":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
-"7_CLE_TEN":{day:"Sunday",date:"Oct 25",time:"1:00 PM",iso:"2026-10-25"},
-"7_DEN_ARI":{day:"Sunday",date:"Oct 25",time:"4:05 PM",iso:"2026-10-25"},
-"7_GB_DET":{day:"Sunday",date:"Oct 25",time:"4:25 PM",iso:"2026-10-25"},
-"7_LAR_LV":{day:"Sunday",date:"Oct 25",time:"4:25 PM",iso:"2026-10-25"},
-"7_KC_SEA":{day:"Sunday",date:"Oct 25",time:"8:20 PM",iso:"2026-10-25"},
-"7_DAL_PHI":{day:"Monday",date:"Oct 26",time:"8:15 PM",iso:"2026-10-26"},
-"8_CAR_GB":{day:"Thursday",date:"Oct 29",time:"8:15 PM",iso:"2026-10-29"},
-"8_BAL_BUF":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_TEN_CIN":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_ARI_DAL":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_MIN_DET":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_IND_JAX":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_LV_NYJ":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_CLE_PIT":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_ATL_TB":{day:"Sunday",date:"Nov 1",time:"1:00 PM",iso:"2026-11-01"},
-"8_LAC_LAR":{day:"Sunday",date:"Nov 1",time:"4:05 PM",iso:"2026-11-01"},
-"8_KC_DEN":{day:"Sunday",date:"Nov 1",time:"4:25 PM",iso:"2026-11-01"},
-"8_NE_MIA":{day:"Sunday",date:"Nov 1",time:"4:25 PM",iso:"2026-11-01"},
-"8_PHI_WAS":{day:"Sunday",date:"Nov 1",time:"8:20 PM",iso:"2026-11-01"},
-"8_CHI_SEA":{day:"Monday",date:"Nov 2",time:"8:15 PM",iso:"2026-11-02"},
-"9_JAX_BAL":{day:"Thursday",date:"Nov 5",time:"8:15 PM",iso:"2026-11-05"},
-"9_CIN_ATL":{day:"Sunday",date:"Nov 8",time:"9:30 AM",iso:"2026-11-08"},
-"9_DEN_CAR":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
-"9_DAL_IND":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
-"9_NYJ_KC":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
-"9_DET_MIA":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
-"9_CLE_NO":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
-"9_NYG_PHI":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
-"9_LAR_WAS":{day:"Sunday",date:"Nov 8",time:"1:00 PM",iso:"2026-11-08"},
-"9_HOU_LAC":{day:"Sunday",date:"Nov 8",time:"4:05 PM",iso:"2026-11-08"},
-"9_LV_SF":{day:"Sunday",date:"Nov 8",time:"4:05 PM",iso:"2026-11-08"},
-"9_GB_NE":{day:"Sunday",date:"Nov 8",time:"4:25 PM",iso:"2026-11-08"},
-"9_ARI_SEA":{day:"Sunday",date:"Nov 8",time:"4:25 PM",iso:"2026-11-08"},
-"9_TB_CHI":{day:"Sunday",date:"Nov 8",time:"8:20 PM",iso:"2026-11-08"},
-"9_BUF_MIN":{day:"Monday",date:"Nov 9",time:"8:15 PM",iso:"2026-11-09"},
-"10_WAS_NYG":{day:"Thursday",date:"Nov 12",time:"8:15 PM",iso:"2026-11-12"},
-"10_NE_DET":{day:"Sunday",date:"Nov 15",time:"9:30 AM",iso:"2026-11-15"},
-"10_KC_ATL":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
-"10_HOU_CLE":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
-"10_MIN_GB":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
-"10_MIA_IND":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
-"10_CAR_NO":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
-"10_BUF_NYJ":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
-"10_JAX_TEN":{day:"Sunday",date:"Nov 15",time:"1:00 PM",iso:"2026-11-15"},
-"10_LAR_ARI":{day:"Sunday",date:"Nov 15",time:"4:05 PM",iso:"2026-11-15"},
-"10_SEA_LV":{day:"Sunday",date:"Nov 15",time:"4:05 PM",iso:"2026-11-15"},
-"10_SF_DAL":{day:"Sunday",date:"Nov 15",time:"4:25 PM",iso:"2026-11-15"},
-"10_PIT_CIN":{day:"Sunday",date:"Nov 15",time:"8:20 PM",iso:"2026-11-15"},
-"10_LAC_BAL":{day:"Monday",date:"Nov 16",time:"8:15 PM",iso:"2026-11-16"},
-"11_IND_HOU":{day:"Thursday",date:"Nov 19",time:"8:15 PM",iso:"2026-11-19"},
-"11_MIA_BUF":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
-"11_BAL_CAR":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
-"11_NO_CHI":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
-"11_TEN_DAL":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
-"11_TB_DET":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
-"11_ARI_KC":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
-"11_JAX_NYG":{day:"Sunday",date:"Nov 22",time:"1:00 PM",iso:"2026-11-22"},
-"11_NYJ_LAC":{day:"Sunday",date:"Nov 22",time:"4:05 PM",iso:"2026-11-22"},
-"11_LV_DEN":{day:"Sunday",date:"Nov 22",time:"4:25 PM",iso:"2026-11-22"},
-"11_PIT_PHI":{day:"Sunday",date:"Nov 22",time:"4:25 PM",iso:"2026-11-22"},
-"11_MIN_SF":{day:"Sunday",date:"Nov 22",time:"8:20 PM",iso:"2026-11-22"},
-"11_CIN_WAS":{day:"Monday",date:"Nov 23",time:"8:15 PM",iso:"2026-11-23"},
-"12_GB_LAR":{day:"Wednesday",date:"Nov 25",time:"8:00 PM",iso:"2026-11-25"},
-"12_CHI_DET":{day:"Thursday",date:"Nov 26",time:"1:00 PM",iso:"2026-11-26"},
-"12_PHI_DAL":{day:"Thursday",date:"Nov 26",time:"4:30 PM",iso:"2026-11-26"},
-"12_KC_BUF":{day:"Thursday",date:"Nov 26",time:"8:20 PM",iso:"2026-11-26"},
-"12_DEN_PIT":{day:"Friday",date:"Nov 27",time:"3:00 PM",iso:"2026-11-27"},
-"12_NO_CIN":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
-"12_LV_CLE":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
-"12_BAL_HOU":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
-"12_NYG_IND":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
-"12_NYJ_MIA":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
-"12_ATL_MIN":{day:"Sunday",date:"Nov 29",time:"1:00 PM",iso:"2026-11-29"},
-"12_TEN_JAX":{day:"Sunday",date:"Nov 29",time:"4:05 PM",iso:"2026-11-29"},
-"12_WAS_ARI":{day:"Sunday",date:"Nov 29",time:"4:25 PM",iso:"2026-11-29"},
-"12_SEA_SF":{day:"Sunday",date:"Nov 29",time:"4:25 PM",iso:"2026-11-29"},
-"12_NE_LAC":{day:"Sunday",date:"Nov 29",time:"8:20 PM",iso:"2026-11-29"},
-"12_CAR_TB":{day:"Monday",date:"Nov 30",time:"8:15 PM",iso:"2026-11-30"},
-"13_KC_LAR":{day:"Thursday",date:"Dec 3",time:"8:15 PM",iso:"2026-12-03"},
-"13_DET_ATL":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
-"13_JAX_CHI":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
-"13_CIN_CLE":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
-"13_GB_NO":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
-"13_SF_NYG":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
-"13_LAC_TB":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
-"13_WAS_TEN":{day:"Sunday",date:"Dec 6",time:"1:00 PM",iso:"2026-12-06"},
-"13_PHI_ARI":{day:"Sunday",date:"Dec 6",time:"4:05 PM",iso:"2026-12-06"},
-"13_MIA_DEN":{day:"Sunday",date:"Dec 6",time:"4:05 PM",iso:"2026-12-06"},
-"13_CAR_MIN":{day:"Sunday",date:"Dec 6",time:"4:25 PM",iso:"2026-12-06"},
-"13_BUF_NE":{day:"Sunday",date:"Dec 6",time:"4:25 PM",iso:"2026-12-06"},
-"13_HOU_PIT":{day:"Sunday",date:"Dec 6",time:"8:20 PM",iso:"2026-12-06"},
-"13_DAL_SEA":{day:"Monday",date:"Dec 7",time:"8:15 PM",iso:"2026-12-07"},
-"14_MIN_NE":{day:"Thursday",date:"Dec 10",time:"8:15 PM",iso:"2026-12-10"},
-"14_TB_BAL":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_NO_CAR":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_ATL_CLE":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_TEN_DET":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_CHI_MIA":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_DEN_NYJ":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_IND_PHI":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_HOU_WAS":{day:"Sunday",date:"Dec 13",time:"1:00 PM",iso:"2026-12-13"},
-"14_LAC_LV":{day:"Sunday",date:"Dec 13",time:"4:05 PM",iso:"2026-12-13"},
-"14_KC_CIN":{day:"Sunday",date:"Dec 13",time:"4:25 PM",iso:"2026-12-13"},
-"14_NYG_SEA":{day:"Sunday",date:"Dec 13",time:"4:25 PM",iso:"2026-12-13"},
-"14_LAR_SF":{day:"Sunday",date:"Dec 13",time:"4:25 PM",iso:"2026-12-13"},
-"14_BUF_GB":{day:"Sunday",date:"Dec 13",time:"8:20 PM",iso:"2026-12-13"},
-"14_PIT_JAX":{day:"Monday",date:"Dec 14",time:"8:15 PM",iso:"2026-12-14"},
-"15_SF_LAC":{day:"Thursday",date:"Dec 17",time:"8:15 PM",iso:"2026-12-17"},
-"15_SEA_PHI":{day:"Saturday",date:"Dec 19",time:"5:00 PM",iso:"2026-12-19"},
-"15_CHI_BUF":{day:"Saturday",date:"Dec 19",time:"8:20 PM",iso:"2026-12-19"},
-"15_CIN_CAR":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_MIA_GB":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_JAX_HOU":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_CLE_NYG":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_BAL_PIT":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_NO_TB":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_IND_TEN":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_ATL_WAS":{day:"Sunday",date:"Dec 20",time:"1:00 PM",iso:"2026-12-20"},
-"15_NYJ_ARI":{day:"Sunday",date:"Dec 20",time:"4:05 PM",iso:"2026-12-20"},
-"15_DAL_LAR":{day:"Sunday",date:"Dec 20",time:"4:25 PM",iso:"2026-12-20"},
-"15_DEN_LV":{day:"Sunday",date:"Dec 20",time:"4:25 PM",iso:"2026-12-20"},
-"15_DET_MIN":{day:"Sunday",date:"Dec 20",time:"8:20 PM",iso:"2026-12-20"},
-"15_NE_KC":{day:"Monday",date:"Dec 21",time:"8:15 PM",iso:"2026-12-21"},
-"16_HOU_PHI":{day:"Thursday",date:"Dec 24",time:"8:15 PM",iso:"2026-12-24"},
-"16_GB_CHI":{day:"Friday",date:"Dec 25",time:"1:00 PM",iso:"2026-12-25"},
-"16_BUF_DEN":{day:"Friday",date:"Dec 25",time:"4:30 PM",iso:"2026-12-25"},
-"16_LAR_SEA":{day:"Friday",date:"Dec 25",time:"8:15 PM",iso:"2026-12-25"},
-"16_TB_ATL":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_CLE_BAL":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_CIN_IND":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_LAC_MIA":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_WAS_MIN":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_ARI_NO":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_NE_NYJ":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_CAR_PIT":{day:"Sunday",date:"Dec 27",time:"1:00 PM",iso:"2026-12-27"},
-"16_TEN_LV":{day:"Sunday",date:"Dec 27",time:"4:05 PM",iso:"2026-12-27"},
-"16_SF_KC":{day:"Sunday",date:"Dec 27",time:"4:25 PM",iso:"2026-12-27"},
-"16_JAX_DAL":{day:"Sunday",date:"Dec 27",time:"8:20 PM",iso:"2026-12-27"},
-"16_NYG_DET":{day:"Monday",date:"Dec 28",time:"8:15 PM",iso:"2026-12-28"},
-"17_BAL_CIN":{day:"Thursday",date:"Dec 31",time:"8:15 PM",iso:"2026-12-31"},
-"17_NO_ATL":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_SEA_CAR":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_IND_CLE":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_NYG_DAL":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_WAS_JAX":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_KC_LAC":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_BUF_MIA":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_DEN_NE":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_MIN_NYJ":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_LAR_TB":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_PIT_TEN":{day:"Sunday",date:"Jan 3",time:"1:00 PM",iso:"2027-01-03"},
-"17_LV_ARI":{day:"Sunday",date:"Jan 3",time:"4:05 PM",iso:"2027-01-03"},
-"17_DET_CHI":{day:"Sunday",date:"Jan 3",time:"4:25 PM",iso:"2027-01-03"},
-"17_PHI_SF":{day:"Sunday",date:"Jan 3",time:"8:20 PM",iso:"2027-01-03"},
-"17_HOU_GB":{day:"Monday",date:"Jan 4",time:"8:15 PM",iso:"2027-01-04"},
-"18_SF_ARI":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_PIT_BAL":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_NYJ_BUF":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_ATL_CAR":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_CLE_CIN":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_LAC_DEN":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_DET_GB":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_TEN_HOU":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_JAX_IND":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_LV_KC":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_SEA_LAR":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_CHI_MIN":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_MIA_NE":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_TB_NO":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_PHI_NYG":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"},
-"18_DAL_WAS":{day:"Sunday",date:"Jan 10",time:"1:00 PM",iso:"2027-01-10"}
+const TEAM_STATS={
+  offensive:["Points per Game","Total Yards per Game","Passing Yards per Game","Rushing Yards per Game"].map(stat=>({stat,data:[]})),
+  defensive:["Points Allowed per Game","Yards Allowed per Game","Sacks","Interceptions"].map(stat=>({stat,data:[]}))
 };
-
-const SCHED_2026={};
-for(const[abbr,weeks]of Object.entries(SCHED_2026_RAW)){SCHED_2026[abbr]={home:[],away:[]};weeks.forEach(w=>{if(w==='BYE')return;if(w.startsWith('@')||w.startsWith('at ')){SCHED_2026[abbr].away.push(w.replace('@','').replace('at ','').trim())}else{SCHED_2026[abbr].home.push(w.trim())}})}
-
-const WEEKS=[];
-for(let i=0;i<18;i++){const weekNum=i+1;const games=[];const used=new Set();for(const[abbr,weeks]of Object.entries(SCHED_2026_RAW)){if(used.has(abbr))continue;const oppStr=weeks[i];if(!oppStr||oppStr==='BYE')continue;const isAway=oppStr.startsWith('@')||oppStr.startsWith('at ');const opp=oppStr.replace('@','').replace('at ','').trim();let away,home;if(isAway){away=abbr;home=opp}else{away=opp;home=abbr}if(used.has(away)||used.has(home))continue;const rt=REAL_GAME_TIMES[`${weekNum}_${away}_${home}`];games.push({away,home,day:rt?rt.day:'Sunday',time:rt?rt.time:'1:00 PM',date:rt?rt.date:''});used.add(away);used.add(home)}WEEKS.push({week:weekNum,games})}
+const SCHED_2026_RAW=Object.fromEntries(NFL_TEAMS.map(team=>[team.abbr,Array(18).fill('BYE')]));
+const SCHED_2026=Object.fromEntries(NFL_TEAMS.map(team=>[team.abbr,{home:[],away:[]}]));
+const REAL_GAME_TIMES={};
+const WEEKS=Array.from({length:18},(_,index)=>({week:index+1,games:[]}));
 
   const INTERNATIONAL_GAMES=[
   {week:1,away:'SF',home:'LAR',stadium:'Melbourne Cricket Ground',city:'Melbourne',country:'Australia',time:'8:35 PM ET',lat:-37.85,lng:144.98},
@@ -977,7 +685,7 @@ for(let i=0;i<18;i++){const weekNum=i+1;const games=[];const used=new Set();for(
 
 // Helper function to find international game data and weeks
 function getInternationalGame(week, away, home) {
-  return INTERNATIONAL_GAMES.find(g => g.week === week && g.away === away && g.home === home);
+  return INTERNATIONAL_GAMES.find(g => g.available && g.week === week && g.away === away && g.home === home);
 }
 function getWeeksForAwayGame(teamAbbr, oppAbbr) {
   const weeks = [];
@@ -995,7 +703,7 @@ function getWeeksForAwayGame(teamAbbr, oppAbbr) {
 function renderInternationalGames(){
   const el=document.getElementById('international-games-list');
   if(!el)return;
-  el.innerHTML=INTERNATIONAL_GAMES.map(g=>{
+  el.innerHTML=INTERNATIONAL_GAMES.filter(g=>g.available).map(g=>{
     const away=getTeam(g.away);
     const home=getTeam(g.home);
     return`<div class="away-item p-3 rounded-lg border border-white/6 bg-white/2 cursor-pointer hover:border-brand-500/30 transition" onclick="focusInternationalGame(${g.week}, '${g.away}', '${g.home}')">
@@ -1017,7 +725,7 @@ function renderInternationalGames(){
   }).join('')}
 
   function focusInternationalGame(week, away, home) {
-  focusedIntlGame = INTERNATIONAL_GAMES.find(g => g.week === week && g.away === away && g.home === home);
+  focusedIntlGame = INTERNATIONAL_GAMES.find(g => g.available && g.week === week && g.away === away && g.home === home);
   renderMap();
   const mapSection = document.getElementById('travel-section') || document.getElementById('map-wrap');
   if(mapSection) mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1140,28 +848,29 @@ function renderFeaturedGame(){
   const bgSrc=fg.bgImage || STADIUM_IMAGES[fg.home] || "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80&auto=format&fit=crop";
   document.getElementById('featured-bg-img').src=bgSrc;
 
-  document.getElementById('featured-week-badge').textContent=`Week ${fg.week} • 2026 Season`;
+  document.getElementById('featured-week-badge').textContent=`Week ${fg.week} • ${fg.season || window.NFLFeeds?.season || ''} Season`;
 
   document.getElementById('featured-away-logo').innerHTML=logo(fg.away,96);
   document.getElementById('featured-away-city').textContent=away.location;
   document.getElementById('featured-away-name').textContent=away.name;
   const awayOffRank=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===fg.away)+1;
   const awayDefRank=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===fg.away)+1;
-  document.getElementById('featured-away-record').innerHTML=`${away.div} • Off #${awayOffRank} • Def #${awayDefRank}`;
+  document.getElementById('featured-away-record').textContent=away.div+(awayOffRank&&awayDefRank?` | Off #${awayOffRank} | Def #${awayDefRank}`:' | Season ranks unavailable');
 
   document.getElementById('featured-home-logo').innerHTML=logo(fg.home,96);
   document.getElementById('featured-home-city').textContent=home.location;
   document.getElementById('featured-home-name').textContent=home.name;
   const homeOffRank=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===fg.home)+1;
   const homeDefRank=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===fg.home)+1;
-  document.getElementById('featured-home-record').innerHTML=`${home.div} • Off #${homeOffRank} • Def #${homeDefRank}`;
+  document.getElementById('featured-home-record').textContent=home.div+(homeOffRank&&homeDefRank?` | Off #${homeOffRank} | Def #${homeDefRank}`:' | Season ranks unavailable');
 
-  const featuredDate=fg.date||scheduled?.date;
-  document.getElementById('featured-day').textContent=[fg.day||scheduled?.day,featuredDate].filter(Boolean).join(', ');
-  document.getElementById('featured-time').textContent=fg.time||(scheduled?.time?`${scheduled.time} ET`:'Time TBD');
-  document.getElementById('featured-venue').textContent=home.stadium;
-  document.getElementById('featured-location').textContent=`${home.city}, ${home.state}`;
-  document.getElementById('featured-distance').innerHTML=`<span data-countup="${dist.toFixed(0)}">0</span> mi apart`;
+  const featuredDate=scheduled?.date||fg.date;
+  document.getElementById('featured-day').textContent=[scheduled?.day||fg.day,featuredDate].filter(Boolean).join(', ');
+  document.getElementById('featured-time').textContent=scheduled?.time||fg.time||'Time TBD';
+  const international=getInternationalGame(fg.week,fg.away,fg.home);
+  document.getElementById('featured-venue').textContent=fg.stadium||scheduled?.stadium||international?.stadium||home.stadium;
+  document.getElementById('featured-location').textContent=fg.city?[fg.city,fg.state,fg.country].filter(Boolean).join(', '):international?`${international.city}, ${international.country}`:`${home.city}, ${home.state}`;
+  document.getElementById('featured-distance').innerHTML=`<span data-countup="${dist.toFixed(0)}">0</span> mi between team stadiums`;
   runCountUps(document.getElementById('featured-distance'));
 
   document.getElementById('featured-discussion').textContent=fg.discussion;
@@ -1187,10 +896,10 @@ function buildTicker(){
   const items=[];
   if(away&&home){const when=[fg.day,fg.time].filter(Boolean).join(' ');items.push({short:`Featured Game: Week ${fg.week} - ${away.abbr} at ${home.abbr}${when?` - ${when}`:''}`,full:`Featured Game - Week ${fg.week}: ${fullName(away)} at ${fullName(home)}${when?` - ${when}`:''}`})}
   const pass=PLAYER_STATS.passing.players[0],rush=PLAYER_STATS.rushing.players[0],rec=PLAYER_STATS.receiving.players[0],def=PLAYER_STATS.defense.players[0];
-  items.push({short:`Passing leader: ${pass[1]} - ${pass[5].toLocaleString()} yards`,full:`Passing leader: ${pass[1]} (${pass[2]}) - ${pass[5].toLocaleString()} yards, ${pass[6]} TD`});
-  items.push({short:`Rushing leader: ${rush[1]} - ${rush[4].toLocaleString()} yards`,full:`Rushing leader: ${rush[1]} (${rush[2]}) - ${rush[4].toLocaleString()} yards, ${rush[6]} TD`});
-  items.push({short:`Receiving leader: ${rec[1]} - ${rec[5].toLocaleString()} yards`,full:`Receiving leader: ${rec[1]} (${rec[2]}) - ${rec[5].toLocaleString()} yards, ${rec[7]} TD`});
-  items.push({short:`Sack leader: ${def[1]} - ${def[4]} sacks`,full:`Sack leader: ${def[1]} (${def[2]}) - ${def[4]} sacks`});
+  if(pass)items.push({short:`Passing leader: ${pass[1]} - ${pass[5].toLocaleString()} yards`,full:`Passing leader: ${pass[1]} (${pass[2]}) - ${pass[5].toLocaleString()} yards, ${pass[6]} TD`});
+  if(rush)items.push({short:`Rushing leader: ${rush[1]} - ${rush[4].toLocaleString()} yards`,full:`Rushing leader: ${rush[1]} (${rush[2]}) - ${rush[4].toLocaleString()} yards, ${rush[6]} TD`});
+  if(rec)items.push({short:`Receiving leader: ${rec[1]} - ${rec[5].toLocaleString()} yards`,full:`Receiving leader: ${rec[1]} (${rec[2]}) - ${rec[5].toLocaleString()} yards, ${rec[7]} TD`});
+  if(def)items.push({short:`Sack leader: ${def[1]} - ${def[4]} sacks`,full:`Sack leader: ${def[1]} (${def[2]}) - ${def[4]} sacks`});
   NFL_FUN_FACTS.slice(0,6).forEach(f=>items.push({short:f.title,full:f.fact}));
   const html=items.map(item=>`<button type="button" class="ticker-item" title="${escTicker(item.full)}"><span class="ticker-short">${escTicker(item.short)}</span><span class="ticker-full">${escTicker(item.full)}</span></button>`).join('');
   track.innerHTML=html+html;
@@ -1269,7 +978,7 @@ async function getWeather(awayAbbr, homeAbbr, weekNum) {
   if (!homeTeam) return { temp: "72°F", precip: "0%", icon: "lucide:thermometer", desc: "Indoors" };
 
   // Check if this is an international game
-  const intlGame = INTERNATIONAL_GAMES.find(g => g.week === weekNum && g.away === awayAbbr && g.home === homeAbbr);
+  const intlGame = INTERNATIONAL_GAMES.find(g => g.available && g.week === weekNum && g.away === awayAbbr && g.home === homeAbbr);
   
   let lat, lng, roof, locationName;
   
@@ -1579,6 +1288,7 @@ function renderStatsTeamBanner(sel){
 }
 function renderTeamStats(){
   const container=document.getElementById('stats-container');
+  if(!TEAM_STATS.offensive.some(category=>category.data.length)){container.innerHTML='<p class="sports-data-status">No season statistics are available yet.</p>';return}
   const sel=document.getElementById('stats-team-select').value;
   renderStatsTeamBanner(sel);
   container.innerHTML='';
@@ -1616,6 +1326,7 @@ function renderPlayerStats(){
   const colMax=Math.max(...data.players.map(p=>Number(p[key])||0));
   const thead=document.getElementById('player-thead');
   const tbody=document.getElementById('player-tbody');
+  if(!players.length){thead.innerHTML='';tbody.innerHTML='<tr><td class="p-5 text-sm text-white/70">No season statistics are available for this category yet.</td></tr>';return}
   thead.innerHTML=`<tr class="border-b border-white/6">${data.headers.map((h,i)=>{const arrow=currentSortCol===i?(currentSortDir==='desc'?' ↓':' ↑'):'';const sortable=i!==0&&i!==1;return`<th class="px-4 py-3 text-left text-[10px] font-mono text-white/40 uppercase tracking-wider whitespace-nowrap ${sortable?'sort-header':''}" ${sortable?`onclick="sortPlayerStats(${i})"`:''}>${h}${arrow}</th>`}).join('')}</tr>`;
   tbody.innerHTML=players.map((p,idx)=>{const team=getTeam(p[2]);const rank=idx+1;return`<tr class="player-row border-b border-white/4 transition">${p.map((val,i)=>{
     if(i===0)return`<td class="px-4 py-3" style="border-left:3px solid ${team.color}"><span class="pl-rank ${rank<=3?'pl-rank-'+rank:''}">${rank}</span></td>`;
@@ -1644,8 +1355,8 @@ function renderPlayerStats(){
 
     // Check if this specific matchup is an international game
     const intlGame = isAway
-      ? INTERNATIONAL_GAMES.find(g => g.week === weekNum && g.away === abbr && g.home === oppAbbr)
-      : INTERNATIONAL_GAMES.find(g => g.week === weekNum && g.away === oppAbbr && g.home === abbr);
+      ? INTERNATIONAL_GAMES.find(g => g.available && g.week === weekNum && g.away === abbr && g.home === oppAbbr)
+      : INTERNATIONAL_GAMES.find(g => g.available && g.week === weekNum && g.away === oppAbbr && g.home === abbr);
 
     if (isAway) {
       // Standard away game
@@ -2103,8 +1814,8 @@ async function showTeamInfoModal(abbr){
   content.innerHTML=`
     <div class="flex items-center gap-4 mb-6">${logo(abbr,64)}<div><div class="text-2xl font-bold">${fullName(team)}</div><div class="text-sm text-white/50">${team.city}, ${team.state} • ${team.div} • Founded ${team.founded}</div></div></div>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Off)</div><div class="text-xl font-bold mt-1">#${offPPG}</div></div>
-      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Def)</div><div class="text-xl font-bold mt-1">#${defPPG}</div></div>
+      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Off)</div><div class="text-xl font-bold mt-1">${offPPG?'#'+offPPG:'--'}</div></div>
+      <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Pts/Game (Def)</div><div class="text-xl font-bold mt-1">${defPPG?'#'+defPPG:'--'}</div></div>
       <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Stadium</div><div class="text-sm font-semibold mt-1">${team.stadium}</div><div class="text-[10px] text-white/40">${facts.roof} • ${facts.surface||'—'} • ${team.stadiumCap.toLocaleString()} cap</div></div>
       <div class="bg-white/5 rounded-lg p-3"><div class="text-[9px] text-white/30 uppercase">Location</div><div class="text-sm font-semibold mt-1">${team.city}, ${team.state}</div><div class="text-[10px] text-white/40">${team.lat}° N, ${Math.abs(team.lng)}° W</div><div class="text-[10px] text-white/40">${tzLabel(team.tz)} time</div></div>
     </div>
@@ -2192,7 +1903,7 @@ function openTravelStats(){
   const closest=trips.reduce((b,t)=>!b||t.distance<b.distance?t:b,null);
   const flightH=total/500;
   const tzSet=new Set([team.tz]); trips.forEach(t=>{ if(t.team&&t.team.tz) tzSet.add(t.team.tz); });
-  const intl=INTERNATIONAL_GAMES.filter(g=>g.away===abbr||g.home===abbr).length;
+  const intl=INTERNATIONAL_GAMES.filter(g=>g.available&&(g.away===abbr||g.home===abbr)).length;
   const c2c=total/2800;
   const dName=t=> !t?'—':(t.isIntl?`${t.city}, ${t.country}`:(t.team?fullName(t.team):'—'));
   const card=(label,value,sub)=>`<div class="bg-white/5 rounded-xl p-4"><div class="text-[9px] uppercase tracking-wider text-white/35">${label}</div><div class="text-lg font-bold mt-1">${value}</div>${sub?`<div class="text-[10px] text-white/40 mt-0.5">${sub}</div>`:''}</div>`;
@@ -2213,7 +1924,7 @@ function openTravelStats(){
 }
 function focusIntlAndClose(week,away,home){ closeTravelModal(); focusInternationalGame(week,away,home); }
 function openIntlSeries(){
-  const rows=INTERNATIONAL_GAMES.map(g=>{
+  const rows=INTERNATIONAL_GAMES.filter(g=>g.available).map(g=>{
     const away=getTeam(g.away), home=getTeam(g.home);
     return `<button onclick="focusIntlAndClose(${g.week},'${g.away}','${g.home}')" class="w-full text-left flex items-center gap-3 p-3 rounded-lg border border-white/6 bg-white/2 hover:border-brand-500/40 hover:bg-brand-500/5 transition">
       <span class="text-[10px] font-mono text-brand-400 w-10 shrink-0">Wk ${g.week}</span>
@@ -2670,7 +2381,25 @@ function closeCompareModal(){
   document.getElementById('compare-modal').classList.remove('flex');
 }
 
-async function init(){if(document.documentElement.dataset.portalPage!=='home')renderFeaturedGame();renderTeams();renderMatchups();populateSelects();await defaultAssignedTeamViews();renderTeamStats();renderPlayerStats();renderFunFacts();generateMathProblems();renderWritingPrompts();renderCityExplorer();renderInternationalGames();await initMap();renderTravel();initScrollReveal()}document.addEventListener('DOMContentLoaded',init);
+// Never render the legacy demonstration arrays while stored feeds are loading.
+Object.values(PLAYER_STATS).forEach(category=>{category.players=[]});
+Object.values(TEAM_STATS).flat().forEach(category=>{category.data=[]});
+WEEKS.forEach(week=>{week.games=[]});
+Object.keys(REAL_GAME_TIMES).forEach(key=>{delete REAL_GAME_TIMES[key]});
+async function init(){
+  const page=document.documentElement.dataset.portalPage;
+  populateSelects();
+  window.portalDataReady=window.initializeSportsData();
+  await defaultAssignedTeamViews();
+  await window.portalDataReady;
+  if(page==='teams')renderTeams();
+  if(page==='matchups')renderMatchups();
+  if(page==='stats')renderTeamStats();
+  if(page==='players')renderPlayerStats();
+  if(page==='travel'){renderInternationalGames();await initMap();renderTravel()}
+  buildTicker();initScrollReveal();
+}
+document.addEventListener('DOMContentLoaded',()=>{init().catch(error=>{console.error('Portal initialization failed.',error);document.documentElement.classList.add('portal-ready')})});
 </script>
 </body>
 </html>

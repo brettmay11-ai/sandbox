@@ -13,7 +13,7 @@
     ['cleats', 'Cleat Studio', 'footprints']
   ];
   const cleanPath = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
-  const requested = cleanPath[0] === 'teacher' ? cleanPath[1] : new URLSearchParams(location.search).get('page');
+  const requested = (cleanPath[0] === 'teacher' ? cleanPath[1] : null) || new URLSearchParams(location.search).get('page');
   const current = pages.some(([id]) => id === requested) ? requested : 'dashboard';
   const teacherPageUrl = id => `/teacher/${id}`;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -58,6 +58,7 @@
   }
   new MutationObserver(applyPages).observe(main, { childList: true });
   applyPages();
+  document.documentElement.classList.add('teacher-navigation-ready');
 
   const headerActions = header.lastElementChild;
   const bell = document.createElement('button');

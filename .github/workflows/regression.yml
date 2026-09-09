@@ -1,0 +1,23 @@
+name: Classroom Regression Checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm install --ignore-scripts
+      - run: npm test
+      - if: matrix.node == 22
+        run: npx playwright install --with-deps chromium
+      - if: matrix.node == 22
+        run: npm run test:smoke
+        env:
+          PLAYWRIGHT_CHANNEL: chromium

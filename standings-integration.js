@@ -1,5 +1,6 @@
 (() => {
-  const SEASON = 2026;
+  let SEASON;
+  let feedMetadata;
   const DIVISION_ORDER = ['AFC East','AFC North','AFC South','AFC West','NFC East','NFC North','NFC South','NFC West'];
   const CONFERENCE_ORDER = ['AFC','NFC'];
   const TEAM_DIVISIONS = {
@@ -53,16 +54,17 @@
     return data;
   }
   async function loadStandings() {
-    if (window.NFL_STANDINGS_2026) return window.NFL_STANDINGS_2026;
-    const rows = await api(`/api/sportsdata/nfl/standings/${SEASON}`);
+    await window.portalDataReady;
+    SEASON=window.NFLFeeds.season;
+    feedMetadata=await window.NFLFeeds.feed(`/api/sportsdata/nfl/standings/${SEASON}`);
+    const rows=feedMetadata.data;
     const normalized = (Array.isArray(rows) ? rows : []).map(row => {
       const abbr = teamCode(row.Team || row.Key || row.TeamKey || row.Abbreviation);
-      const division = row.Division || TEAM_DIVISIONS[abbr] || 'NFL';
+      const division = /^(AFC|NFC) /.test(row.Division||'')?row.Division:TEAM_DIVISIONS[abbr] || 'NFL';
       const conference = row.Conference || TEAM_CONFERENCES[abbr] || division.slice(0, 3);
       return { ...row, abbr, division, conference, pct:pct(row), record:record(row), divisionRecord:divisionRecord(row), pointDiff:pointDiff(row) };
     }).filter(row => row.abbr);
     normalized.sort((a, b) => b.pct - a.pct || b.pointDiff - a.pointDiff || teamName(a.abbr).localeCompare(teamName(b.abbr)));
-    window.NFL_STANDINGS_2026 = normalized;
     return normalized;
   }
   async function selectedTeam() {
@@ -180,14 +182,16 @@
     target.appendChild(context);
   }
   async function installStandings() {
+    const page=document.documentElement.dataset.portalPage;
+    if(!['stats','dashboard','home'].includes(page))return;
     try {
-      const rows = await loadStandings();
-      installStatsStandings(rows);
-      await installDashboardCard(rows);
-      await installFeaturedContext(rows);
-    } catch (error) {
-      console.warn('Could not install NFL standings.', error);
-    }
+      const rows=await loadStandings();
+      if(page==='stats')installStatsStandings(rows);
+      if(page==='dashboard')await installDashboardCard(rows);
+      if(page==='home')await installFeaturedContext(rows);
+      const panel=document.getElementById('standings-panel')||document.getElementById('selected-team-standings-card')||document.getElementById('featured-standings-context');
+      if(panel){const note=document.createElement('p');note.className='sports-data-status';note.textContent=window.NFLFeeds.label(feedMetadata,SEASON);panel.appendChild(note)}
+    } catch(error) { console.warn('Standings unavailable.',error); }
   }
-  window.addEventListener('DOMContentLoaded', installStandings);
+  window.addEventListener('portal-page-ready', installStandings);
 })();

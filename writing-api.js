@@ -1,4 +1,5 @@
 const { awardWritingBadges } = require('./badges-api');
+const { classroomScope } = require('./classroom-access');
 
 const ACTIVITIES = {
   postgame:{ label:'Postgame Reporter', xp:50 },
@@ -30,7 +31,9 @@ async function initWriting(pool) {
   `);
 }
 
-async function profile(pool, userId) {
+async function profile(pool, user) {
+  const userId = user.id;
+  const scope = classroomScope(user);
   const entries = (await pool.query(
     'SELECT id,activity,title,content,checklist,status,xp_awarded,teacher_feedback,submitted_at,reviewed_at,updated_at FROM writing_entries WHERE user_id=$1 ORDER BY updated_at DESC',
     [userId]
@@ -40,11 +43,11 @@ async function profile(pool, userId) {
       COUNT(*) FILTER(WHERE w.status IN('submitted','revision','complete','reviewed'))::int AS submissions
     FROM users u
     LEFT JOIN writing_entries w ON w.user_id=u.id
-    WHERE u.role='student' AND u.active=TRUE
+    WHERE u.role='student' AND u.active=TRUE ${scope.clause}
     GROUP BY u.id
     ORDER BY writing_xp DESC,submissions DESC,u.display_name
     LIMIT 10
-  `)).rows;
+  `, scope.params)).rows;
   return {
     entries,
     writingXp:entries.reduce((sum, row) => sum + Number(row.xp_awarded || 0), 0),
@@ -74,7 +77,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
   if (!user) { sendJson(res, 401, { error:'Please sign in.' }); return true; }
 
   if (path === '/api/writing/profile' && req.method === 'GET') {
-    sendJson(res, 200, await profile(pool, user.id));
+    sendJson(res, 200, await profile(pool, user));
     return true;
   }
 
@@ -149,7 +152,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
         updated_at=NOW()
       RETURNING *
     `, [user.id, data.activity, data.title, data.content, data.checklist, info.xp]);
-    const profileData = await profile(pool, user.id);
+    const profileData = await profile(pool, user);
     const awardedBadges = await awardWritingBadges(pool, user.id, { activity:data.activity, profile:profileData }, { entryId:result.rows[0].id });
     sendJson(res, 200, { entry:result.rows[0], message:`Submitted! You earned ${info.xp} writing XP.`, ...profileData, awardedBadges });
     return true;

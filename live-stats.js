@@ -35,6 +35,11 @@ async function resolveLiveStatsSeason() {
 }
 
 async function fetchTeamLiveStats(teamAbbr) {
+  if (window.NFLFeeds) {
+    await window.portalDataReady;
+    if (!window.NFLFeeds.players) throw new Error('Stored player stats unavailable');
+    return { season:window.NFLFeeds.season, players:window.NFLFeeds.players.data.filter(player=>String(player.Team||player.TeamKey||'').toUpperCase()===teamAbbr.toUpperCase()) };
+  }
   const season = await resolveLiveStatsSeason();
   const cacheKey = `${season}-league`;
   if (!liveStatsCache.has(cacheKey)) {
@@ -88,10 +93,10 @@ function liveLeadersMarkup(teamAbbr, season, players) {
   return `<div class="mb-6" data-live-team-leaders="${teamAbbr}">
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
       <h3 class="text-sm font-semibold text-white/75 flex items-center gap-2"><iconify-icon icon="lucide:activity" class="text-brand-400"></iconify-icon>${fullName(team)} Stat Leaders</h3>
-      <span class="text-[9px] font-mono text-green-400 uppercase tracking-wider">Live API · ${season} Season</span>
+      <span class="text-xs text-white/60">Stored stats | ${season} Season</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${LIVE_LEADER_CATEGORIES.map(category => liveLeaderCard(category, players)).join('')}</div>
-    <p class="text-[9px] text-white/25 mt-3">Source: SportsData.io. Figures depend on the connected API subscription and update schedule.</p>
+    <p class="text-xs text-white/60 mt-3">${window.NFLFeeds?.label(window.NFLFeeds.players,season)||'Source: SportsData.io. Updated daily.'}</p>
   </div>`;
 }
 
@@ -102,7 +107,7 @@ async function loadLiveLeadersInto(container, teamAbbr) {
     container.innerHTML = liveLeadersMarkup(teamAbbr, season, players);
   } catch (error) {
     console.warn('Live team statistics could not be loaded.', error);
-    container.innerHTML = '<div class="glass-panel rounded-xl p-5 text-[11px] text-white/40">Updated statistics are temporarily unavailable. The classroom fallback data is still available below.</div>';
+    container.innerHTML = '<div class="glass-panel rounded-xl p-5 text-sm text-white/70">Statistics are unavailable while this feed waits for its scheduled update.</div>';
   }
 }
 

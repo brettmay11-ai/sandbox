@@ -5,12 +5,17 @@
   "scripts": {
     "prestart": "node cleanup-placeholders.js",
     "start": "SEED_CLASS_STUDENTS=false node start-with-teacher-menu.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:smoke": "node test-support/smoke.cjs"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "playwright": "1.63.0"
   }
 }
