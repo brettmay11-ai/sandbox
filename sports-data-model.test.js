@@ -23,6 +23,14 @@ test('team rates use games played, defensive rates sort lower first, no games me
   assert.deepEqual(tables.defensive[0],[{team:'SF',val:10},{team:'DAL',val:15}]);
   assert.deepEqual(playerTables([]).passing,[]);
 });
+test('player tables preserve raw regular-season yardage fields',()=>{
+  const tables=playerTables([
+    {Team:'SEA',Name:'D.Lock',PassingCompletions:16,PassingAttempts:22,PassingYards:187,PassingTouchdowns:1,PassingInterceptions:0,PassingRating:108.1},
+    {Team:'SEA',Name:'J.Smith-Njigba',Receptions:8,ReceivingTargets:10,ReceivingYards:122,ReceivingYardsPerReception:15.3,ReceivingTouchdowns:1,ReceivingLong:45}
+  ]);
+  assert.equal(tables.passing[0][5],187);
+  assert.equal(tables.receiving[0][5],122);
+});
 test('student renderer includes same content-hashed assets for normal and preview HTML',()=>{
   const html=renderStudentHtml(fs.readFileSync('index.html','utf8'));
   assert.match(html,/sports-data-model\.js\?v=[a-f0-9]{12}/);

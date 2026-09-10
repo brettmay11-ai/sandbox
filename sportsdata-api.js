@@ -24,10 +24,16 @@ function routeToSportsData(pathname) {
   if (kind === 'current-season' && parts.length === 4) return { sport:'nfl', apiPath:'scores/json/CurrentSeason' };
   const season = Number(parts[4]);
   if (!Number.isInteger(season) || season < 2000 || season > 2100) return null;
-  const endpoints = { schedule:'scores/json/Schedules', standings:'scores/json/Standings', 'player-season-stats':'stats/json/PlayerSeasonStats', 'team-season-stats':'scores/json/TeamSeasonStats' };
-  if (endpoints[kind] && parts.length === 5) return { sport:'nfl', season, apiPath:`${endpoints[kind]}/${season}` };
+  const regularSeason = `${season}REG`;
+  const endpoints = {
+    schedule:{ base:'scores/json/Schedules', season },
+    standings:{ base:'scores/json/Standings', season:regularSeason },
+    'player-season-stats':{ base:'stats/json/PlayerSeasonStats', season:regularSeason },
+    'team-season-stats':{ base:'scores/json/TeamSeasonStats', season:regularSeason }
+  };
+  if (endpoints[kind] && parts.length === 5) return { sport:'nfl', season, apiPath:`${endpoints[kind].base}/${endpoints[kind].season}` };
   if (kind === 'player-season-stats-by-team' && parts.length === 6 && NFL_TEAMS.has(parts[5].toUpperCase())) {
-    return { sport:'nfl', season, apiPath:`stats/json/PlayerSeasonStats/${season}`, team:parts[5].toUpperCase() };
+    return { sport:'nfl', season, apiPath:`stats/json/PlayerSeasonStats/${regularSeason}`, team:parts[5].toUpperCase() };
   }
   // News is RSS-only. Old clients must never reactivate paid news endpoints.
   return null;

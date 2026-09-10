@@ -5,7 +5,7 @@
   const CATEGORIES = [
     { id:'passing', label:'Passing', statLabel:'Pass yds', fields:['PassingYards','PassYards','passing_yards'] },
     { id:'rushing', label:'Rushing', statLabel:'Rush yds', fields:['RushingYards','RushYards','rushing_yards'] },
-    { id:'receiving', label:'Receiving', statLabel:'Rec yds', fields:['ReceivingYards','ReceivingYardsPerGame','RecYards','receiving_yards'] },
+    { id:'receiving', label:'Receiving', statLabel:'Rec yds', fields:['ReceivingYards','RecYards','receiving_yards'] },
     { id:'touchdowns', label:'Touchdowns', statLabel:'TD', fields:['Touchdowns','TotalTouchdowns','ReceivingTouchdowns','RushingTouchdowns','PassingTouchdowns'] },
     { id:'defense', label:'Defense', statLabel:'Tackles', fields:['Tackles','SoloTackles','AssistedTackles'] },
     { id:'sacks', label:'Sacks', statLabel:'Sacks', fields:['Sacks'] },

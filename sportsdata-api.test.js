@@ -7,8 +7,12 @@ const originalKey=process.env.SPORTSDATA_IO_KEY;
 before(async()=>{({db,pool}=await testDatabase());await initSportsDataCache(pool);process.env.SPORTSDATA_IO_KEY='test-only'});
 after(async()=>{if(originalKey===undefined)delete process.env.SPORTSDATA_IO_KEY;else process.env.SPORTSDATA_IO_KEY=originalKey;await db?.close()});
 beforeEach(async()=>pool.query('TRUNCATE sportsdata_cache,sportsdata_usage,sportsdata_refresh_guard'));
-test('legacy per-team requests use the consolidated league cache; paid news is disabled',()=>{
-  assert.equal(routeToSportsData('/api/sportsdata/nfl/player-season-stats-by-team/2026/DET').apiPath,'stats/json/PlayerSeasonStats/2026');
+test('regular-season stat routes use SportsData season type tokens; paid news is disabled',()=>{
+  assert.equal(routeToSportsData('/api/sportsdata/nfl/schedule/2026').apiPath,'scores/json/Schedules/2026');
+  assert.equal(routeToSportsData('/api/sportsdata/nfl/standings/2026').apiPath,'scores/json/Standings/2026REG');
+  assert.equal(routeToSportsData('/api/sportsdata/nfl/player-season-stats/2026').apiPath,'stats/json/PlayerSeasonStats/2026REG');
+  assert.equal(routeToSportsData('/api/sportsdata/nfl/team-season-stats/2026').apiPath,'scores/json/TeamSeasonStats/2026REG');
+  assert.equal(routeToSportsData('/api/sportsdata/nfl/player-season-stats-by-team/2026/DET').apiPath,'stats/json/PlayerSeasonStats/2026REG');
   assert.equal(routeToSportsData('/api/sportsdata/nfl/news/team/DET'),null);
   assert.equal(routeToSportsData('/api/sportsdata/nfl/player-season-stats-by-team/2026/INVALID'),null);
 });
@@ -39,7 +43,7 @@ test('failed calls consume budget and retain durable cooldowns even with no cach
   assert.equal(Number((await pool.query('SELECT COUNT(*) AS count FROM sportsdata_usage WHERE succeeded=FALSE')).rows[0].count),5);
 });
 test('student traffic reads stale data and filters locally without reserving calls',async()=>{
-  await pool.query("INSERT INTO sportsdata_cache(cache_key,data,fetched_at,expires_at) VALUES($1,$2,NOW()-INTERVAL '2 days',NOW()-INTERVAL '1 day')",['sportsdata:nfl:stats/json/PlayerSeasonStats/2026',JSON.stringify([{Team:'DET',Name:'One'},{Team:'DAL',Name:'Two'}])]);
+  await pool.query("INSERT INTO sportsdata_cache(cache_key,data,fetched_at,expires_at) VALUES($1,$2,NOW()-INTERVAL '2 days',NOW()-INTERVAL '1 day')",['sportsdata:nfl:stats/json/PlayerSeasonStats/2026REG',JSON.stringify([{Team:'DET',Name:'One'},{Team:'DAL',Name:'Two'}])]);
   const headers={};let result;
   for(let i=0;i<80;i++)await handleSportsData({pool,req:{method:'GET'},res:{setHeader:(key,value)=>{headers[key]=value}},path:'/api/sportsdata/nfl/player-season-stats-by-team/2026/DET',user:{id:1},sendJson:(res,status,data)=>{result={status,data}}});
   assert.equal(result.status,200);assert.deepEqual(result.data,[{Team:'DET',Name:'One'}]);assert.equal(headers['X-Data-Status'],'stale');
