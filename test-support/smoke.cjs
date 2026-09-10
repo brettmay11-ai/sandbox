@@ -20,17 +20,18 @@ const base=`http://localhost:${port}`;
     await context.addInitScript(()=>window.addEventListener('portal-page-ready',()=>{window.__smokeReady=true}));
     const page=await context.newPage();
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
-    await page.goto(base+'/login');
+    await page.goto(base+'/login',{waitUntil:'domcontentloaded'});
     await page.locator('#username').fill('qa.student');await page.locator('#pin').fill('1234');
-    await page.locator('#submit').click();await page.waitForURL('**/dashboard');
+    await page.locator('#submit').click();await page.waitForURL('**/dashboard',{waitUntil:'domcontentloaded'});
     fs.mkdirSync(path.resolve(__dirname,'../test-results'),{recursive:true});
     for(const route of ['dashboard','math','writing','profile','players','stats','teams','matchups','travel','cities','']){
-      await page.goto(base+'/'+route);
+      await page.goto(base+'/'+route,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.documentElement.classList.contains('portal-ready'));
       await page.waitForFunction(()=>window.__smokeReady===true);
       assert.equal(await page.locator('html').getAttribute('data-portal-page'),route||'home');
       assert(!await page.locator('body').innerText().then(text=>text.includes('Loading Math Lab...')) || route!=='math');
       if(route===''){
+        await page.waitForFunction(()=>document.getElementById('featured-time')?.textContent.trim());
         assert.match(await page.locator('#featured-day').innerText(),/Sep 10/);
         assert.equal(await page.locator('#featured-time').innerText(),'7:35 PM CT');
         assert.equal(await page.locator('#featured-venue').innerText(),'Melbourne Cricket Ground');
@@ -39,13 +40,13 @@ const base=`http://localhost:${port}`;
     }
     await page.evaluate(()=>window.featuredPhotoReady);
     await page.screenshot({path:'test-results/home-desktop.png'});
-    await page.goto(base+'/players');await page.waitForFunction(()=>window.__smokeReady===true);
+    await page.goto(base+'/players',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__smokeReady===true);
     await page.setViewportSize({width:390,height:844});await page.screenshot({path:'test-results/players-mobile.png'});
     const teacher=await browser.newContext();
     assert((await teacher.request.post(base+'/api/login',{data:{username:'qa.teacher',pin:'1234'}})).ok());
     const tp=await teacher.newPage();tp.on('pageerror',error=>errors.push(error.message));
     for(const route of ['dashboard','students','progress','featured','writing','coach']){
-      await tp.goto(base+'/teacher/'+route);await tp.waitForFunction(()=>document.documentElement.classList.contains('teacher-navigation-ready'));
+      await tp.goto(base+'/teacher/'+route,{waitUntil:'domcontentloaded'});await tp.waitForFunction(()=>document.documentElement.classList.contains('teacher-navigation-ready'));
       assert(!await tp.locator('main').innerText().then(text=>text.includes('Other Class')));
       console.log('Teacher page OK:',route);
     }
@@ -60,7 +61,19 @@ const base=`http://localhost:${port}`;
     assert.equal((await (await context.request.get(base+'/api/writing/profile')).json()).returned,1);
     assert((await context.request.post(base+'/api/writing/revise',{data:{activity:'journal'}})).ok());
     assert((await context.request.post(base+'/api/writing/submit',{data:writing})).ok());
-    for(const yards of [5,10,15,20])assert.equal((await context.request.post(base+'/api/math-game/challenge',{data:{yards}})).status(),201);
+    for(const yards of [5,10,15,20]){
+      const response=await context.request.post(base+'/api/math-game/challenge',{data:{yards}});
+      assert.equal(response.status(),201);
+      const {challenge}=await response.json();
+      assert.equal(challenge.answer,undefined);
+      const answered=await context.request.post(base+'/api/math-game/answer',{data:{challengeId:challenge.id,answer:-1}});
+      assert.equal(answered.status(),200);
+      const feedback=await answered.json();
+      assert.equal(feedback.correct,false);
+      assert.equal(feedback.xpEarned,0);
+      assert.ok(Number.isInteger(feedback.correctAnswer));
+      assert.ok(feedback.explanation.length>20);
+    }
     const admin=await browser.newContext();
     assert((await admin.request.post(base+'/api/login',{data:{username:'qa.admin',pin:'1234'}})).ok());
     const students=(await (await admin.request.get(base+'/api/admin/students')).json()).students;
@@ -69,10 +82,10 @@ const base=`http://localhost:${port}`;
       assert.equal((await teacher.request.patch(`${base}/api/teacher/students/${other.id}/${suffix}`,{data})).status(),404);
     }
     assert((await admin.request.post(`${base}/api/admin/students/${own.id}/impersonate`)).ok());
-    const ap=await admin.newPage();await ap.goto(base+'/profile');
+    const ap=await admin.newPage();await ap.goto(base+'/profile',{waitUntil:'domcontentloaded'});
     await ap.locator('#stop-student-impersonation').waitFor();
     assert(await ap.locator('script[src*="student-portal-fixes.js?v="]').count());
-    await ap.locator('#stop-student-impersonation').click();await ap.waitForURL('**/admin');
+    await ap.locator('#stop-student-impersonation').click();await ap.waitForURL('**/admin',{waitUntil:'domcontentloaded'});
     const usage=await (await admin.request.get(base+'/api/admin/sportsdata-usage')).json();
     assert.equal(usage.budget.used,0);
     assert.deepEqual(errors,[]);

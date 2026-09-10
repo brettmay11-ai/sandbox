@@ -25,10 +25,10 @@
   document.head.appendChild(style);
 
   const playCalls = [
-    { yards:5, name:'Quick Slant', label:'Short gain', difficulty:'Rookie', accent:'#22c55e', icon:'zap', note:'Fast facts' },
-    { yards:10, name:'Curl Route', label:'Move chains', difficulty:'Starter', accent:'#5b9bd5', icon:'corner-down-right', note:'One clean step' },
-    { yards:15, name:'Deep Cross', label:'Big chunk', difficulty:'Captain', accent:'#f59e0b', icon:'route', note:'Two-step thinking' },
-    { yards:20, name:'End Zone Shot', label:'High risk', difficulty:'All-Pro', accent:'#ef4444', icon:'crosshair', note:'Fractions, percent, or travel' }
+    { yards:5, name:'Quick Slant', label:'Short gain', difficulty:'Rookie', accent:'#22c55e', icon:'zap', note:'Add, subtract, regroup' },
+    { yards:10, name:'Curl Route', label:'Move chains', difficulty:'Starter', accent:'#5b9bd5', icon:'corner-down-right', note:'Multiply, divide, combine' },
+    { yards:15, name:'Deep Cross', label:'Big chunk', difficulty:'Captain', accent:'#f59e0b', icon:'route', note:'Fractions, time, measurement' },
+    { yards:20, name:'End Zone Shot', label:'High risk', difficulty:'All-Pro', accent:'#ef4444', icon:'crosshair', note:'Multi-step strategy' }
   ];
   const yardNumbers = [10,20,30,40,50,40,30,20,10].map((number, index) => {
     const position = `calc(48px + (100% - 96px) * ${(index + 1) / 10})`;
