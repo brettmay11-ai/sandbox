@@ -31,7 +31,7 @@ const base=`http://localhost:${port}`;
       assert.equal(await page.locator('html').getAttribute('data-portal-page'),route||'home');
       assert(!await page.locator('body').innerText().then(text=>text.includes('Loading Math Lab...')) || route!=='math');
       if(route===''){
-        await page.waitForFunction(()=>document.getElementById('featured-time')?.textContent.trim());
+        await page.waitForFunction(()=>document.getElementById('featured-day')?.textContent.trim()&&document.getElementById('featured-time')?.textContent.trim()&&document.getElementById('featured-venue')?.textContent.trim());
         assert.match(await page.locator('#featured-day').innerText(),/Sep 10/);
         assert.equal(await page.locator('#featured-time').innerText(),'7:35 PM CT');
         assert.equal(await page.locator('#featured-venue').innerText(),'Melbourne Cricket Ground');

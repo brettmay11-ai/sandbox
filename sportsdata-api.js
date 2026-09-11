@@ -53,6 +53,12 @@ function seasonStatRoutes(season) {
   ];
 }
 
+function boxScoreRoutes(season, week, isComplete = false) {
+  const token = `${season}REG`;
+  const ttlHours = isComplete ? 24 * 365 : 24;
+  return [{ sport:'nfl', season, week, apiPath:`stats/json/BoxScoresFinal/${token}/${week}`, ttlHours }];
+}
+
 async function readCached(pool, route) {
   return (await pool.query('SELECT data,fetched_at,expires_at FROM sportsdata_cache WHERE cache_key=$1', [cacheKeyFor(route)])).rows[0] || null;
 }
@@ -184,6 +190,36 @@ function aggregatePlayerStats(rows) {
   return [...players.values()];
 }
 
+function boxScoreRows(boxScores) {
+  const teamRows = [];
+  const playerRows = [];
+  for (const box of Array.isArray(boxScores) ? boxScores : []) {
+    if (Array.isArray(box?.TeamGames)) teamRows.push(...box.TeamGames);
+    if (Array.isArray(box?.PlayerGames)) playerRows.push(...box.PlayerGames);
+  }
+  return { teamRows, playerRows };
+}
+
+async function rebuildDerivedStatsFromBoxScores(pool, season, throughWeek) {
+  const teamRows = [];
+  const playerRows = [];
+  for (let week = 1; week <= throughWeek; week++) {
+    const [boxRoute] = boxScoreRoutes(season, week, true);
+    const boxCache = await readCached(pool, boxRoute);
+    const rows = boxScoreRows(boxCache?.data);
+    teamRows.push(...rows.teamRows);
+    playerRows.push(...rows.playerRows);
+  }
+  if (teamRows.length) {
+    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
+      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/TeamSeasonStats/${season}`, JSON.stringify(aggregateTeamStats(teamRows))]);
+  }
+  if (playerRows.length) {
+    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
+      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/PlayerSeasonStats/${season}`, JSON.stringify(aggregatePlayerStats(playerRows))]);
+  }
+}
+
 async function rebuildDerivedStats(pool, season, throughWeek) {
   const teamRows = [];
   const playerRows = [];
@@ -225,8 +261,13 @@ async function refreshScheduledData(pool, fetcher = fetch) {
   const today = new Date();
   const season = Number(process.env.NFL_SEASON || seasonRow?.data || (today.getUTCMonth() < 2 ? today.getUTCFullYear()-1 : today.getUTCFullYear()));
   for (const route of scheduledRoutes(season)) await refreshRoute(pool, route, fetcher);
-  for (const route of seasonStatRoutes(season)) await refreshRoute(pool, route, fetcher);
-  await rebuildDerivedStatsFromSeasonFeeds(pool, season);
+  const scheduleRow = await readCached(pool, routeToSportsData(`/api/sportsdata/nfl/schedule/${season}`));
+  const { currentWeek, complete } = completedWeekInfo(scheduleRow?.data || [], today);
+  for (let week = 1; week <= currentWeek; week++) {
+    const isComplete = week < currentWeek || complete;
+    for (const route of boxScoreRoutes(season, week, isComplete)) await refreshRoute(pool, route, fetcher);
+  }
+  await rebuildDerivedStatsFromBoxScores(pool, season, currentWeek);
 }
 
 function startSportsDataRefresh(pool) {
@@ -266,4 +307,4 @@ async function handleSportsData({ pool, req, res, path, user, sendJson }) {
   return true;
 }
 
-module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, seasonStatRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo, rebuildDerivedStatsFromSeasonFeeds };
+module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, seasonStatRoutes, boxScoreRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo, boxScoreRows, rebuildDerivedStatsFromSeasonFeeds, rebuildDerivedStatsFromBoxScores };
