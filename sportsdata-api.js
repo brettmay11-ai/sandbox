@@ -1,9 +1,23 @@
 const BASE_URL = 'https://api.sportsdata.io/v3/nfl';
+const NFLVERSE_BASE = 'https://github.com/nflverse/nflverse-data/releases/download';
 const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
+const TEAM_ALIASES = { JAC:'JAX', LA:'LAR', WSH:'WAS' };
+const TEAM_DIVISIONS = {
+  BUF:'AFC East', MIA:'AFC East', NE:'AFC East', NYJ:'AFC East',
+  BAL:'AFC North', CIN:'AFC North', CLE:'AFC North', PIT:'AFC North',
+  HOU:'AFC South', IND:'AFC South', JAX:'AFC South', TEN:'AFC South',
+  DEN:'AFC West', KC:'AFC West', LV:'AFC West', LAC:'AFC West',
+  DAL:'NFC East', NYG:'NFC East', PHI:'NFC East', WAS:'NFC East',
+  CHI:'NFC North', DET:'NFC North', GB:'NFC North', MIN:'NFC North',
+  ATL:'NFC South', CAR:'NFC South', NO:'NFC South', TB:'NFC South',
+  ARI:'NFC West', LAR:'NFC West', SEA:'NFC West', SF:'NFC West'
+};
+const TEAM_CONFERENCES = Object.fromEntries(Object.entries(TEAM_DIVISIONS).map(([team, division]) => [team, division.slice(0, 3)]));
 const DAILY_LIMIT = 5;
 const cacheKeyFor = route => `sportsdata:nfl:${route.apiPath}`;
 const activeUsageWhere = "provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours' AND NOT (api_path ~ '^(scores/json/Standings|stats/json/PlayerSeasonStats|scores/json/TeamSeasonStats)/[0-9]{4}(REG)?$')";
 const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+const teamCode = value => TEAM_ALIASES[String(value || '').toUpperCase()] || String(value || '').toUpperCase();
 
 async function initSportsDataCache(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
@@ -112,6 +126,167 @@ async function refreshRoute(pool, route, fetcher = fetch) {
     await pool.query('UPDATE sportsdata_usage SET status_code=$2,duration_ms=$3,error_message=$4 WHERE id=$1', [reservation, status, Date.now()-start, String(error.message).slice(0,500)]);
     console.warn(`Scheduled sports refresh failed: ${route.apiPath}: ${error.message}`);
   } finally { clearTimeout(timeout); }
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cell = '', quoted = false;
+  for (let i = 0; i < String(text || '').length; i++) {
+    const char = text[i], next = text[i + 1];
+    if (quoted) {
+      if (char === '"' && next === '"') { cell += '"'; i++; }
+      else if (char === '"') quoted = false;
+      else cell += char;
+    } else if (char === '"') quoted = true;
+    else if (char === ',') { row.push(cell); cell = ''; }
+    else if (char === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (char !== '\r') cell += char;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const headers = rows.shift() || [];
+  return rows.filter(values => values.some(Boolean)).map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ''])));
+}
+
+async function fetchCsv(url, fetcher = fetch) {
+  const response = await fetcher(url);
+  if (!response.ok) throw new Error(`nflverse returned ${response.status} for ${url.split('/').slice(-1)[0]}`);
+  return parseCsv(await response.text());
+}
+
+async function writeCache(pool, route, data, ttlHours = 24) {
+  await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+($3::text || ' hours')::interval)
+    ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [cacheKeyFor(route), JSON.stringify(data), ttlHours]);
+}
+
+async function logProviderRefresh(pool, provider, route, statusCode, succeeded, durationMs, errorMessage = null) {
+  await pool.query("INSERT INTO sportsdata_usage(sport,api_path,provider,cache_key,status_code,succeeded,duration_ms,error_message) VALUES('nfl',$1,$2,$3,$4,$5,$6,$7)", [
+    route.apiPath, provider, cacheKeyFor(route), statusCode, succeeded, durationMs, errorMessage ? String(errorMessage).slice(0, 500) : null
+  ]);
+}
+
+function nflverseUrls(season) {
+  return {
+    schedule:`${NFLVERSE_BASE}/schedules/games.csv`,
+    players:`${NFLVERSE_BASE}/stats_player/stats_player_reg_${season}.csv`,
+    teamWeekly:`${NFLVERSE_BASE}/stats_team/stats_team_week_${season}.csv`
+  };
+}
+
+function normalizeNflverseSchedule(rows, season) {
+  return rows.filter(row => Number(row.season) === Number(season) && row.game_type === 'REG' && NFL_TEAMS.has(teamCode(row.away_team)) && NFL_TEAMS.has(teamCode(row.home_team))).map(row => {
+    const awayScore = row.away_score === '' ? null : number(row.away_score);
+    const homeScore = row.home_score === '' ? null : number(row.home_score);
+    const hasScore = awayScore != null && homeScore != null;
+    return {
+      GameKey:row.game_id, Season:Number(row.season), SeasonType:1, Week:number(row.week),
+      AwayTeam:teamCode(row.away_team), HomeTeam:teamCode(row.home_team),
+      AwayScore:awayScore, HomeScore:homeScore, Date:row.gametime ? `${row.gameday}T${row.gametime}:00` : row.gameday,
+      DateTimeIsTBD:!row.gametime, Status:hasScore ? 'Final' : 'Scheduled', IsOver:hasScore,
+      StadiumDetails:{ Name:row.stadium || '', City:'', State:'', Country:'USA' }
+    };
+  });
+}
+
+function normalizeNflversePlayers(rows) {
+  return rows.map(row => {
+    const team = teamCode(row.recent_team);
+    if (!NFL_TEAMS.has(team)) return null;
+    const receptions = number(row.receptions);
+    const rushingAttempts = number(row.carries);
+    return {
+      PlayerID:row.player_id || null, Team:team, Name:row.player_display_name || row.player_name || '', Position:row.position || '',
+      PassingCompletions:number(row.completions), PassingAttempts:number(row.attempts), PassingYards:number(row.passing_yards),
+      PassingTouchdowns:number(row.passing_tds), PassingInterceptions:number(row.passing_interceptions), PassingRating:null,
+      RushingAttempts:rushingAttempts, RushingYards:number(row.rushing_yards), RushingTouchdowns:number(row.rushing_tds),
+      RushingYardsPerAttempt:rushingAttempts ? Number((number(row.rushing_yards) / rushingAttempts).toFixed(1)) : 0, RushingLong:0,
+      Receptions:receptions, ReceivingTargets:number(row.targets), ReceivingYards:number(row.receiving_yards),
+      ReceivingTouchdowns:number(row.receiving_tds), ReceivingYardsPerReception:receptions ? Number((number(row.receiving_yards) / receptions).toFixed(1)) : 0,
+      ReceivingLong:0, Fumbles:number(row.fumbles_total), SoloTackles:number(row.def_tackles_solo), AssistedTackles:number(row.def_tackle_assists),
+      Tackles:number(row.def_tackles_solo) + number(row.def_tackle_assists), Sacks:number(row.def_sacks),
+      Interceptions:number(row.def_interceptions), FumblesForced:number(row.def_fumbles_forced),
+      PassesDefended:number(row.def_pass_defended), DefensiveTouchdowns:number(row.def_tds)
+    };
+  }).filter(player => player && player.Name);
+}
+
+function standingsFromSchedule(games) {
+  const rows = Object.fromEntries([...NFL_TEAMS].map(team => [team, { Team:team, Conference:TEAM_CONFERENCES[team], Division:TEAM_DIVISIONS[team], Wins:0, Losses:0, Ties:0, PointsFor:0, PointsAgainst:0, DivisionWins:0, DivisionLosses:0, DivisionTies:0 }]));
+  for (const game of games) {
+    if (!game.IsOver || game.AwayScore == null || game.HomeScore == null) continue;
+    const away = rows[game.AwayTeam], home = rows[game.HomeTeam];
+    if (!away || !home) continue;
+    away.PointsFor += game.AwayScore; away.PointsAgainst += game.HomeScore;
+    home.PointsFor += game.HomeScore; home.PointsAgainst += game.AwayScore;
+    const divGame = away.Division === home.Division;
+    if (game.AwayScore === game.HomeScore) {
+      away.Ties++; home.Ties++;
+      if (divGame) { away.DivisionTies++; home.DivisionTies++; }
+    } else {
+      const awayWon = game.AwayScore > game.HomeScore;
+      const winner = awayWon ? away : home, loser = awayWon ? home : away;
+      winner.Wins++; loser.Losses++;
+      if (divGame) { winner.DivisionWins++; loser.DivisionLosses++; }
+    }
+  }
+  return Object.values(rows);
+}
+
+function normalizeNflverseTeamStats(rows, games) {
+  const scoreRows = standingsFromSchedule(games);
+  const scores = new Map(scoreRows.map(row => [row.Team, row]));
+  const byTeam = new Map();
+  for (const row of rows.filter(row => row.season_type === 'REG')) {
+    const team = teamCode(row.team), opponent = teamCode(row.opponent_team);
+    if (!NFL_TEAMS.has(team)) continue;
+    if (!byTeam.has(team)) byTeam.set(team, { Team:team, Games:0, Score:0, OffensiveYards:0, PassingYards:0, RushingYards:0, OpponentScore:0, OpponentOffensiveYards:0, OpponentPassingYards:0, OpponentRushingYards:0, Sacks:0, InterceptionReturns:0 });
+    const target = byTeam.get(team);
+    target.Games += 1;
+    target.OffensiveYards += number(row.passing_yards) + number(row.rushing_yards);
+    target.PassingYards += number(row.passing_yards);
+    target.RushingYards += number(row.rushing_yards);
+    target.Sacks += number(row.def_sacks);
+    target.InterceptionReturns += number(row.def_interceptions);
+    const opponentRow = rows.find(candidate => candidate.season_type === 'REG' && teamCode(candidate.team) === opponent && Number(candidate.week) === Number(row.week));
+    if (opponentRow) {
+      target.OpponentOffensiveYards += number(opponentRow.passing_yards) + number(opponentRow.rushing_yards);
+      target.OpponentPassingYards += number(opponentRow.passing_yards);
+      target.OpponentRushingYards += number(opponentRow.rushing_yards);
+    }
+  }
+  for (const stat of byTeam.values()) {
+    const score = scores.get(stat.Team);
+    if (score) { stat.Score = score.PointsFor; stat.OpponentScore = score.PointsAgainst; }
+  }
+  return [...byTeam.values()];
+}
+
+async function refreshNflverseData(pool, season, fetcher = fetch) {
+  const urls = nflverseUrls(season);
+  const started = Date.now();
+  const routes = {
+    current:routeToSportsData('/api/sportsdata/nfl/current-season'),
+    schedule:routeToSportsData(`/api/sportsdata/nfl/schedule/${season}`),
+    standings:routeToSportsData(`/api/sportsdata/nfl/standings/${season}`),
+    players:routeToSportsData(`/api/sportsdata/nfl/player-season-stats/${season}`),
+    teams:routeToSportsData(`/api/sportsdata/nfl/team-season-stats/${season}`)
+  };
+  const fresh = await Promise.all(Object.values(routes).map(route => readCached(pool, route)));
+  if (fresh.every(row => row && new Date(row.expires_at).getTime() > Date.now())) return true;
+  try {
+    const [scheduleRows, playerRows, teamWeeklyRows] = await Promise.all([fetchCsv(urls.schedule, fetcher), fetchCsv(urls.players, fetcher), fetchCsv(urls.teamWeekly, fetcher)]);
+    const schedule = normalizeNflverseSchedule(scheduleRows, season);
+    await writeCache(pool, routes.current, Number(season), 24);
+    await writeCache(pool, routes.schedule, schedule, 24);
+    await writeCache(pool, routes.standings, standingsFromSchedule(schedule), 24);
+    await writeCache(pool, routes.players, normalizeNflversePlayers(playerRows), 24);
+    await writeCache(pool, routes.teams, normalizeNflverseTeamStats(teamWeeklyRows, schedule), 24);
+    await logProviderRefresh(pool, 'nflverse', { apiPath:`nflverse/${season}/daily-import` }, 200, true, Date.now() - started);
+    return true;
+  } catch (error) {
+    await logProviderRefresh(pool, 'nflverse', { apiPath:`nflverse/${season}/daily-import` }, null, false, Date.now() - started, error.message);
+    console.warn(`Scheduled nflverse refresh failed: ${error.message}`);
+    return false;
+  }
 }
 
 function weekStatRoutes(season, week, isComplete = false) {
@@ -290,10 +465,14 @@ async function rebuildDerivedStatsFromSeasonFeeds(pool, season) {
 
 async function refreshScheduledData(pool, fetcher = fetch) {
   const current = routeToSportsData('/api/sportsdata/nfl/current-season');
-  await refreshRoute(pool, current, fetcher);
-  const seasonRow = await readCached(pool, current);
   const today = new Date();
+  const seasonRow = await readCached(pool, current);
   const season = Number(process.env.NFL_SEASON || seasonRow?.data || (today.getUTCMonth() < 2 ? today.getUTCFullYear()-1 : today.getUTCFullYear()));
+  if (process.env.NFL_STATS_PROVIDER !== 'sportsdata') {
+    await refreshNflverseData(pool, season, fetcher);
+    return;
+  }
+  await refreshRoute(pool, current, fetcher);
   for (const route of scheduledRoutes(season)) await refreshRoute(pool, route, fetcher);
   const scheduleRow = await readCached(pool, routeToSportsData(`/api/sportsdata/nfl/schedule/${season}`));
   const { currentWeek, complete } = completedWeekInfo(scheduleRow?.data || [], today);
@@ -332,7 +511,7 @@ async function handleSportsData({ pool, req, res, path, user, sendJson }) {
   if (!route) return sendJson(res, 404, { error:'Sports feed not found. News is available from /api/nfl-news/.' }), true;
   const row = await readCached(pool, route);
   if (!row) return sendJson(res, 503, { error:'This feed is waiting for its scheduled update.', status:'unavailable', season:route.season || null }), true;
-  res.setHeader('X-Data-Source', 'SportsData.io');
+  res.setHeader('X-Data-Source', process.env.NFL_STATS_PROVIDER === 'sportsdata' ? 'SportsData.io' : 'nflverse');
   res.setHeader('X-Data-Status', new Date(row.expires_at).getTime() > Date.now() ? 'cached' : 'stale');
   res.setHeader('X-Data-Updated-At', new Date(row.fetched_at).toISOString());
   if (route.season) res.setHeader('X-Data-Season', String(route.season));
@@ -341,4 +520,4 @@ async function handleSportsData({ pool, req, res, path, user, sendJson }) {
   return true;
 }
 
-module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, seasonStatRoutes, boxScoreRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo, boxScoreRows, rowsLookScrambled, rebuildDerivedStatsFromSeasonFeeds, rebuildDerivedStatsFromBoxScores };
+module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, seasonStatRoutes, boxScoreRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo, boxScoreRows, rowsLookScrambled, rebuildDerivedStatsFromSeasonFeeds, rebuildDerivedStatsFromBoxScores, parseCsv, normalizeNflverseSchedule, normalizeNflversePlayers, normalizeNflverseTeamStats, standingsFromSchedule, refreshNflverseData };

@@ -6,6 +6,7 @@ process.env.SEED_CLASS_STUDENTS='false';
 process.env.SUPER_ADMIN_USERNAME='qa.admin';process.env.SUPER_ADMIN_PIN='1234';
 process.env.TEACHER_USERNAME='qa.teacher';process.env.TEACHER_PIN='1234';
 delete process.env.SPORTSDATA_IO_KEY;delete process.env.SPORTSDATA_API_KEY;
+process.env.NFL_STATS_PROVIDER='sportsdata';
 const {testDatabase}=require('./database');
 const crypto=require('crypto');
 const http=require('http');

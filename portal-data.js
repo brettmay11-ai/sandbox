@@ -5,14 +5,14 @@
       const response = await fetch(url, { signal:AbortSignal.timeout(12000) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Feed unavailable');
-      return { data, status:response.headers.get('X-Data-Status') || 'cached', updatedAt:response.headers.get('X-Data-Updated-At') };
+      return { data, status:response.headers.get('X-Data-Status') || 'cached', updatedAt:response.headers.get('X-Data-Updated-At'), source:response.headers.get('X-Data-Source') || 'Cached NFL data' };
     })());
     return requests.get(url);
   }
   function label(meta, season) {
     if (!meta) return `${season} season | Data unavailable; waiting for scheduled update`;
     const updated = meta.updatedAt ? new Date(meta.updatedAt).toLocaleString('en-US',{ timeZone:'America/Chicago', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })+' CT' : 'unknown';
-    return `${season} season | SportsData.io | Updated ${updated}${meta.status==='stale'?' | Delayed update: showing last stored data':''}`;
+    return `${season} season | ${meta.source || 'Cached NFL data'} | Updated ${updated}${meta.status==='stale'?' | Delayed update: showing last stored data':''}`;
   }
   window.NFLFeeds = { feed, label, season:null, players:null, schedule:null, teamStats:null };
   window.initializeSportsData = async function() {
