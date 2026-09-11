@@ -18,6 +18,7 @@ const cacheKeyFor = route => `sportsdata:nfl:${route.apiPath}`;
 const activeUsageWhere = "provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours' AND NOT (api_path ~ '^(scores/json/Standings|stats/json/PlayerSeasonStats|scores/json/TeamSeasonStats)/[0-9]{4}(REG)?$')";
 const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const teamCode = value => TEAM_ALIASES[String(value || '').toUpperCase()] || String(value || '').toUpperCase();
+const nflverseTtlHours = () => Math.max(1, Number(process.env.NFLVERSE_TTL_HOURS || 2));
 
 async function initSportsDataCache(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
@@ -263,6 +264,7 @@ function normalizeNflverseTeamStats(rows, games) {
 async function refreshNflverseData(pool, season, fetcher = fetch) {
   const urls = nflverseUrls(season);
   const started = Date.now();
+  const ttlHours = nflverseTtlHours();
   const routes = {
     current:routeToSportsData('/api/sportsdata/nfl/current-season'),
     schedule:routeToSportsData(`/api/sportsdata/nfl/schedule/${season}`),
@@ -271,15 +273,15 @@ async function refreshNflverseData(pool, season, fetcher = fetch) {
     teams:routeToSportsData(`/api/sportsdata/nfl/team-season-stats/${season}`)
   };
   const fresh = await Promise.all(Object.values(routes).map(route => readCached(pool, route)));
-  if (fresh.every(row => row && new Date(row.expires_at).getTime() > Date.now())) return true;
+  if (fresh.every(row => row && Date.now() - new Date(row.fetched_at).getTime() < ttlHours * 3600000)) return true;
   try {
     const [scheduleRows, playerRows, teamWeeklyRows] = await Promise.all([fetchCsv(urls.schedule, fetcher), fetchCsv(urls.players, fetcher), fetchCsv(urls.teamWeekly, fetcher)]);
     const schedule = normalizeNflverseSchedule(scheduleRows, season);
-    await writeCache(pool, routes.current, Number(season), 24);
-    await writeCache(pool, routes.schedule, schedule, 24);
-    await writeCache(pool, routes.standings, standingsFromSchedule(schedule), 24);
-    await writeCache(pool, routes.players, normalizeNflversePlayers(playerRows), 24);
-    await writeCache(pool, routes.teams, normalizeNflverseTeamStats(teamWeeklyRows, schedule), 24);
+    await writeCache(pool, routes.current, Number(season), ttlHours);
+    await writeCache(pool, routes.schedule, schedule, ttlHours);
+    await writeCache(pool, routes.standings, standingsFromSchedule(schedule), ttlHours);
+    await writeCache(pool, routes.players, normalizeNflversePlayers(playerRows), ttlHours);
+    await writeCache(pool, routes.teams, normalizeNflverseTeamStats(teamWeeklyRows, schedule), ttlHours);
     await logProviderRefresh(pool, 'nflverse', { apiPath:`nflverse/${season}/daily-import` }, 200, true, Date.now() - started);
     return true;
   } catch (error) {

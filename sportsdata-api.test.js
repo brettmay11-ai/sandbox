@@ -157,6 +157,29 @@ test('nflverse daily import fills legacy student sports caches',async()=>{
   assert.equal(teams.find(team=>team.Team==='SEA').OpponentOffensiveYards,287);
   assert.equal(standings.find(team=>team.Team==='SEA').Wins,1);
 });
+test('nflverse refresh ignores old 24-hour expirations after the shorter refresh window',async()=>{
+  const current=routeToSportsData('/api/sportsdata/nfl/current-season');
+  const schedule=routeToSportsData('/api/sportsdata/nfl/schedule/2026');
+  const standings=routeToSportsData('/api/sportsdata/nfl/standings/2026');
+  const players=routeToSportsData('/api/sportsdata/nfl/player-season-stats/2026');
+  const teams=routeToSportsData('/api/sportsdata/nfl/team-season-stats/2026');
+  for (const route of [current,schedule,standings,players,teams]) {
+    await pool.query("INSERT INTO sportsdata_cache(cache_key,data,fetched_at,expires_at) VALUES($1,$2,NOW()-INTERVAL '3 hours',NOW()+INTERVAL '21 hours')", [`sportsdata:nfl:${route.apiPath}`, JSON.stringify([])]);
+  }
+  const csv = {
+    'games.csv':`game_id,season,game_type,week,gameday,weekday,gametime,away_team,away_score,home_team,home_score,stadium\n2026_01_NE_SEA,2026,REG,1,2026-09-10,Thursday,20:20,NE,10,SEA,13,Lumen Field\n`,
+    'stats_player_reg_2026.csv':`player_id,player_name,player_display_name,position,recent_team,completions,attempts,passing_yards,passing_tds,passing_interceptions,carries,rushing_yards,rushing_tds,receptions,targets,receiving_yards,receiving_tds\n00-0035704,D.Lock,Drew Lock,QB,SEA,16,22,187,1,0,0,0,0,0,0,0,0\n`,
+    'stats_team_week_2026.csv':`season,week,team,season_type,opponent_team,passing_yards,rushing_yards,def_sacks,def_interceptions\n2026,1,SEA,REG,NE,187,46,3,3\n2026,1,NE,REG,SEA,178,109,2,0\n`
+  };
+  let calls=0;
+  const fetcher=async url=>({ok:true,status:200,text:async()=>{calls++;return csv[url.split('/').pop()]||''}});
+  delete process.env.NFL_STATS_PROVIDER;
+  await refreshNflverseData(pool,2026,fetcher);
+  process.env.NFL_STATS_PROVIDER='sportsdata';
+  assert.equal(calls,3);
+  const updated=(await pool.query("SELECT data FROM sportsdata_cache WHERE cache_key='sportsdata:nfl:derived/json/PlayerSeasonStats/2026'")).rows[0].data;
+  assert.equal(updated.find(player=>player.Name==='Drew Lock').PassingYards,187);
+});
 test('a missing cache returns unavailable without contacting SportsData',async()=>{
   let result;
   await handleSportsData({pool,req:{method:'GET'},res:{},path:'/api/sportsdata/nfl/schedule/2026',user:{id:1},sendJson:(res,status,data)=>{result={status,data}}});
