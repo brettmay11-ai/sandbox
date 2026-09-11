@@ -23,6 +23,11 @@ test('team rates use games played, defensive rates sort lower first, no games me
   assert.deepEqual(tables.defensive[0],[{team:'SF',val:10},{team:'DAL',val:15}]);
   assert.deepEqual(playerTables([]).passing,[]);
 });
+test('team passing yards per game comes from regular-season totals divided by games',()=>{
+  const tables=teamTables([{Team:'SEA',Games:1,Score:13,OffensiveYards:233,PassingYards:187,RushingYards:46,OpponentScore:10,OpponentOffensiveYards:130}]);
+  assert.equal(tables.offensive[2][0].team,'SEA');
+  assert.equal(tables.offensive[2][0].val,187);
+});
 test('player tables preserve raw regular-season yardage fields',()=>{
   const tables=playerTables([
     {Team:'SEA',Name:'D.Lock',PassingCompletions:16,PassingAttempts:22,PassingYards:187,PassingTouchdowns:1,PassingInterceptions:0,PassingRating:108.1},

@@ -2,6 +2,7 @@ const BASE_URL = 'https://api.sportsdata.io/v3/nfl';
 const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
 const DAILY_LIMIT = 5;
 const cacheKeyFor = route => `sportsdata:nfl:${route.apiPath}`;
+const activeUsageWhere = "provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours' AND NOT (api_path ~ '^(scores/json/Standings|stats/json/PlayerSeasonStats|scores/json/TeamSeasonStats)/[0-9]{4}$')";
 
 async function initSportsDataCache(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
@@ -57,7 +58,7 @@ async function reserveRefresh(pool, route) {
     const key = cacheKeyFor(route);
     const cached = await readCached(client, route);
     const guard = (await client.query('SELECT next_attempt_at FROM sportsdata_refresh_guard WHERE cache_key=$1', [key])).rows[0];
-    const used = Number((await client.query("SELECT COUNT(*)::int AS count FROM sportsdata_usage WHERE provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours'")).rows[0].count);
+    const used = Number((await client.query(`SELECT COUNT(*)::int AS count FROM sportsdata_usage WHERE ${activeUsageWhere}`)).rows[0].count);
     if ((cached && new Date(cached.expires_at).getTime() > Date.now()) ||
         (guard && new Date(guard.next_attempt_at).getTime() > Date.now()) || used >= DAILY_LIMIT) {
       await client.query('COMMIT');
@@ -122,7 +123,7 @@ function startSportsDataRefresh(pool) {
 }
 
 async function sportsDataHealth(pool) {
-  const used = Number((await pool.query("SELECT COUNT(*)::int AS count FROM sportsdata_usage WHERE provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours'")).rows[0].count);
+  const used = Number((await pool.query(`SELECT COUNT(*)::int AS count FROM sportsdata_usage WHERE ${activeUsageWhere}`)).rows[0].count);
   return { limit:DAILY_LIMIT, used, remaining:Math.max(0, DAILY_LIMIT-used), window:'rolling 24 hours', refresh:'background only', configured:Boolean(process.env.SPORTSDATA_IO_KEY || process.env.SPORTSDATA_API_KEY) };
 }
 

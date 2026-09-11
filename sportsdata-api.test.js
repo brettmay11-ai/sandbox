@@ -42,6 +42,23 @@ test('failed calls consume budget and retain durable cooldowns even with no cach
   assert.equal(calls,5);
   assert.equal(Number((await pool.query('SELECT COUNT(*) AS count FROM sportsdata_usage WHERE succeeded=FALSE')).rows[0].count),5);
 });
+test('retired plain-year stat attempts do not block regular-season cache refresh',async()=>{
+  for (const path of ['scores/json/Standings/2026','stats/json/PlayerSeasonStats/2026','scores/json/TeamSeasonStats/2026']) {
+    await pool.query("INSERT INTO sportsdata_usage(sport,api_path,provider,cache_key,error_message) VALUES('nfl',$1,'sportsdata',$2,'retired path')", [path, `sportsdata:nfl:${path}`]);
+  }
+  let calls=0;
+  const fetcher=async url=>{calls++;return {ok:true,status:200,json:async()=>url.endsWith('CurrentSeason')?2026:[]}};
+  await refreshScheduledData(pool,fetcher);
+  assert.equal(calls,5);
+  const refreshed=(await pool.query("SELECT api_path FROM sportsdata_usage WHERE succeeded=TRUE ORDER BY api_path")).rows.map(row=>row.api_path);
+  assert.deepEqual(refreshed,[
+    'scores/json/CurrentSeason',
+    'scores/json/Schedules/2026',
+    'scores/json/Standings/2026REG',
+    'scores/json/TeamSeasonStats/2026REG',
+    'stats/json/PlayerSeasonStats/2026REG'
+  ]);
+});
 test('student traffic reads stale data and filters locally without reserving calls',async()=>{
   await pool.query("INSERT INTO sportsdata_cache(cache_key,data,fetched_at,expires_at) VALUES($1,$2,NOW()-INTERVAL '2 days',NOW()-INTERVAL '1 day')",['sportsdata:nfl:stats/json/PlayerSeasonStats/2026REG',JSON.stringify([{Team:'DET',Name:'One'},{Team:'DAL',Name:'Two'}])]);
   const headers={};let result;
