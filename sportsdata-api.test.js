@@ -1,7 +1,7 @@
 const {test,before,after,beforeEach}=require('node:test');
 const assert=require('node:assert/strict');
 const {testDatabase}=require('./test-support/database');
-const {initSportsDataCache,routeToSportsData,reserveRefresh,refreshScheduledData,handleSportsData,aggregateTeamStats,aggregatePlayerStats,completedWeekInfo}=require('./sportsdata-api');
+const {initSportsDataCache,routeToSportsData,reserveRefresh,refreshScheduledData,handleSportsData,aggregateTeamStats,aggregatePlayerStats,completedWeekInfo,rebuildDerivedStatsFromSeasonFeeds}=require('./sportsdata-api');
 let db,pool;
 const originalKey=process.env.SPORTSDATA_IO_KEY;
 before(async()=>{({db,pool}=await testDatabase());await initSportsDataCache(pool);process.env.SPORTSDATA_IO_KEY='test-only'});
@@ -55,9 +55,26 @@ test('retired plain-year stat attempts do not block regular-season cache refresh
     'scores/json/CurrentSeason',
     'scores/json/Schedules/2026',
     'scores/json/Standings/2026REG',
-    'scores/json/TeamGameStats/2026REG/1',
-    'stats/json/PlayerGameStatsByWeek/2026REG/1'
+    'scores/json/TeamSeasonStats/2026REG',
+    'stats/json/PlayerSeasonStats/2026REG'
   ]);
+});
+test('regular season SportsData feeds populate derived student caches',async()=>{
+  await pool.query("INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours'),($3,$4,NOW()+INTERVAL '24 hours')",[
+    'sportsdata:nfl:stats/json/PlayerSeasonStats/2026REG',
+    JSON.stringify([
+      {PlayerID:1,Team:'SEA',Name:'D.Lock',Position:'QB',PassingCompletions:16,PassingAttempts:22,PassingYards:187,PassingTouchdowns:1},
+      {PlayerID:2,Team:'SEA',Name:'J.Smith-Njigba',Position:'WR',Receptions:8,ReceivingTargets:11,ReceivingYards:122,ReceivingTouchdowns:1}
+    ]),
+    'sportsdata:nfl:scores/json/TeamSeasonStats/2026REG',
+    JSON.stringify([{Team:'SEA',Games:1,Score:13,OffensiveYards:233,PassingYards:187,RushingYards:46,OpponentScore:10,OpponentOffensiveYards:130}])
+  ]);
+  await rebuildDerivedStatsFromSeasonFeeds(pool,2026);
+  const players=(await pool.query("SELECT data FROM sportsdata_cache WHERE cache_key='sportsdata:nfl:derived/json/PlayerSeasonStats/2026'")).rows[0].data;
+  const teams=(await pool.query("SELECT data FROM sportsdata_cache WHERE cache_key='sportsdata:nfl:derived/json/TeamSeasonStats/2026'")).rows[0].data;
+  assert.equal(players.find(player=>player.Name==='D.Lock').PassingYards,187);
+  assert.equal(players.find(player=>player.Name==='J.Smith-Njigba').ReceivingYards,122);
+  assert.equal(teams.find(team=>team.Team==='SEA').PassingYards,187);
 });
 test('derived stats aggregate SportsData weekly box-score rows into season totals',()=>{
   const team=aggregateTeamStats([

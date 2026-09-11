@@ -45,6 +45,14 @@ function scheduledRoutes(season) {
   return ['schedule','standings'].map(kind => routeToSportsData(`/api/sportsdata/nfl/${kind}/${season}`));
 }
 
+function seasonStatRoutes(season) {
+  const token = `${season}REG`;
+  return [
+    { sport:'nfl', season, apiPath:`stats/json/PlayerSeasonStats/${token}` },
+    { sport:'nfl', season, apiPath:`scores/json/TeamSeasonStats/${token}` }
+  ];
+}
+
 async function readCached(pool, route) {
   return (await pool.query('SELECT data,fetched_at,expires_at FROM sportsdata_cache WHERE cache_key=$1', [cacheKeyFor(route)])).rows[0] || null;
 }
@@ -196,6 +204,20 @@ async function rebuildDerivedStats(pool, season, throughWeek) {
   }
 }
 
+async function rebuildDerivedStatsFromSeasonFeeds(pool, season) {
+  const [playerRoute, teamRoute] = seasonStatRoutes(season);
+  const playerCache = await readCached(pool, playerRoute);
+  const teamCache = await readCached(pool, teamRoute);
+  if (Array.isArray(teamCache?.data)) {
+    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
+      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/TeamSeasonStats/${season}`, JSON.stringify(aggregateTeamStats(teamCache.data))]);
+  }
+  if (Array.isArray(playerCache?.data)) {
+    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
+      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/PlayerSeasonStats/${season}`, JSON.stringify(aggregatePlayerStats(playerCache.data))]);
+  }
+}
+
 async function refreshScheduledData(pool, fetcher = fetch) {
   const current = routeToSportsData('/api/sportsdata/nfl/current-season');
   await refreshRoute(pool, current, fetcher);
@@ -203,13 +225,8 @@ async function refreshScheduledData(pool, fetcher = fetch) {
   const today = new Date();
   const season = Number(process.env.NFL_SEASON || seasonRow?.data || (today.getUTCMonth() < 2 ? today.getUTCFullYear()-1 : today.getUTCFullYear()));
   for (const route of scheduledRoutes(season)) await refreshRoute(pool, route, fetcher);
-  const scheduleRow = await readCached(pool, routeToSportsData(`/api/sportsdata/nfl/schedule/${season}`));
-  const { currentWeek, complete } = completedWeekInfo(scheduleRow?.data || [], today);
-  for (let week = 1; week <= currentWeek; week++) {
-    const isComplete = week < currentWeek || complete;
-    for (const route of weekStatRoutes(season, week, isComplete)) await refreshRoute(pool, route, fetcher);
-  }
-  await rebuildDerivedStats(pool, season, currentWeek);
+  for (const route of seasonStatRoutes(season)) await refreshRoute(pool, route, fetcher);
+  await rebuildDerivedStatsFromSeasonFeeds(pool, season);
 }
 
 function startSportsDataRefresh(pool) {
@@ -249,4 +266,4 @@ async function handleSportsData({ pool, req, res, path, user, sendJson }) {
   return true;
 }
 
-module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo };
+module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, seasonStatRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo, rebuildDerivedStatsFromSeasonFeeds };
