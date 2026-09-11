@@ -43,7 +43,7 @@ test('failed calls consume budget and retain durable cooldowns even with no cach
   assert.equal(Number((await pool.query('SELECT COUNT(*) AS count FROM sportsdata_usage WHERE succeeded=FALSE')).rows[0].count),5);
 });
 test('retired plain-year stat attempts do not block regular-season cache refresh',async()=>{
-  for (const path of ['scores/json/Standings/2026','stats/json/PlayerSeasonStats/2026','scores/json/TeamSeasonStats/2026']) {
+  for (const path of ['scores/json/Standings/2026','stats/json/PlayerSeasonStats/2026','scores/json/TeamSeasonStats/2026','stats/json/PlayerSeasonStats/2026REG','scores/json/TeamSeasonStats/2026REG']) {
     await pool.query("INSERT INTO sportsdata_usage(sport,api_path,provider,cache_key,error_message) VALUES('nfl',$1,'sportsdata',$2,'retired path')", [path, `sportsdata:nfl:${path}`]);
   }
   let calls=0;

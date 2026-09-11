@@ -2,7 +2,7 @@ const BASE_URL = 'https://api.sportsdata.io/v3/nfl';
 const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LV','LAC','LAR','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SF','SEA','TB','TEN','WAS']);
 const DAILY_LIMIT = 5;
 const cacheKeyFor = route => `sportsdata:nfl:${route.apiPath}`;
-const activeUsageWhere = "provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours' AND NOT (api_path ~ '^(scores/json/Standings|stats/json/PlayerSeasonStats|scores/json/TeamSeasonStats)/[0-9]{4}$')";
+const activeUsageWhere = "provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours' AND NOT (api_path ~ '^(scores/json/Standings|stats/json/PlayerSeasonStats|scores/json/TeamSeasonStats)/[0-9]{4}(REG)?$')";
 const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 
 async function initSportsDataCache(pool) {
