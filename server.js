@@ -95,6 +95,7 @@ async function initDatabase() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS jersey_number VARCHAR(2);
     ALTER TABLE users ADD COLUMN IF NOT EXISTS favorite_position VARCHAR(24);
     ALTER TABLE users ADD COLUMN IF NOT EXISTS team_role VARCHAR(24);
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS math_difficulty_boost INTEGER NOT NULL DEFAULT 0;
 
     CREATE TABLE IF NOT EXISTS classes(
       id BIGSERIAL PRIMARY KEY,
@@ -196,7 +197,7 @@ async function getUser(request) {
   const token = parseCookies(request).nfl_session;
   if (!token) return null;
   const result = await pool.query(
-    `SELECT u.id,u.username,u.display_name,u.role,u.selected_team,u.class_id,c.name AS class_name,c.slug AS class_slug
+    `SELECT u.id,u.username,u.display_name,u.role,u.selected_team,u.class_id,u.math_difficulty_boost,c.name AS class_name,c.slug AS class_slug
      FROM sessions s
      JOIN users u ON u.id=s.user_id
      LEFT JOIN classes c ON c.id=u.class_id
@@ -224,6 +225,7 @@ function publicUser(user) {
     displayName:user.display_name,
     role:user.role,
     selectedTeam:user.selected_team,
+    mathDifficultyBoost:Number(user.math_difficulty_boost || 0),
     classId:user.class_id,
     className:user.class_name,
     classSlug:user.class_slug
@@ -333,7 +335,7 @@ async function handleAdminApi(request, response, pathname, user) {
     const classId = Number(url.searchParams.get('classId'));
     if (classId) { params.push(classId); where += ` AND u.class_id=$${params.length}`; }
     const result = await pool.query(
-      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at
+      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,u.math_difficulty_boost,c.name AS class_name,u.created_at,u.last_login_at
        FROM users u
        LEFT JOIN classes c ON c.id=u.class_id
        WHERE ${where}
@@ -365,12 +367,14 @@ async function handleAdminApi(request, response, pathname, user) {
   const studentMatch = pathname.match(/^\/api\/admin\/students\/(\d+)$/);
   if (studentMatch && request.method === 'PATCH') {
     const body = await readJson(request);
+    const hasBoost = body.mathDifficultyBoost !== undefined;
+    const mathDifficultyBoost = Math.max(0, Math.min(3, Number(body.mathDifficultyBoost) || 0));
     const result = await pool.query(
       `UPDATE users
-       SET display_name=COALESCE($2,display_name), class_id=COALESCE($3,class_id), selected_team=$4, active=COALESCE($5,active)
+       SET display_name=COALESCE($2,display_name), class_id=COALESCE($3,class_id), selected_team=$4, active=COALESCE($5,active), math_difficulty_boost=CASE WHEN $6::boolean THEN $7 ELSE math_difficulty_boost END
        WHERE id=$1 AND role='student'
-       RETURNING id,username,display_name,class_id,selected_team,active`,
-      [studentMatch[1], body.displayName ? safeText(body.displayName, 80) : null, body.classId === undefined ? null : Number(body.classId) || null, body.selectedTeam === undefined ? null : safeText(body.selectedTeam, 12).toUpperCase() || null, body.active === undefined ? null : Boolean(body.active)]
+       RETURNING id,username,display_name,class_id,selected_team,active,math_difficulty_boost`,
+      [studentMatch[1], body.displayName ? safeText(body.displayName, 80) : null, body.classId === undefined ? null : Number(body.classId) || null, body.selectedTeam === undefined ? null : safeText(body.selectedTeam, 12).toUpperCase() || null, body.active === undefined ? null : Boolean(body.active), hasBoost, mathDifficultyBoost]
     );
     if (!result.rowCount) return sendJson(response, 404, { error:'Student not found.' }), true;
     return sendJson(response, 200, { student:result.rows[0] }), true;
@@ -509,7 +513,7 @@ async function handleApi(request, response, pathname, user) {
     params.push(...scope.params);
     classFilter = scope.clause;
     const result = await pool.query(
-      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,c.name AS class_name,u.created_at,u.last_login_at
+      `SELECT u.id,u.username,u.display_name,u.selected_team,u.active,u.class_id,u.math_difficulty_boost,c.name AS class_name,u.created_at,u.last_login_at
        FROM users u
        LEFT JOIN classes c ON c.id=u.class_id
        WHERE u.role='student' ${classFilter}
@@ -540,14 +544,16 @@ async function handleApi(request, response, pathname, user) {
     const body = await readJson(request);
     const username = normalizeUsername(body.username);
     const displayName = safeText(body.displayName, 80);
+    const hasBoost = body.mathDifficultyBoost !== undefined;
+    const mathDifficultyBoost = Math.max(0, Math.min(3, Number(body.mathDifficultyBoost) || 0));
     if (username.length < 2 || !displayName) return sendJson(response, 400, { error:'Enter a valid username and display name.' });
     try {
       const result = await pool.query(
         `UPDATE users
-         SET username=$2,display_name=$3
+         SET username=$2,display_name=$3,math_difficulty_boost=CASE WHEN $6::boolean THEN $7 ELSE math_difficulty_boost END
          WHERE id=$1 AND role='student' AND ($4::boolean OR class_id=$5)
-         RETURNING id,username,display_name,selected_team,active,class_id`,
-        [identityMatch[1], username, displayName, isSuperAdmin(user), user.class_id]
+         RETURNING id,username,display_name,selected_team,active,class_id,math_difficulty_boost`,
+        [identityMatch[1], username, displayName, isSuperAdmin(user), user.class_id, hasBoost, mathDifficultyBoost]
       );
       if (!result.rowCount) return sendJson(response, 404, { error:'Student not found in your class.' });
       return sendJson(response, 200, { student:result.rows[0] });

@@ -6,9 +6,9 @@ const PLAY_CALLS = {
 };
 const LEVEL_THRESHOLDS = [0, 500, 1500, 3500, 7500];
 
-function createQuestion(yards = 10, totalXp = 0, random = Math.random) {
+function createQuestion(yards = 10, totalXp = 0, random = Math.random, difficultyBoost = 0) {
   const play = PLAY_CALLS[Number(yards)] || PLAY_CALLS[10];
-  const level = Math.max(0, LEVEL_THRESHOLDS.filter(xp => Number(totalXp) >= xp).length - 1);
+  const level = Math.max(0, LEVEL_THRESHOLDS.filter(xp => Number(totalXp) >= xp).length - 1) + Math.max(0, Math.min(3, Number(difficultyBoost) || 0));
   const int = (min, max) => min + Math.floor(random() * (max - min + 1));
   const variant = int(0, 3);
   const result = (question, answer, explanation) => ({

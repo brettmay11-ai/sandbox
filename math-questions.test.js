@@ -53,14 +53,23 @@ test('levels change at the same XP thresholds as profiles, and invalid play defa
   assert.equal(createQuestion(999).yards, 10);
 });
 
+test('student math difficulty boost raises question complexity without changing rewards', () => {
+  const normal = question(20, 0, 0, 0);
+  const boosted = createQuestion(20, 0, () => 0, 3);
+  assert.equal(boosted.xp, normal.xp);
+  assert.equal(boosted.yards, normal.yards);
+  assert.ok(boosted.answer > normal.answer);
+  assert.match(boosted.question, /students each/);
+});
+
 test('challenge uses stored XP, ignores client level, and never discloses the answer', async () => {
   for (const storedXp of [undefined, 7500]) {
     let inserted, response;
     await handleMathGame({
       pool: {query: async (sql, params) => {
-        if (sql.startsWith('SELECT total_xp')) {
+        if (sql.startsWith('SELECT p.total_xp')) {
           assert.deepEqual(params, [42]);
-          return {rows: storedXp === undefined ? [] : [{total_xp:storedXp}]};
+          return {rows: storedXp === undefined ? [] : [{total_xp:storedXp, math_difficulty_boost:0}]};
         }
         if (sql.startsWith('INSERT INTO math_challenges')) inserted = params;
         return {rows:[]};
@@ -78,4 +87,34 @@ test('challenge uses stored XP, ignores client level, and never discloses the an
     assert.ok(numbers.some(n => n >= (storedXp ? 625 : 125)));
     assert.equal(possible[0].xp, response.xp);
   }
+});
+
+test('challenge applies student math difficulty boost from the account', async () => {
+  let inserted;
+  const originalRandom = Math.random;
+  Math.random = () => 0;
+  try {
+    await handleMathGame({
+      pool: {query: async (sql, params) => {
+        if (sql.startsWith('SELECT p.total_xp')) {
+          assert.deepEqual(params, [42]);
+          return {rows: [{total_xp:0, math_difficulty_boost:3}]};
+        }
+        if (sql.startsWith('DELETE FROM math_challenges')) return {rows:[]};
+        if (sql.startsWith('INSERT INTO math_challenges')) inserted = params;
+        return {rows:[]};
+      }},
+      req:{method:'POST'}, res:{}, path:'/api/math-game/challenge', user:{id:42},
+      readJson:async () => ({yards:20}),
+      sendJson:(_res, status, body) => {
+        assert.equal(status, 201);
+        assert.equal(body.challenge.xp, 20);
+        assert.equal(body.challenge.answer, undefined);
+      }
+    });
+  } finally {
+    Math.random = originalRandom;
+  }
+  assert.ok(inserted);
+  assert.ok(Number(inserted[3]) > question(20, 0, 0, 0).answer);
 });
