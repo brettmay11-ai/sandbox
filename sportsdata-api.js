@@ -3,6 +3,7 @@ const NFL_TEAMS = new Set(['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL'
 const DAILY_LIMIT = 5;
 const cacheKeyFor = route => `sportsdata:nfl:${route.apiPath}`;
 const activeUsageWhere = "provider='sportsdata' AND requested_at>NOW()-INTERVAL '24 hours' AND NOT (api_path ~ '^(scores/json/Standings|stats/json/PlayerSeasonStats|scores/json/TeamSeasonStats)/[0-9]{4}$')";
+const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 
 async function initSportsDataCache(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS sportsdata_cache(
@@ -29,19 +30,19 @@ function routeToSportsData(pathname) {
   const endpoints = {
     schedule:{ base:'scores/json/Schedules', season },
     standings:{ base:'scores/json/Standings', season:regularSeason },
-    'player-season-stats':{ base:'stats/json/PlayerSeasonStats', season:regularSeason },
-    'team-season-stats':{ base:'scores/json/TeamSeasonStats', season:regularSeason }
+    'player-season-stats':{ base:'derived/json/PlayerSeasonStats', season, derived:true },
+    'team-season-stats':{ base:'derived/json/TeamSeasonStats', season, derived:true }
   };
-  if (endpoints[kind] && parts.length === 5) return { sport:'nfl', season, apiPath:`${endpoints[kind].base}/${endpoints[kind].season}` };
+  if (endpoints[kind] && parts.length === 5) return { sport:'nfl', season, apiPath:`${endpoints[kind].base}/${endpoints[kind].season}`, derived:Boolean(endpoints[kind].derived) };
   if (kind === 'player-season-stats-by-team' && parts.length === 6 && NFL_TEAMS.has(parts[5].toUpperCase())) {
-    return { sport:'nfl', season, apiPath:`stats/json/PlayerSeasonStats/${regularSeason}`, team:parts[5].toUpperCase() };
+    return { sport:'nfl', season, apiPath:`derived/json/PlayerSeasonStats/${season}`, derived:true, team:parts[5].toUpperCase() };
   }
   // News is RSS-only. Old clients must never reactivate paid news endpoints.
   return null;
 }
 
 function scheduledRoutes(season) {
-  return ['schedule','standings','player-season-stats','team-season-stats'].map(kind => routeToSportsData(`/api/sportsdata/nfl/${kind}/${season}`));
+  return ['schedule','standings'].map(kind => routeToSportsData(`/api/sportsdata/nfl/${kind}/${season}`));
 }
 
 async function readCached(pool, route) {
@@ -89,13 +90,110 @@ async function refreshRoute(pool, route, fetcher = fetch) {
     if (!response.ok) throw new Error(`SportsData returned ${status}`);
     const data = await response.json();
     if (route.apiPath.endsWith('CurrentSeason') ? !Number.isInteger(Number(data)) : !Array.isArray(data)) throw new Error('Unexpected sports data format');
-    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
-      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [cacheKeyFor(route), JSON.stringify(data)]);
+    const ttlHours = Number.isFinite(Number(route.ttlHours)) ? Math.max(1, Number(route.ttlHours)) : 24;
+    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+($3::text || ' hours')::interval)
+      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [cacheKeyFor(route), JSON.stringify(data), ttlHours]);
     await pool.query('UPDATE sportsdata_usage SET status_code=$2,succeeded=TRUE,duration_ms=$3,error_message=NULL WHERE id=$1', [reservation, status, Date.now()-start]);
   } catch (error) {
     await pool.query('UPDATE sportsdata_usage SET status_code=$2,duration_ms=$3,error_message=$4 WHERE id=$1', [reservation, status, Date.now()-start, String(error.message).slice(0,500)]);
     console.warn(`Scheduled sports refresh failed: ${route.apiPath}: ${error.message}`);
   } finally { clearTimeout(timeout); }
+}
+
+function weekStatRoutes(season, week, isComplete = false) {
+  const token = `${season}REG`;
+  const ttlHours = isComplete ? 24 * 365 : 24;
+  return [
+    { sport:'nfl', season, week, apiPath:`scores/json/TeamGameStats/${token}/${week}`, ttlHours },
+    { sport:'nfl', season, week, apiPath:`stats/json/PlayerGameStatsByWeek/${token}/${week}`, ttlHours }
+  ];
+}
+
+function gameTime(game) {
+  const raw = game?.DateTimeUTC || game?.Date;
+  if (!raw) return null;
+  const date = new Date(/(?:Z|[+-]\d\d:\d\d)$/i.test(raw) ? raw : `${raw}Z`);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function completedWeekInfo(games, now = new Date()) {
+  const regularGames = (Array.isArray(games) ? games : []).filter(game => Number(game.Week) >= 1 && Number(game.Week) <= 18 && (!game.SeasonType || Number(game.SeasonType) === 1));
+  const started = regularGames.filter(game => {
+    const status = String(game.Status || '').toLowerCase();
+    const when = gameTime(game);
+    return status.includes('final') || status.includes('inprogress') || status.includes('in progress') || (when && when <= now);
+  });
+  const currentWeek = Math.max(1, ...started.map(game => Number(game.Week)).filter(Number.isFinite));
+  const weekGames = regularGames.filter(game => Number(game.Week) === currentWeek);
+  const complete = weekGames.length > 0 && weekGames.every(game => String(game.Status || '').toLowerCase().includes('final') || game.IsOver === true);
+  return { currentWeek, complete };
+}
+
+function addNumber(target, source, fields) {
+  for (const field of fields) target[field] = number(target[field]) + number(source[field]);
+}
+
+function aggregateTeamStats(rows) {
+  const fields = ['Score','OffensiveYards','PassingYards','RushingYards','OpponentScore','OpponentOffensiveYards','OpponentPassingYards','OpponentRushingYards','Sacks','InterceptionReturns'];
+  const teams = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const team = String(row.Team || row.TeamKey || '').toUpperCase();
+    if (!NFL_TEAMS.has(team)) continue;
+    if (!teams.has(team)) teams.set(team, { Team:team, Games:0 });
+    const target = teams.get(team);
+    target.Games += Math.max(1, number(row.Games) || 1);
+    addNumber(target, row, fields);
+  }
+  return [...teams.values()];
+}
+
+function aggregatePlayerStats(rows) {
+  const sumFields = [
+    'PassingCompletions','PassingAttempts','PassingYards','PassingTouchdowns','PassingInterceptions',
+    'RushingAttempts','RushingYards','RushingTouchdowns','Fumbles',
+    'Receptions','ReceivingTargets','ReceivingYards','ReceivingTouchdowns',
+    'SoloTackles','AssistedTackles','Tackles','Sacks','Interceptions','FumblesForced','PassesDefended','DefensiveTouchdowns'
+  ];
+  const players = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const team = String(row.Team || row.TeamKey || '').toUpperCase();
+    if (!NFL_TEAMS.has(team)) continue;
+    const name = row.Name || row.PlayerName || [row.FirstName,row.LastName].filter(Boolean).join(' ');
+    if (!name) continue;
+    const key = row.PlayerID || row.PlayerId || `${team}:${name}`;
+    if (!players.has(key)) players.set(key, { PlayerID:row.PlayerID || row.PlayerId || null, Team:team, Name:name, Position:row.Position || row.FantasyPosition || '' });
+    const target = players.get(key);
+    addNumber(target, row, sumFields);
+    target.RushingLong = Math.max(number(target.RushingLong), number(row.RushingLong));
+    target.ReceivingLong = Math.max(number(target.ReceivingLong), number(row.ReceivingLong));
+  }
+  for (const player of players.values()) {
+    player.RushingYardsPerAttempt = number(player.RushingAttempts) ? Number((number(player.RushingYards) / number(player.RushingAttempts)).toFixed(1)) : 0;
+    player.ReceivingYardsPerReception = number(player.Receptions) ? Number((number(player.ReceivingYards) / number(player.Receptions)).toFixed(1)) : 0;
+    player.Tackles = number(player.Tackles) || number(player.SoloTackles) + number(player.AssistedTackles);
+    player.PassingRating = null;
+  }
+  return [...players.values()];
+}
+
+async function rebuildDerivedStats(pool, season, throughWeek) {
+  const teamRows = [];
+  const playerRows = [];
+  for (let week = 1; week <= throughWeek; week++) {
+    const [teamRoute, playerRoute] = weekStatRoutes(season, week, true);
+    const teamCache = await readCached(pool, teamRoute);
+    const playerCache = await readCached(pool, playerRoute);
+    if (Array.isArray(teamCache?.data)) teamRows.push(...teamCache.data);
+    if (Array.isArray(playerCache?.data)) playerRows.push(...playerCache.data);
+  }
+  if (teamRows.length) {
+    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
+      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/TeamSeasonStats/${season}`, JSON.stringify(aggregateTeamStats(teamRows))]);
+  }
+  if (playerRows.length) {
+    await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
+      ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/PlayerSeasonStats/${season}`, JSON.stringify(aggregatePlayerStats(playerRows))]);
+  }
 }
 
 async function refreshScheduledData(pool, fetcher = fetch) {
@@ -105,6 +203,13 @@ async function refreshScheduledData(pool, fetcher = fetch) {
   const today = new Date();
   const season = Number(process.env.NFL_SEASON || seasonRow?.data || (today.getUTCMonth() < 2 ? today.getUTCFullYear()-1 : today.getUTCFullYear()));
   for (const route of scheduledRoutes(season)) await refreshRoute(pool, route, fetcher);
+  const scheduleRow = await readCached(pool, routeToSportsData(`/api/sportsdata/nfl/schedule/${season}`));
+  const { currentWeek, complete } = completedWeekInfo(scheduleRow?.data || [], today);
+  for (let week = 1; week <= currentWeek; week++) {
+    const isComplete = week < currentWeek || complete;
+    for (const route of weekStatRoutes(season, week, isComplete)) await refreshRoute(pool, route, fetcher);
+  }
+  await rebuildDerivedStats(pool, season, currentWeek);
 }
 
 function startSportsDataRefresh(pool) {
@@ -144,4 +249,4 @@ async function handleSportsData({ pool, req, res, path, user, sendJson }) {
   return true;
 }
 
-module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, reserveRefresh, refreshScheduledData };
+module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo };
