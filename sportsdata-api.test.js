@@ -1,7 +1,7 @@
 const {test,before,after,beforeEach}=require('node:test');
 const assert=require('node:assert/strict');
 const {testDatabase}=require('./test-support/database');
-const {initSportsDataCache,routeToSportsData,reserveRefresh,refreshScheduledData,handleSportsData,aggregateTeamStats,aggregatePlayerStats,completedWeekInfo,rebuildDerivedStatsFromSeasonFeeds,rebuildDerivedStatsFromBoxScores}=require('./sportsdata-api');
+const {initSportsDataCache,routeToSportsData,reserveRefresh,refreshScheduledData,handleSportsData,aggregateTeamStats,aggregatePlayerStats,completedWeekInfo,rebuildDerivedStatsFromSeasonFeeds,rebuildDerivedStatsFromBoxScores,rowsLookScrambled}=require('./sportsdata-api');
 let db,pool;
 const originalKey=process.env.SPORTSDATA_IO_KEY;
 before(async()=>{({db,pool}=await testDatabase());await initSportsDataCache(pool);process.env.SPORTSDATA_IO_KEY='test-only'});
@@ -75,6 +75,18 @@ test('final SportsData box scores populate derived student stat caches',async()=
   assert.equal(players.find(player=>player.Name==='D.Lock').PassingYards,187);
   assert.equal(players.find(player=>player.Name==='J.Smith-Njigba').ReceivingYards,122);
   assert.equal(teams.find(team=>team.Team==='SEA').PassingYards,187);
+});
+test('scrambled SportsData stat rows are not displayed as real stats',async()=>{
+  assert.equal(rowsLookScrambled([{Name:'Drew Lock',Team:'SEA',PassingYards:58.3,InjuryStatus:'Scrambled'}]),true);
+  await pool.query("INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours'),($3,$4,NOW()+INTERVAL '24 hours')",[
+    'sportsdata:nfl:stats/json/BoxScoresFinal/2026REG/1',
+    JSON.stringify([{TeamGames:[{Team:'SEA',Games:1,PassingYards:280}],PlayerGames:[{PlayerID:1,Team:'SEA',Name:'Drew Lock',PassingYards:58.3,InjuryStatus:'Scrambled'}]}]),
+    'sportsdata:nfl:derived/json/PlayerSeasonStats/2026',
+    JSON.stringify([{Team:'SEA',Name:'Old Wrong Row',PassingYards:311.2}])
+  ]);
+  await rebuildDerivedStatsFromBoxScores(pool,2026,1);
+  const count=Number((await pool.query("SELECT COUNT(*) AS count FROM sportsdata_cache WHERE cache_key IN ('sportsdata:nfl:derived/json/PlayerSeasonStats/2026','sportsdata:nfl:derived/json/TeamSeasonStats/2026')")).rows[0].count);
+  assert.equal(count,0);
 });
 test('regular season SportsData feeds populate derived student caches',async()=>{
   await pool.query("INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours'),($3,$4,NOW()+INTERVAL '24 hours')",[

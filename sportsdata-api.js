@@ -200,6 +200,25 @@ function boxScoreRows(boxScores) {
   return { teamRows, playerRows };
 }
 
+function rowsLookScrambled(rows) {
+  const integerFields = [
+    'PassingAttempts','PassingCompletions','PassingYards','PassingTouchdowns','PassingInterceptions',
+    'RushingAttempts','RushingYards','RushingTouchdowns',
+    'Receptions','ReceivingTargets','ReceivingYards','ReceivingTouchdowns'
+  ];
+  return (Array.isArray(rows) ? rows : []).some(row => {
+    if (String(row?.InjuryStatus || '').toLowerCase() === 'scrambled') return true;
+    return integerFields.some(field => row?.[field] != null && Number.isFinite(Number(row[field])) && !Number.isInteger(Number(row[field])));
+  });
+}
+
+async function clearDerivedStats(pool, season) {
+  await pool.query('DELETE FROM sportsdata_cache WHERE cache_key IN ($1,$2)', [
+    `sportsdata:nfl:derived/json/TeamSeasonStats/${season}`,
+    `sportsdata:nfl:derived/json/PlayerSeasonStats/${season}`
+  ]);
+}
+
 async function rebuildDerivedStatsFromBoxScores(pool, season, throughWeek) {
   const teamRows = [];
   const playerRows = [];
@@ -209,6 +228,11 @@ async function rebuildDerivedStatsFromBoxScores(pool, season, throughWeek) {
     const rows = boxScoreRows(boxCache?.data);
     teamRows.push(...rows.teamRows);
     playerRows.push(...rows.playerRows);
+  }
+  if (rowsLookScrambled(teamRows) || rowsLookScrambled(playerRows)) {
+    await clearDerivedStats(pool, season);
+    console.warn(`SportsData returned scrambled stat values for ${season}; derived stat caches were cleared instead of showing incorrect leaderboards.`);
+    return;
   }
   if (teamRows.length) {
     await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
@@ -230,6 +254,11 @@ async function rebuildDerivedStats(pool, season, throughWeek) {
     if (Array.isArray(teamCache?.data)) teamRows.push(...teamCache.data);
     if (Array.isArray(playerCache?.data)) playerRows.push(...playerCache.data);
   }
+  if (rowsLookScrambled(teamRows) || rowsLookScrambled(playerRows)) {
+    await clearDerivedStats(pool, season);
+    console.warn(`SportsData returned scrambled stat values for ${season}; derived stat caches were cleared instead of showing incorrect leaderboards.`);
+    return;
+  }
   if (teamRows.length) {
     await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
       ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/TeamSeasonStats/${season}`, JSON.stringify(aggregateTeamStats(teamRows))]);
@@ -244,6 +273,11 @@ async function rebuildDerivedStatsFromSeasonFeeds(pool, season) {
   const [playerRoute, teamRoute] = seasonStatRoutes(season);
   const playerCache = await readCached(pool, playerRoute);
   const teamCache = await readCached(pool, teamRoute);
+  if (rowsLookScrambled(teamCache?.data) || rowsLookScrambled(playerCache?.data)) {
+    await clearDerivedStats(pool, season);
+    console.warn(`SportsData returned scrambled stat values for ${season}; derived stat caches were cleared instead of showing incorrect leaderboards.`);
+    return;
+  }
   if (Array.isArray(teamCache?.data)) {
     await pool.query(`INSERT INTO sportsdata_cache(cache_key,data,expires_at) VALUES($1,$2,NOW()+INTERVAL '24 hours')
       ON CONFLICT(cache_key) DO UPDATE SET data=EXCLUDED.data,fetched_at=NOW(),expires_at=EXCLUDED.expires_at`, [`sportsdata:nfl:derived/json/TeamSeasonStats/${season}`, JSON.stringify(aggregateTeamStats(teamCache.data))]);
@@ -307,4 +341,4 @@ async function handleSportsData({ pool, req, res, path, user, sendJson }) {
   return true;
 }
 
-module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, seasonStatRoutes, boxScoreRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo, boxScoreRows, rebuildDerivedStatsFromSeasonFeeds, rebuildDerivedStatsFromBoxScores };
+module.exports = { initSportsDataCache, handleSportsData, startSportsDataRefresh, sportsDataHealth, routeToSportsData, scheduledRoutes, seasonStatRoutes, boxScoreRoutes, reserveRefresh, refreshScheduledData, aggregateTeamStats, aggregatePlayerStats, weekStatRoutes, completedWeekInfo, boxScoreRows, rowsLookScrambled, rebuildDerivedStatsFromSeasonFeeds, rebuildDerivedStatsFromBoxScores };
