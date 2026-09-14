@@ -219,7 +219,7 @@ function normalizeNflverseGamePlayer(row) {
   const receptions = number(row.receptions);
   const rushingAttempts = number(row.carries);
   return {
-    PlayerID:row.player_id || null, Team:teamCode(row.recent_team), Name:row.player_display_name || row.player_name || '', Position:row.position || '',
+    PlayerID:row.player_id || null, Team:teamCode(row.recent_team || row.team), Name:row.player_display_name || row.player_name || '', Position:row.position || '',
     PassingCompletions:number(row.completions), PassingAttempts:number(row.attempts), PassingYards:number(row.passing_yards),
     PassingTouchdowns:number(row.passing_tds), PassingInterceptions:number(row.passing_interceptions),
     RushingAttempts:rushingAttempts, RushingYards:number(row.rushing_yards), RushingTouchdowns:number(row.rushing_tds),
@@ -234,6 +234,30 @@ function topGamePlayers(players, field, limit = 3) {
     .filter(player => player.Name && Number(player[field]) > 0)
     .sort((a, b) => Number(b[field]) - Number(a[field]))
     .slice(0, limit);
+}
+
+function playerStat(row, field) {
+  const aliases = {
+    PassingYards:['PassingYards','PassingYardage'],
+    RushingYards:['RushingYards','RushingYardage'],
+    ReceivingYards:['ReceivingYards','ReceivingYardage'],
+    Sacks:['Sacks','DefensiveSacks']
+  }[field] || [field];
+  for (const alias of aliases) if (row?.[alias] != null && row[alias] !== '') return number(row[alias]);
+  return 0;
+}
+
+function normalizedCachedPlayer(row) {
+  return {
+    ...row,
+    Team:String(row.Team || row.TeamKey || '').toUpperCase(),
+    Name:row.Name || row.PlayerName || row.DisplayName || [row.FirstName,row.LastName].filter(Boolean).join(' '),
+    Position:row.Position || row.FantasyPosition || '',
+    PassingYards:playerStat(row, 'PassingYards'),
+    RushingYards:playerStat(row, 'RushingYards'),
+    ReceivingYards:playerStat(row, 'ReceivingYards'),
+    Sacks:playerStat(row, 'Sacks')
+  };
 }
 
 function gameTeamStat(row, field, fallback = 0) {
@@ -267,7 +291,7 @@ function normalizeCachedGameStats(game, teamRows, playerRows) {
   }
   const players = playerRows
     .filter(row => NFL_TEAMS.has(String(row.Team || row.TeamKey || '').toUpperCase()))
-    .map(row => ({ ...row, Team:String(row.Team || row.TeamKey || '').toUpperCase(), Name:row.Name || row.PlayerName || [row.FirstName,row.LastName].filter(Boolean).join(' ') }));
+    .map(normalizedCachedPlayer);
   return {
     GameKey:game.GameKey, Season:Number(game.Season), Week:Number(game.Week), AwayTeam:away, HomeTeam:home,
     AwayScore:scoreFor(away), HomeScore:scoreFor(home), Status:game.Status || 'Final', StadiumDetails:game.StadiumDetails || game.Stadium || null,
@@ -388,6 +412,13 @@ function normalizeSportsDataGameStats(boxScores, schedule = []) {
   return games;
 }
 
+function gameStatsHavePlayerLeaders(data) {
+  return Array.isArray(data) && data.some(game => {
+    const leaders = game?.Leaders || {};
+    return ['Passing','Rushing','Receiving','Defense'].some(key => Array.isArray(leaders[key]) && leaders[key].length > 0);
+  });
+}
+
 async function refreshNflverseData(pool, season, fetcher = fetch) {
   const urls = nflverseUrls(season);
   const started = Date.now();
@@ -401,7 +432,8 @@ async function refreshNflverseData(pool, season, fetcher = fetch) {
     games:routeToSportsData(`/api/sportsdata/nfl/game-stats/${season}`)
   };
   const fresh = await Promise.all(Object.values(routes).map(route => readCached(pool, route)));
-  if (fresh.every(row => row && Date.now() - new Date(row.fetched_at).getTime() < ttlHours * 3600000)) return true;
+  const allFresh = fresh.every(row => row && Date.now() - new Date(row.fetched_at).getTime() < ttlHours * 3600000);
+  if (allFresh && gameStatsHavePlayerLeaders(fresh[5]?.data)) return true;
   try {
     const [scheduleRows, playerRows, playerWeeklyRows, teamWeeklyRows] = await Promise.all([fetchCsv(urls.schedule, fetcher), fetchCsv(urls.players, fetcher), fetchCsv(urls.playerWeekly, fetcher), fetchCsv(urls.teamWeekly, fetcher)]);
     const schedule = normalizeNflverseSchedule(scheduleRows, season);

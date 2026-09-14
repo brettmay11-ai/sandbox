@@ -140,7 +140,7 @@ test('nflverse daily import fills legacy student sports caches',async()=>{
     'games.csv':`game_id,season,game_type,week,gameday,weekday,gametime,away_team,away_score,home_team,home_score,stadium\n2026_01_NE_SEA,2026,REG,1,2026-09-10,Thursday,20:20,NE,10,SEA,13,Lumen Field\n`,
     'stats_player_reg_2026.csv':`player_id,player_name,player_display_name,position,recent_team,completions,attempts,passing_yards,passing_tds,passing_interceptions,carries,rushing_yards,rushing_tds,receptions,targets,receiving_yards,receiving_tds,fumbles_total,def_tackles_solo,def_tackle_assists,def_sacks,def_interceptions,def_fumbles_forced,def_pass_defended,def_tds\n00-0035704,D.Lock,Drew Lock,QB,SEA,16,22,187,1,0,2,13,0,0,0,0,0,0,0,0,0,0,0,0,0\n00-0038543,J.Smith-Njigba,Jaxon Smith-Njigba,WR,SEA,0,0,0,0,0,0,0,0,8,11,122,1,0,0,0,0,0,0,0,0\n`,
     'stats_player_week_2026.csv':`season,week,season_type,game_id,player_id,player_name,player_display_name,position,recent_team,completions,attempts,passing_yards,passing_tds,passing_interceptions,carries,rushing_yards,rushing_tds,receptions,targets,receiving_yards,receiving_tds,def_sacks\n2026,1,REG,2026_01_NE_SEA,00-0035704,D.Lock,Drew Lock,QB,SEA,16,22,187,1,0,2,13,0,0,0,0,0,0\n2026,1,REG,2026_01_NE_SEA,00-0038543,J.Smith-Njigba,Jaxon Smith-Njigba,WR,SEA,0,0,0,0,0,0,0,0,8,11,122,1,0\n`,
-    'stats_team_week_2026.csv':`season,week,team,season_type,opponent_team,passing_yards,rushing_yards,def_sacks,def_interceptions\n2026,1,NE,REG,SEA,178,109,2,0\n2026,1,SEA,REG,NE,187,46,3,3\n`
+    'stats_team_week_2026.csv':`season,week,team,season_type,game_id,opponent_team,passing_yards,rushing_yards,def_sacks,def_interceptions\n2026,1,NE,REG,2026_01_NE_SEA,SEA,178,109,2,0\n2026,1,SEA,REG,2026_01_NE_SEA,NE,187,46,3,3\n`
   };
   const fetcher=async url=>{
     const name=url.split('/').pop();
@@ -173,7 +173,7 @@ test('nflverse refresh ignores old 24-hour expirations after the shorter refresh
     'games.csv':`game_id,season,game_type,week,gameday,weekday,gametime,away_team,away_score,home_team,home_score,stadium\n2026_01_NE_SEA,2026,REG,1,2026-09-10,Thursday,20:20,NE,10,SEA,13,Lumen Field\n`,
     'stats_player_reg_2026.csv':`player_id,player_name,player_display_name,position,recent_team,completions,attempts,passing_yards,passing_tds,passing_interceptions,carries,rushing_yards,rushing_tds,receptions,targets,receiving_yards,receiving_tds\n00-0035704,D.Lock,Drew Lock,QB,SEA,16,22,187,1,0,0,0,0,0,0,0,0\n`,
     'stats_player_week_2026.csv':`season,week,season_type,game_id,player_id,player_name,player_display_name,position,recent_team,completions,attempts,passing_yards,passing_tds,passing_interceptions,carries,rushing_yards,rushing_tds,receptions,targets,receiving_yards,receiving_tds\n2026,1,REG,2026_01_NE_SEA,00-0035704,D.Lock,Drew Lock,QB,SEA,16,22,187,1,0,0,0,0,0,0,0,0\n`,
-    'stats_team_week_2026.csv':`season,week,team,season_type,opponent_team,passing_yards,rushing_yards,def_sacks,def_interceptions\n2026,1,SEA,REG,NE,187,46,3,3\n2026,1,NE,REG,SEA,178,109,2,0\n`
+    'stats_team_week_2026.csv':`season,week,team,season_type,game_id,opponent_team,passing_yards,rushing_yards,def_sacks,def_interceptions\n2026,1,SEA,REG,2026_01_NE_SEA,NE,187,46,3,3\n2026,1,NE,REG,2026_01_NE_SEA,SEA,178,109,2,0\n`
   };
   let calls=0;
   const fetcher=async url=>({ok:true,status:200,text:async()=>{calls++;return csv[url.split('/').pop()]||''}});
@@ -191,8 +191,8 @@ test('nflverse game stats create final-game box score summaries',()=>{
       {season_type:'REG',game_id:'2026_01_NE_SEA',team:'NE',opponent_team:'SEA',passing_yards:'178',rushing_yards:'109',passing_first_downs:'7',rushing_first_downs:'5',passing_interceptions:'2',fumbles_lost_total:'1',def_sacks:'1',def_interceptions:'0'}
     ],
     [
-      {season_type:'REG',game_id:'2026_01_NE_SEA',recent_team:'SEA',player_display_name:'Drew Lock',position:'QB',passing_yards:'187',passing_tds:'1'},
-      {season_type:'REG',game_id:'2026_01_NE_SEA',recent_team:'SEA',player_display_name:'Jaxon Smith-Njigba',position:'WR',receiving_yards:'122',receptions:'8'}
+      {season_type:'REG',game_id:'2026_01_NE_SEA',team:'SEA',player_display_name:'Drew Lock',position:'QB',passing_yards:'187',passing_tds:'1'},
+      {season_type:'REG',game_id:'2026_01_NE_SEA',team:'SEA',player_display_name:'Jaxon Smith-Njigba',position:'WR',receiving_yards:'122',receptions:'8'}
     ],
     [{GameKey:'2026_01_NE_SEA',Season:2026,Week:1,AwayTeam:'NE',HomeTeam:'SEA',AwayScore:10,HomeScore:13,Status:'Final',IsOver:true}]
   )[0];
