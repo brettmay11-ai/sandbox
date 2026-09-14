@@ -1182,12 +1182,32 @@ function filterDivision(div){currentDivFilter=div;document.querySelectorAll('.di
 
 function gameStatValue(stats, team, field){return stats?.Teams?.[team]?.[field]??null}
 function formatGameStat(value){const n=Number(value);return Number.isFinite(n)?n.toLocaleString():'--'}
-function playerLine(player, field, suffix=''){
-  if(!player)return'<div class="text-[11px] text-white/30 italic">No leader recorded</div>';
-  return `<div class="flex items-center justify-between gap-3 rounded-lg border border-white/6 bg-white/[.025] px-3 py-2"><span class="min-w-0"><strong class="block text-[12px] text-white truncate">${escHtml(player.Name)}</strong><small class="text-[10px] text-white/35">${escHtml(player.Team)} ${escHtml(player.Position||'')}</small></span><span class="text-sm font-black text-brand-400">${Number(player[field]||0).toLocaleString()}${suffix}</span></div>`;
+function leaderForTeam(rows, team, field){return (rows||[]).filter(player=>String(player.Team||'').toUpperCase()===team).sort((a,b)=>Number(b[field]||0)-Number(a[field]||0))[0]||null}
+function playerCell(player, field, suffix='', align='left'){
+  const alignClass=align==='right'?'text-right':'text-left';
+  if(!player)return `<div class="${alignClass} text-[11px] text-white/30 italic">No leader</div>`;
+  return `<div class="min-w-0 ${alignClass}"><strong class="block text-[12px] text-white truncate">${escHtml(player.Name)}</strong><small class="block text-[10px] text-white/35">${escHtml(player.Position||'Player')}</small><span class="mt-1 block text-sm font-black text-brand-400">${Number(player[field]||0).toLocaleString()}${suffix}</span></div>`;
 }
-function leadersBlock(title, icon, rows, field, suffix=''){
-  return `<section class="rounded-xl border border-white/8 bg-white/[.025] p-4"><h4 class="mb-3 flex items-center gap-2 text-[11px] font-black uppercase tracking-[.14em] text-white/60"><iconify-icon icon="${icon}" class="text-brand-400"></iconify-icon>${title}</h4><div class="space-y-2">${(rows||[]).slice(0,3).map(player=>playerLine(player,field,suffix)).join('')||playerLine(null,field,suffix)}</div></section>`;
+function playerLeaderRow(label, icon, rows, awayTeam, homeTeam, field, suffix=''){
+  const away=leaderForTeam(rows,awayTeam,field),home=leaderForTeam(rows,homeTeam,field);
+  return `<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-white/5 py-3 last:border-b-0">
+    ${playerCell(away,field,suffix,'left')}
+    <div class="text-center min-w-[96px]"><iconify-icon icon="${icon}" class="text-brand-400"></iconify-icon><div class="mt-1 text-[10px] uppercase tracking-[.14em] text-white/35">${label}</div></div>
+    ${playerCell(home,field,suffix,'right')}
+  </div>`;
+}
+function playerLeadersComparison(stats){
+  const away=stats.AwayTeam,home=stats.HomeTeam,leaders=stats.Leaders||{};
+  const rows=[
+    ['Passing','lucide:target',leaders.Passing,'PassingYards',' yds'],
+    ['Rushing','lucide:footprints',leaders.Rushing,'RushingYards',' yds'],
+    ['Receiving','lucide:hand',leaders.Receiving,'ReceivingYards',' yds'],
+    ['Sacks','lucide:shield',leaders.Defense,'Sacks',' sacks']
+  ];
+  return `<section class="rounded-2xl border border-white/8 bg-black/20 p-4">
+    <h3 class="mb-3 flex items-center gap-2 text-sm font-bold text-white/75"><iconify-icon icon="lucide:users-round" class="text-brand-400"></iconify-icon>Player Leaders</h3>
+    <div>${rows.map(([label,icon,data,field,suffix])=>playerLeaderRow(label,icon,data,away,home,field,suffix)).join('')}</div>
+  </section>`;
 }
 async function showGameStatsModal(gameKey, season){
   const content=document.getElementById('compare-modal-content');
@@ -1216,12 +1236,7 @@ async function showGameStatsModal(gameKey, season){
         <h3 class="mb-3 flex items-center gap-2 text-sm font-bold text-white/75"><iconify-icon icon="lucide:bar-chart-3" class="text-brand-400"></iconify-icon>Team Box Score</h3>
         <div class="space-y-1">${statRows.map(([label,field])=>`<div class="grid grid-cols-3 items-center gap-2 border-b border-white/5 py-2 text-center last:border-b-0"><div class="text-sm font-bold text-white">${formatGameStat(gameStatValue(stats,stats.AwayTeam,field))}</div><div class="text-[10px] uppercase tracking-[.14em] text-white/35">${label}</div><div class="text-sm font-bold text-white">${formatGameStat(gameStatValue(stats,stats.HomeTeam,field))}</div></div>`).join('')}</div>
       </section>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        ${leadersBlock('Passing Leaders','lucide:target',stats.Leaders?.Passing,'PassingYards',' yds')}
-        ${leadersBlock('Rushing Leaders','lucide:footprints',stats.Leaders?.Rushing,'RushingYards',' yds')}
-        ${leadersBlock('Receiving Leaders','lucide:hand',stats.Leaders?.Receiving,'ReceivingYards',' yds')}
-        ${leadersBlock('Defensive Pressure','lucide:shield',stats.Leaders?.Defense,'Sacks',' sacks')}
-      </div>
+      ${playerLeadersComparison(stats)}
       <p class="mt-5 text-center text-[10px] text-white/30">Game stats are loaded from the backend cache after nflverse updates.</p>
     `;
   }catch(error){
