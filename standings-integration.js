@@ -146,18 +146,17 @@
     render('division');
   }
   async function installDashboardCard(rows) {
+    document.getElementById('selected-team-standings-card')?.remove();
+    const slot = document.getElementById('sd-team-standing');
     const dashboard = document.getElementById('dashboard') || document.getElementById('facts');
-    if (!dashboard || document.getElementById('selected-team-standings-card')) return;
+    if (!dashboard || !slot) return;
     const selected = await selectedTeam();
     const team = rows.find(row => row.abbr === selected);
     if (!team) return;
     const divRank = rankInGroup(rows, team, 'division');
     const confRank = rankInGroup(rows, team, 'conference');
-    const card = document.createElement('article');
-    card.id = 'selected-team-standings-card';
-    card.className = 'glass-panel selected-standing-card section-reveal visible';
-    card.innerHTML = `<p class="standings-eyebrow">Your team standing</p><div class="selected-standing-main"><div><h2>${esc(teamName(team.abbr))}</h2><p>${esc(team.record)} • ${divRank ? `${ordinal(divRank)} in ${team.division}` : team.division}</p></div><strong>${confRank ? `#${confRank}` : '—'} <span>${esc(team.conference)}</span></strong></div><div class="selected-standing-metrics"><span><small>Win %</small>${(team.pct * 100).toFixed(1)}%</span><span><small>Point diff</small>${team.pointDiff > 0 ? '+' : ''}${team.pointDiff}</span><span><small>Streak</small>${esc(team.Streak || team.CurrentStreak || '—')}</span></div>`;
-    dashboard.insertBefore(card, dashboard.firstElementChild?.nextSibling || dashboard.firstChild);
+    slot.innerHTML = `<span><small>Record</small><strong>${esc(team.record)}</strong></span><span><small>Division</small><strong>${divRank ? `${ordinal(divRank)} ${esc(team.division)}` : esc(team.division)}</strong></span><span><small>Conference</small><strong>${confRank ? `#${confRank} ${esc(team.conference)}` : esc(team.conference)}</strong></span>`;
+    slot.hidden = false;
   }
   function ordinal(value) {
     const suffix = value % 10 === 1 && value % 100 !== 11 ? 'st' : value % 10 === 2 && value % 100 !== 12 ? 'nd' : value % 10 === 3 && value % 100 !== 13 ? 'rd' : 'th';
@@ -194,4 +193,5 @@
     } catch(error) { console.warn('Standings unavailable.',error); }
   }
   window.addEventListener('portal-page-ready', installStandings);
+  window.addEventListener('student-dashboard-ready', installStandings);
 })();

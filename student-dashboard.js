@@ -39,6 +39,10 @@
     .sd-chip{padding:4px 12px;border-radius:999px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.2)}
     .sd-cta{background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));box-shadow:0 12px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.22);transition:transform .18s ease,box-shadow .18s ease}
     .sd-cta:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.22)}
+    .sd-team-standing{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin-top:1rem;max-width:560px}
+    .sd-team-standing span{min-width:0;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.24);border-radius:12px;padding:.65rem .75rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+    .sd-team-standing small{display:block;margin-bottom:.18rem;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.42)}
+    .sd-team-standing strong{display:block;font-size:.95rem;font-weight:950;color:#fff;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .sd-card{background:rgba(255,255,255,.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.09);border-radius:18px;box-shadow:0 16px 44px rgba(0,0,0,.22)}
     .sd-tile{transition:transform .25s ease,border-color .25s ease}
     .sd-tile:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 55%,transparent)}
@@ -126,6 +130,7 @@
                 <span class="sd-chip">${esc(team?.name || 'Team assignment pending')}</span>
                 <span class="sd-chip">${esc(profile.level || 'Rookie')}</span>
               </div>
+              <div id="sd-team-standing" class="sd-team-standing" hidden></div>
             </div>
           </div>
           <a href="/math" class="sd-cta inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white shrink-0"><iconify-icon icon="lucide:play"></iconify-icon>Play Math Game</a>
@@ -148,6 +153,7 @@
     document.getElementById('sd-loading').remove();
     content.classList.remove('hidden');
     if (typeof runCountUps === 'function') runCountUps(content);
+    window.dispatchEvent(new Event('student-dashboard-ready'));
   }).catch(error => {
     document.getElementById('sd-loading').textContent = error.message;
   });
