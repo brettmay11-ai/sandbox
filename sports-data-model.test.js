@@ -36,6 +36,13 @@ test('player tables preserve raw regular-season yardage fields',()=>{
   assert.equal(tables.passing[0][5],187);
   assert.equal(tables.receiving[0][5],122);
 });
+test('normalized games preserve completed scores for matchup cards',()=>{
+  const game=normalizeGame({Week:1,AwayTeam:'DAL',HomeTeam:'PHI',Season:2026,GameKey:'2026_01_DAL_PHI',AwayScore:20,HomeScore:24,IsOver:true,DateTimeUTC:'2026-09-11T00:20:00Z'});
+  assert.equal(game.awayScore,20);
+  assert.equal(game.homeScore,24);
+  assert.equal(game.isOver,true);
+  assert.equal(game.status,'Final');
+});
 test('student renderer includes same content-hashed assets for normal and preview HTML',()=>{
   const html=renderStudentHtml(fs.readFileSync('index.html','utf8'));
   assert.match(html,/sports-data-model\.js\?v=[a-f0-9]{12}/);

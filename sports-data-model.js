@@ -37,6 +37,7 @@
   function normalizeGame(game) {
     const venue = game.StadiumDetails || (typeof game.Stadium === 'object' ? game.Stadium : {});
     return { week:Number(game.Week), away:game.AwayTeam, home:game.HomeTeam, season:Number(game.Season), gameKey:game.GameKey,
+      awayScore:game.AwayScore ?? null, homeScore:game.HomeScore ?? null, isOver:game.IsOver === true,
       ...kickoff(game), status:game.Status || (game.IsOver ? 'Final' : 'Scheduled'),
       stadium:venue.Name || (typeof game.Stadium === 'string' ? game.Stadium : ''),
       city:venue.City || '', state:venue.State || '', country:venue.Country || '',
