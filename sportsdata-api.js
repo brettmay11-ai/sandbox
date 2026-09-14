@@ -154,7 +154,7 @@ function parseCsv(text) {
 
 async function fetchCsv(url, fetcher = fetch) {
   const response = await fetcher(url);
-  if (!response.ok) throw new Error(`nflverse returned ${response.status} for ${url.split('/').slice(-1)[0]}`);
+  if (!response.ok) throw new Error(`NFL data cache returned ${response.status} for ${url.split('/').slice(-1)[0]}`);
   return parseCsv(await response.text());
 }
 
@@ -443,11 +443,11 @@ async function refreshNflverseData(pool, season, fetcher = fetch) {
     await writeCache(pool, routes.players, normalizeNflversePlayers(playerRows), ttlHours);
     await writeCache(pool, routes.teams, normalizeNflverseTeamStats(teamWeeklyRows, schedule), ttlHours);
     await writeCache(pool, routes.games, normalizeNflverseGameStats(teamWeeklyRows, playerWeeklyRows, schedule), ttlHours);
-    await logProviderRefresh(pool, 'nflverse', { apiPath:`nflverse/${season}/daily-import` }, 200, true, Date.now() - started);
+    await logProviderRefresh(pool, 'nflverse', { apiPath:`NFL stats daily import/${season}` }, 200, true, Date.now() - started);
     return true;
   } catch (error) {
-    await logProviderRefresh(pool, 'nflverse', { apiPath:`nflverse/${season}/daily-import` }, null, false, Date.now() - started, error.message);
-    console.warn(`Scheduled nflverse refresh failed: ${error.message}`);
+    await logProviderRefresh(pool, 'nflverse', { apiPath:`NFL stats daily import/${season}` }, null, false, Date.now() - started, error.message);
+    console.warn(`Scheduled NFL data cache refresh failed: ${error.message}`);
     return false;
   }
 }
@@ -684,7 +684,7 @@ async function handleSportsData({ pool, req, res, path, user, sendJson }) {
   if (!route) return sendJson(res, 404, { error:'Sports feed not found. News is available from /api/nfl-news/.' }), true;
   const row = await readCached(pool, route);
   if (!row) return sendJson(res, 503, { error:'This feed is waiting for its scheduled update.', status:'unavailable', season:route.season || null }), true;
-  res.setHeader('X-Data-Source', process.env.NFL_STATS_PROVIDER === 'sportsdata' ? 'SportsData.io' : 'nflverse');
+  res.setHeader('X-Data-Source', process.env.NFL_STATS_PROVIDER === 'sportsdata' ? 'SportsData.io' : 'NFL data cache');
   res.setHeader('X-Data-Status', new Date(row.expires_at).getTime() > Date.now() ? 'cached' : 'stale');
   res.setHeader('X-Data-Updated-At', new Date(row.fetched_at).toISOString());
   if (route.season) res.setHeader('X-Data-Season', String(route.season));

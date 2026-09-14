@@ -12,7 +12,7 @@
   function label(meta, season) {
     if (!meta) return `${season} season | Data unavailable; waiting for scheduled update`;
     const updated = meta.updatedAt ? new Date(meta.updatedAt).toLocaleString('en-US',{ timeZone:'America/Chicago', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })+' CT' : 'unknown';
-    return `${season} season | ${meta.source || 'Cached NFL data'} | Updated ${updated}${meta.status==='stale'?' | Delayed update: showing last stored data':''}`;
+    return `${season} season | Updated ${updated}${meta.status==='stale'?' | Delayed update: showing last stored data':''}`;
   }
   window.NFLFeeds = { feed, label, season:null, players:null, schedule:null, teamStats:null };
   window.initializeSportsData = async function() {
