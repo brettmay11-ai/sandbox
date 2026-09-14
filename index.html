@@ -133,6 +133,7 @@ select option{background:#111827;color:#fff}
 .map-tooltip.visible{opacity:1;transform:translateY(0)}
 .away-item{transition:all 0.2s ease}.away-item:hover{background:color-mix(in srgb,var(--student-team-primary,#013369) 8%,transparent);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 25%,transparent)}
 .away-item.highlighted{background:color-mix(in srgb,var(--student-team-primary,#013369) 13%,transparent);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 38%,transparent)}
+.away-item.selected{background:linear-gradient(135deg,color-mix(in srgb,var(--student-team-primary,#013369) 22%,rgba(255,255,255,.04)),rgba(255,255,255,.035));border-color:color-mix(in srgb,var(--student-team-primary,#013369) 62%,rgba(255,255,255,.16));box-shadow:0 0 0 1px color-mix(in srgb,var(--student-team-primary,#013369) 20%,transparent),0 14px 34px color-mix(in srgb,var(--student-team-primary,#013369) 18%,transparent)}
 /* ===== Stats / Players page facelift ===== */
 .stats-page,.players-page{position:relative;overflow:hidden;background:radial-gradient(circle at 12% 8%,color-mix(in srgb,var(--student-team-primary,#013369) 22%,transparent),transparent 34%),radial-gradient(circle at 90% 14%,color-mix(in srgb,var(--student-team-secondary,#D50A0A) 12%,transparent),transparent 30%),linear-gradient(180deg,#0a0a0a,#0b0e13 50%,#0a0a0a)}
 .stats-page:before,.players-page:before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 96px);-webkit-mask:radial-gradient(ellipse at 50% 24%,#000 22%,transparent 74%);mask:radial-gradient(ellipse at 50% 24%,#000 22%,transparent 74%)}
@@ -824,7 +825,7 @@ const FIPS={"01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT
 let compareTeams=[];let currentWeek=0;let currentPlayerTab='passing';let currentConfFilter='all';let currentDivFilter='all';let currentSortCol=-1;let currentSortDir='desc';let focusedIntlGame=null;
 
 /* ===== Map state ===== */
-let currentMapTeam=null;let awayGamesData=[];let projection=null;let pathGen=null;
+let currentMapTeam=null;let awayGamesData=[];let selectedTravelDest=null;let projection=null;let pathGen=null;
 
 function getTeam(abbr){const t=NFL_TEAMS.find(t=>t.abbr===abbr);if(!t)console.warn(`Team not found: ${abbr}`);return t}
 function haversine(lat1,lng1,lat2,lng2){const R=3959;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
@@ -1395,6 +1396,7 @@ function updateTravelSelectedStatsAction(){
 }
 function renderTravel(){
   focusedIntlGame = null;
+  selectedTravelDest = null;
   renderMap();
   updateTravelSelectedStatsAction();
   window.refreshDataExperience?.();
@@ -1603,13 +1605,14 @@ function renderMap(){
               g.distance<500?'<span class="text-[8px] px-1.5 py-0.5 bg-green-500/15 text-green-400 rounded ml-1">SHORT</span>':'';
     const intlTag = g.isIntl ? '<span class="text-[8px] px-1.5 py-0.5 bg-brand-500/15 text-brand-400 rounded ml-1">INTL</span>' : '';
     const locStr = g.isIntl ? `${g.city}, ${g.country}` : `${g.team.city}, ${g.team.state}`;
-    return`<div class="away-item p-2.5 rounded-lg border border-white/6 cursor-pointer" data-dest="${g.abbr}"
-              onmouseenter="highlightDestination('${g.abbr}')" onmouseleave="clearHighlight()">
+    return`<div class="away-item p-2.5 rounded-lg border border-white/6 cursor-pointer" role="button" tabindex="0" data-dest="${g.abbr}"
+              onclick="selectTravelDestination('${g.abbr}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectTravelDestination('${g.abbr}')}" onmouseenter="highlightDestination('${g.abbr}')" onmouseleave="clearHighlight()">
       <div class="flex items-center justify-between">
         <span class="text-[11px] font-medium">at ${fullName(g.team)} ${intlTag}</span>
         <span class="text-[11px] font-mono ${distColor}">${g.distance.toFixed(0)} mi${tag}</span>
       </div>
       <div class="text-[9px] text-white/30 mt-0.5">${g.stadium} • ${locStr} ${g.isIntl ? '(Off-Map)' : ''}</div>
+      <div class="text-[9px] text-white/35 mt-2 flex items-center gap-1.5"><iconify-icon icon="lucide:play" class="text-brand-400"></iconify-icon><span>Tap to run this route</span></div>
     </div>`;
   }).join('');
 
@@ -1662,6 +1665,7 @@ function renderMap(){
 
     const g=dotsGroup.append("g")
       .attr("transform",`translate(${coords[0]},${coords[1]})`)
+      .attr("data-base-transform",`translate(${coords[0]},${coords[1]})`)
       .style("cursor","pointer").attr("data-abbr",t.abbr);
 
     if(isHome){
@@ -1729,6 +1733,9 @@ function renderMap(){
     .on("mousemove",positionTooltip)
     .on("mouseleave",()=>tooltip.classList.remove('visible'));
   });
+  if(selectedTravelDest&&awayAbbrs.includes(selectedTravelDest)){
+    requestAnimationFrame(()=>highlightDestination(selectedTravelDest));
+  }
 }
 
 function positionTooltip(event){
@@ -1770,7 +1777,14 @@ function stopPlaneAnimation(){
   d3.select('#plane-marker').remove();
 }
 
+function selectTravelDestination(destAbbr){
+  if(!awayGamesData.some(game=>game.abbr===destAbbr))return;
+  selectedTravelDest=destAbbr;
+  highlightDestination(destAbbr);
+}
+
 function highlightDestination(destAbbr){
+  stopPlaneAnimation();
   d3.selectAll('#svg-lines path[data-dest]').each(function(){
     const arc=d3.select(this);
     const col=arc.attr('data-col')||'#013369';
@@ -1783,16 +1797,20 @@ function highlightDestination(destAbbr){
   });
   d3.selectAll('#svg-dots g').each(function(){
     const g=d3.select(this);
+    const base=g.attr('data-base-transform')||g.attr('transform')||'';
     if(g.attr('data-abbr')===destAbbr){
-      g.selectAll("circle").attr("r",function(d,i){return parseFloat(d3.select(this).attr("r"))*1.6;});
+      g.attr('transform',`${base} scale(1.28)`);
+    }else{
+      g.attr('transform',base);
     }
   });
   document.querySelectorAll('.away-item').forEach(item=>{
     item.classList.toggle('highlighted',item.dataset.dest===destAbbr);
+    item.classList.toggle('selected',item.dataset.dest===selectedTravelDest);
   });
 }
 
-function clearHighlight(){stopPlaneAnimation();if(currentMapTeam)renderMap();}
+function clearHighlight(){if(selectedTravelDest){highlightDestination(selectedTravelDest);return;}stopPlaneAnimation();if(currentMapTeam)renderMap();}
 
 function initScrollReveal(){const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});document.querySelectorAll('.section-reveal').forEach(el=>observer.observe(el))}
 document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',function(e){e.preventDefault();const t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
