@@ -1154,6 +1154,19 @@ function renderMatchups(){
   window.refreshDataExperience?.();
 }
 
+function matchupGameIsFinal(game){
+  return game?.isOver===true||String(game?.status||'').toLowerCase().includes('final');
+}
+
+function defaultMatchupWeekIndex(){
+  const firstWithGames=WEEKS.findIndex(week=>week.games.length>0);
+  if(firstWithGames<0)return 0;
+  const firstUnfinished=WEEKS.findIndex(week=>week.games.length>0&&week.games.some(game=>!matchupGameIsFinal(game)));
+  if(firstUnfinished>=0)return firstUnfinished;
+  const lastWithGames=WEEKS.reduce((last,week,index)=>week.games.length?index:last,firstWithGames);
+  return lastWithGames;
+}
+
 function renderTeams(){const divisions=[...new Set(NFL_TEAMS.map(t=>t.div))];const divFilters=document.getElementById('division-filters');divFilters.innerHTML=`<button onclick="filterDivision('all')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter==='all'?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="all">All Divisions</button>`;divisions.forEach(d=>{divFilters.innerHTML+=`<button onclick="filterDivision('${d}')" class="text-[10px] px-3 py-1 rounded-full border border-white/8 bg-white/3 text-white/40 uppercase tracking-wider hover:bg-white/5 transition division-btn ${currentDivFilter===d?'!bg-brand-500/15 !text-brand-400 !border-brand-500/30':''}" data-div="${d}">${d}</button>`});renderTeamCards()}
 
 const TZ_NAMES={EST:'Eastern',CST:'Central',MST:'Mountain',PST:'Pacific'};
@@ -2481,7 +2494,7 @@ async function init(){
   await defaultAssignedTeamViews();
   await window.portalDataReady;
   if(page==='teams')renderTeams();
-  if(page==='matchups')renderMatchups();
+  if(page==='matchups'){currentWeek=defaultMatchupWeekIndex();renderMatchups();}
   if(page==='stats')renderTeamStats();
   if(page==='players')renderPlayerStats();
   if(page==='travel'){renderInternationalGames();await initMap();renderTravel()}
