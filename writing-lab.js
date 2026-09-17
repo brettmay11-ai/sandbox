@@ -17,6 +17,9 @@
   let state = { activity:'postgame', entries:[], profile:null, team:'your team' };
   let autosaveTimer = null;
   let lastSaved = { title:'', content:'', checklist:'' };
+  let pickedInitialActivity = false;
+  const REVISION_MIN_CHANGED_WORDS = 8;
+  const REVISION_MIN_RATIO = 0.08;
 
   const style = document.createElement('style');
   style.textContent = `
@@ -50,6 +53,16 @@
     .wl-starter{border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02);transition:all .18s ease}
     .wl-starter:hover:not(:disabled){border-color:color-mix(in srgb,var(--student-team-primary,#013369) 45%,transparent);background:color-mix(in srgb,var(--student-team-primary,#013369) 10%,transparent);color:#fff}
     .wl-feedback{position:sticky;top:80px;z-index:5;border-radius:14px}
+    .wl-revision-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
+    .wl-revision-step{border:1px solid rgba(251,191,36,.2);background:rgba(0,0,0,.2);border-radius:12px;padding:10px}
+    .wl-revision-step b{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:rgba(253,230,138,.9)}
+    .wl-revision-step span{display:block;margin-top:4px;font-size:10px;line-height:1.35;color:rgba(255,255,255,.62)}
+    .wl-revision-action{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(251,191,36,.2)}
+    .wl-revision-meter{margin-top:14px;border:1px solid rgba(251,191,36,.24);background:rgba(0,0,0,.22);border-radius:14px;padding:12px}
+    .wl-revision-meter.ok{border-color:rgba(74,222,128,.35);background:rgba(34,197,94,.08)}
+    .wl-revision-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}
+    .wl-revision-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,#f59e0b,#f7d154);transition:width .25s ease}
+    .wl-revision-meter.ok .wl-revision-fill{background:linear-gradient(90deg,#22c55e,#86efac)}
     .wl-btn{border-radius:12px;font-weight:800;transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
     .wl-btn:hover{transform:translateY(-1px)}
     .wl-btn-submit{background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));color:#fff;box-shadow:0 10px 28px rgba(0,0,0,.32)}
@@ -63,6 +76,7 @@
     .wl-modal.show{opacity:1;pointer-events:auto}
     .wl-modal-card{width:min(94vw,460px);border-radius:20px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,#12151c,#0b0d12);box-shadow:0 30px 90px rgba(0,0,0,.6);transform:translateY(12px) scale(.97);transition:transform .2s ease}
     .wl-modal.show .wl-modal-card{transform:none}
+    @media (max-width:640px){.wl-revision-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
   `;
   document.head.appendChild(style);
 
@@ -144,6 +158,64 @@
     return Object.fromEntries([...document.querySelectorAll('[data-check]')].map(input => [input.dataset.check, input.checked]));
   }
 
+  function revisionTokens(value = '') {
+    return String(value).toLowerCase().match(/[a-z0-9']+/g) || [];
+  }
+
+  function revisionStats(previous = '', next = '') {
+    const before = revisionTokens(previous);
+    const after = revisionTokens(next);
+    const counts = new Map();
+    before.forEach(word => counts.set(word, (counts.get(word) || 0) + 1));
+    let shared = 0;
+    after.forEach(word => {
+      const remaining = counts.get(word) || 0;
+      if (remaining > 0) {
+        shared += 1;
+        counts.set(word, remaining - 1);
+      }
+    });
+    const changedWords = Math.max(before.length, after.length) - shared;
+    const ratio = before.length ? changedWords / before.length : (after.length ? 1 : 0);
+    return {
+      changedWords,
+      ratio,
+      sufficient: changedWords >= REVISION_MIN_CHANGED_WORDS || ratio >= REVISION_MIN_RATIO
+    };
+  }
+
+  function currentRevisionStats(entry = currentEntry()) {
+    if (!entry.teacher_feedback || !entry.revision_base_content) return null;
+    return revisionStats(entry.revision_base_content, $('wl-content')?.value || entry.content || '');
+  }
+
+  function revisionMeterMarkup(stats) {
+    if (!stats) return '';
+    const pct = Math.min(100, Math.max(stats.changedWords / REVISION_MIN_CHANGED_WORDS, stats.ratio / REVISION_MIN_RATIO) * 100);
+    const wordsLeft = Math.max(0, REVISION_MIN_CHANGED_WORDS - stats.changedWords);
+    const percent = Math.round(stats.ratio * 100);
+    const detail = stats.sufficient
+      ? 'Nice. This has enough new revision work to send back.'
+      : `${wordsLeft} more changed words, or about ${Math.max(0, Math.ceil(REVISION_MIN_RATIO * 100) - percent)}% more revision, before resubmitting.`;
+    return `<div id="wl-revision-meter" class="wl-revision-meter ${stats.sufficient ? 'ok' : ''}">
+      <div class="flex items-start justify-between gap-3">
+        <div><div class="text-xs font-black uppercase tracking-wide">${stats.sufficient ? 'Ready to resubmit' : 'Revision progress'}</div><div class="text-[11px] text-white/55 mt-1">${detail}</div></div>
+        <div class="text-right shrink-0"><div class="text-lg font-black">${stats.changedWords}</div><div class="text-[9px] uppercase text-white/45">changed words</div></div>
+      </div>
+      <div class="wl-revision-bar"><div class="wl-revision-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  function refreshRevisionMeter() {
+    const meter = $('wl-revision-meter');
+    if (!meter) return;
+    const stats = currentRevisionStats();
+    if (!stats) return;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = revisionMeterMarkup(stats);
+    meter.replaceWith(wrapper.firstElementChild);
+  }
+
   function renderStatusFlow(entry = {}) {
     const status = entry.status || 'draft';
     const active = status === 'complete' || status === 'reviewed' ? 3 : status === 'revision' ? 2 : status === 'submitted' ? 1 : 0;
@@ -158,8 +230,42 @@
       panel.innerHTML = `<div class="flex items-start gap-3"><iconify-icon icon="lucide:${icon}" class="text-xl shrink-0"></iconify-icon><div><div class="text-xs font-black uppercase tracking-wide">${title}</div><p class="text-sm leading-6 mt-2 whitespace-pre-wrap">${esc(body)}</p></div></div>`;
       panel.classList.remove('hidden');
     };
-    if (entry.status === 'revision') return show('border-amber-300/40 bg-amber-400/10 text-amber-50', 'message-square-warning', 'Feedback returned: revise and resubmit', entry.teacher_feedback || 'Use your teacher feedback to make this stronger, then resubmit.');
-    if (entry.status === 'draft' && entry.teacher_feedback) return show('border-amber-300/30 bg-amber-400/10 text-amber-50', 'clipboard-pen', 'Revision notes', entry.teacher_feedback);
+    if (entry.status === 'revision') {
+      panel.className = 'wl-feedback mb-5 p-4 border border-amber-300/40 bg-amber-400/10 text-amber-50';
+      panel.innerHTML = `<div class="flex items-start gap-3">
+        <iconify-icon icon="lucide:message-square-warning" class="text-2xl shrink-0"></iconify-icon>
+        <div class="min-w-0 flex-1">
+          <div class="text-xs font-black uppercase tracking-wide">Revision mission from your teacher</div>
+          <p class="text-sm leading-6 mt-2 whitespace-pre-wrap">${esc(entry.teacher_feedback || 'Use your teacher feedback to make this stronger, then resubmit.')}</p>
+          <div class="wl-revision-steps">
+            <div class="wl-revision-step"><b>1. Read</b><span>Look at the teacher notes.</span></div>
+            <div class="wl-revision-step"><b>2. Start</b><span>Unlock your draft.</span></div>
+            <div class="wl-revision-step"><b>3. Fix</b><span>Make real changes.</span></div>
+            <div class="wl-revision-step"><b>4. Send</b><span>Submit it again.</span></div>
+          </div>
+          <div class="wl-revision-action">
+            <span class="text-[11px] text-white/60">Your draft is locked until you start the revision.</span>
+            <button id="wl-feedback-revise" class="wl-btn wl-btn-revise px-5 py-3 text-xs inline-flex items-center gap-2"><iconify-icon icon="lucide:pencil-line"></iconify-icon>Start Revision</button>
+          </div>
+        </div>
+      </div>`;
+      panel.classList.remove('hidden');
+      $('wl-feedback-revise')?.addEventListener('click', revise);
+      return;
+    }
+    if (entry.status === 'draft' && entry.teacher_feedback) {
+      panel.className = 'wl-feedback mb-5 p-4 border border-amber-300/30 bg-amber-400/10 text-amber-50';
+      panel.innerHTML = `<div class="flex items-start gap-3">
+        <iconify-icon icon="lucide:clipboard-pen" class="text-xl shrink-0"></iconify-icon>
+        <div class="min-w-0 flex-1">
+          <div class="text-xs font-black uppercase tracking-wide">Revision in progress</div>
+          <p class="text-sm leading-6 mt-2 whitespace-pre-wrap">${esc(entry.teacher_feedback)}</p>
+          ${revisionMeterMarkup(revisionStats(entry.revision_base_content || '', entry.content || ''))}
+        </div>
+      </div>`;
+      panel.classList.remove('hidden');
+      return;
+    }
     if ((entry.status === 'complete' || entry.status === 'reviewed') && entry.teacher_feedback) return show('border-green-300/30 bg-green-400/10 text-green-50', 'badge-check', 'Marked complete', entry.teacher_feedback);
     panel.className = 'hidden';
     panel.innerHTML = '';
@@ -238,6 +344,7 @@
     const fill = $('wl-progress');
     fill.style.width = `${pct}%`;
     fill.classList.toggle('done', count >= goal);
+    refreshRevisionMeter();
   }
 
   function setSaveStatus(kind) {
@@ -339,10 +446,12 @@
     const checks = checklist();
     const checkedCount = Object.values(checks).filter(Boolean).length;
     const totalChecks = Object.keys(checks).length || 4;
+    const revision = currentRevisionStats();
     const row = (ok, label, detail) => `<div class="flex items-center gap-3 p-3 rounded-xl border ${ok ? 'border-green-400/25 bg-green-500/5' : 'border-amber-400/25 bg-amber-500/5'}"><iconify-icon icon="lucide:${ok ? 'check-circle-2' : 'alert-circle'}" class="text-lg ${ok ? 'text-green-300' : 'text-amber-300'}"></iconify-icon><div class="min-w-0"><div class="text-xs font-bold">${label}</div><div class="text-[10px] text-white/45">${detail}</div></div></div>`;
     $('wl-confirm-body').innerHTML =
       row(metGoal, 'Word goal', `${count} of ${activity.goal} words${metGoal ? ' — goal met!' : ' — a bit more makes it stronger'}`) +
       row(checkedCount === totalChecks, "Reporter's checklist", `${checkedCount} of ${totalChecks} items checked`) +
+      (revision ? row(revision.sufficient, 'Revision changes', `${revision.changedWords} changed words since your teacher returned it${revision.sufficient ? ' — ready to send back' : ' — revise more before submitting'}`) : '') +
       `<div class="flex items-center justify-between p-3 rounded-xl border border-white/12 bg-white/[.03] mt-1"><span class="text-xs font-bold flex items-center gap-2"><iconify-icon icon="lucide:zap" class="text-brand-400"></iconify-icon>You'll earn</span><span class="text-base font-black text-amber-300">+${activity.xp} XP</span></div>`;
     $('wl-confirm').classList.add('show');
   }
@@ -363,6 +472,12 @@
     state.team = typeof getNFLTeamBrand === 'function' ? (getNFLTeamBrand(me.user.selectedTeam)?.name || 'your team') : 'your team';
     state.username = me.user.username;
     state.entries = data.entries || [];
+    if (!pickedInitialActivity) {
+      state.activity = state.entries.find(entry => entry.status === 'revision')?.activity
+        || state.entries.find(entry => entry.status === 'draft' && entry.teacher_feedback)?.activity
+        || state.activity;
+      pickedInitialActivity = true;
+    }
     $('wl-team').textContent = state.team;
     renderProfile(data);
     selectActivity(state.activity);
