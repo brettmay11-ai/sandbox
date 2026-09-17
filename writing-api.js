@@ -7,8 +7,36 @@ const ACTIVITIES = {
   journal:{ label:'Season Journal', xp:30 }
 };
 const SUBMITTED_STATUSES = ['submitted', 'revision', 'complete', 'reviewed'];
+const MIN_REVISION_CHANGED_WORDS = 8;
+const MIN_REVISION_CHANGE_RATIO = 0.08;
 const clean = (value, max) => String(value || '').trim().slice(0, max);
 const wordCount = value => clean(value, 12000).split(/\s+/).filter(Boolean).length;
+const revisionTokens = value => clean(value, 12000).toLowerCase().replace(/[^a-z0-9\s']/g, ' ').split(/\s+/).filter(Boolean);
+
+function revisionStats(previous = '', next = '') {
+  const before = revisionTokens(previous);
+  const after = revisionTokens(next);
+  const normalizedBefore = before.join(' ');
+  const normalizedAfter = after.join(' ');
+  if (!normalizedBefore && !normalizedAfter) return { changedWords:0, changeRatio:0, unchanged:true, sufficient:false };
+  const counts = new Map();
+  for (const token of before) counts.set(token, (counts.get(token) || 0) + 1);
+  let added = 0;
+  for (const token of after) {
+    const remaining = counts.get(token) || 0;
+    if (remaining) counts.set(token, remaining - 1);
+    else added++;
+  }
+  const removed = [...counts.values()].reduce((sum, count) => sum + count, 0);
+  const changedWords = added + removed;
+  const changeRatio = before.length ? changedWords / before.length : (after.length ? 1 : 0);
+  return {
+    changedWords,
+    changeRatio,
+    unchanged:normalizedBefore === normalizedAfter,
+    sufficient:normalizedBefore !== normalizedAfter && (changedWords >= MIN_REVISION_CHANGED_WORDS || changeRatio >= MIN_REVISION_CHANGE_RATIO)
+  };
+}
 
 async function initWriting(pool) {
   await pool.query(`
@@ -22,6 +50,9 @@ async function initWriting(pool) {
       status VARCHAR(16) NOT NULL DEFAULT 'draft',
       xp_awarded INTEGER NOT NULL DEFAULT 0,
       teacher_feedback TEXT NOT NULL DEFAULT '',
+      revision_base_title VARCHAR(120) NOT NULL DEFAULT '',
+      revision_base_content TEXT NOT NULL DEFAULT '',
+      revision_started_at TIMESTAMPTZ,
       submitted_at TIMESTAMPTZ,
       reviewed_at TIMESTAMPTZ,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -29,13 +60,18 @@ async function initWriting(pool) {
     );
     CREATE INDEX IF NOT EXISTS writing_entries_status_idx ON writing_entries(status,updated_at DESC);
   `);
+  await pool.query(`
+    ALTER TABLE writing_entries ADD COLUMN IF NOT EXISTS revision_base_title VARCHAR(120) NOT NULL DEFAULT '';
+    ALTER TABLE writing_entries ADD COLUMN IF NOT EXISTS revision_base_content TEXT NOT NULL DEFAULT '';
+    ALTER TABLE writing_entries ADD COLUMN IF NOT EXISTS revision_started_at TIMESTAMPTZ;
+  `);
 }
 
 async function profile(pool, user) {
   const userId = user.id;
   const scope = classroomScope(user);
   const entries = (await pool.query(
-    'SELECT id,activity,title,content,checklist,status,xp_awarded,teacher_feedback,submitted_at,reviewed_at,updated_at FROM writing_entries WHERE user_id=$1 ORDER BY updated_at DESC',
+    'SELECT id,activity,title,content,checklist,status,xp_awarded,teacher_feedback,revision_base_title,revision_base_content,revision_started_at,submitted_at,reviewed_at,updated_at FROM writing_entries WHERE user_id=$1 ORDER BY updated_at DESC',
     [userId]
   )).rows;
   const leaderboard = (await pool.query(`
@@ -84,7 +120,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
   if (path === '/api/writing/save' && req.method === 'POST') {
     const data = entryPayload(await readJson(req));
     if (!ACTIVITIES[data.activity]) { sendJson(res, 400, { error:'Choose a writing activity.' }); return true; }
-    const existing = (await pool.query('SELECT status FROM writing_entries WHERE user_id=$1 AND activity=$2', [user.id, data.activity])).rows[0];
+    const existing = (await pool.query('SELECT status,revision_base_content FROM writing_entries WHERE user_id=$1 AND activity=$2', [user.id, data.activity])).rows[0];
     if (existing?.status === 'submitted') {
       sendJson(res, 409, { error:'Your writing is with your teacher right now. You can edit again after feedback comes back.' });
       return true;
@@ -129,7 +165,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
     if (!info) { sendJson(res, 400, { error:'Choose a writing activity.' }); return true; }
     if (wordCount(data.content) < 40) { sendJson(res, 400, { error:'Write at least 40 words before submitting.' }); return true; }
     if (Object.values(data.checklist).some(value => !value)) { sendJson(res, 400, { error:'Complete the writing checklist before submitting.' }); return true; }
-    const existing = (await pool.query('SELECT status FROM writing_entries WHERE user_id=$1 AND activity=$2', [user.id, data.activity])).rows[0];
+    const existing = (await pool.query('SELECT status,teacher_feedback,revision_base_content FROM writing_entries WHERE user_id=$1 AND activity=$2', [user.id, data.activity])).rows[0];
     if (existing?.status === 'submitted') {
       sendJson(res, 409, { error:'This writing is already waiting for teacher feedback.' });
       return true;
@@ -137,6 +173,13 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
     if (existing?.status === 'complete' || existing?.status === 'reviewed') {
       sendJson(res, 409, { error:'This writing piece is already complete.' });
       return true;
+    }
+    if (existing?.teacher_feedback && existing.revision_base_content) {
+      const stats = revisionStats(existing.revision_base_content, data.content);
+      if (!stats.sufficient) {
+        sendJson(res, 400, { error:`Make a real revision before resubmitting. Add or change at least ${MIN_REVISION_CHANGED_WORDS} meaningful words based on your teacher feedback.` });
+        return true;
+      }
     }
     const result = await pool.query(`
       INSERT INTO writing_entries(user_id,activity,title,content,checklist,status,xp_awarded,submitted_at)
@@ -161,7 +204,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
   if (path === '/api/teacher/writing' && req.method === 'GET') {
     if (user.role !== 'teacher') { sendJson(res, 403, { error:'Teacher access required.' }); return true; }
     const rows = (await pool.query(`
-      SELECT w.id,w.activity,w.title,w.content,w.checklist,w.status,w.xp_awarded,w.teacher_feedback,w.submitted_at,w.reviewed_at,w.updated_at,
+      SELECT w.id,w.activity,w.title,w.content,w.checklist,w.status,w.xp_awarded,w.teacher_feedback,w.revision_base_title,w.revision_base_content,w.revision_started_at,w.submitted_at,w.reviewed_at,w.updated_at,
         u.display_name,u.username,u.selected_team
       FROM writing_entries w
       JOIN users u ON u.id=w.user_id
@@ -169,7 +212,15 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
         AND u.role='student' AND u.class_id=$1
       ORDER BY CASE WHEN w.status='submitted' THEN 0 WHEN w.status='revision' THEN 1 ELSE 2 END,w.submitted_at DESC,w.updated_at DESC
     `, [user.class_id])).rows;
-    sendJson(res, 200, { submissions:rows });
+    sendJson(res, 200, { submissions:rows.map(row => {
+      const stats = row.revision_base_content ? revisionStats(row.revision_base_content, row.content) : null;
+      return {
+        ...row,
+        revisionChangedWords:stats?.changedWords || 0,
+        revisionChangePercent:stats ? Math.round(stats.changeRatio * 100) : null,
+        revisionSufficient:stats ? stats.sufficient : null
+      };
+    }) });
     return true;
   }
 
@@ -184,7 +235,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
       return true;
     }
     const result = await pool.query(
-      "UPDATE writing_entries SET teacher_feedback=$1,status=$2,reviewed_at=NOW(),updated_at=NOW() WHERE id=$3 AND status IN('submitted','revision','complete','reviewed') AND user_id IN (SELECT id FROM users WHERE role='student' AND class_id=$4) RETURNING id",
+      "UPDATE writing_entries SET teacher_feedback=$1,status=$2,reviewed_at=NOW(),updated_at=NOW(),revision_base_title=CASE WHEN $2::varchar='revision' THEN title ELSE '' END,revision_base_content=CASE WHEN $2::varchar='revision' THEN content ELSE '' END,revision_started_at=CASE WHEN $2::varchar='revision' THEN NOW() ELSE NULL END WHERE id=$3 AND status IN('submitted','revision','complete','reviewed') AND user_id IN (SELECT id FROM users WHERE role='student' AND class_id=$4) RETURNING id",
       [feedback, status, match[1], user.class_id]
     );
     if (!result.rowCount) { sendJson(res, 404, { error:'Submission not found.' }); return true; }
@@ -196,4 +247,4 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
   return true;
 }
 
-module.exports = { initWriting, handleWriting };
+module.exports = { initWriting, handleWriting, revisionStats };

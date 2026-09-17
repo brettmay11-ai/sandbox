@@ -60,7 +60,8 @@ const base=`http://localhost:${port}`;
     assert((await teacher.request.patch(`${base}/api/teacher/writing/${submitted[0].id}`,{data:{status:'revision',feedback:'Add one specific example.'}})).ok());
     assert.equal((await (await context.request.get(base+'/api/writing/profile')).json()).returned,1);
     assert((await context.request.post(base+'/api/writing/revise',{data:{activity:'journal'}})).ok());
-    assert((await context.request.post(base+'/api/writing/submit',{data:writing})).ok());
+    const revisedWriting={...writing,content:writing.content+' I added a specific example about the team using 187 passing yards because that evidence explains how the offense moved the ball.'};
+    assert((await context.request.post(base+'/api/writing/submit',{data:revisedWriting})).ok());
     for(const yards of [5,10,15,20]){
       const response=await context.request.post(base+'/api/math-game/challenge',{data:{yards}});
       assert.equal(response.status(),201);
