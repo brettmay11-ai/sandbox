@@ -17,6 +17,9 @@
   let state = { activity:'postgame', entries:[], profile:null, team:'your team' };
   let autosaveTimer = null;
   let lastSaved = { title:'', content:'', checklist:'' };
+  let lastSavedAt = 0;
+  let saveAgeTimer = null;
+  let saveStatusKind = 'clean';
   let pickedInitialActivity = false;
   const REVISION_MIN_CHANGED_WORDS = 8;
   const REVISION_MIN_RATIO = 0.08;
@@ -32,11 +35,16 @@
     .wl-title{font-family:'Anton','Inter',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.01em;line-height:.94;transform:skewX(-2deg);text-shadow:0 6px 24px rgba(0,0,0,.55)}
     .wl-stat{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.14);border-radius:14px}
     .wl-card{background:rgba(255,255,255,.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.09);border-radius:18px;box-shadow:0 16px 44px rgba(0,0,0,.2)}
-    .wl-activity{position:relative;overflow:hidden;text-align:left;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);transition:transform .2s ease,border-color .2s ease}
+    .wl-queue{display:grid;gap:12px}
+    .wl-queue-group{display:grid;gap:8px}
+    .wl-queue-heading{display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.42)}
+    .wl-queue-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .wl-activity{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;text-align:left;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);padding:14px;min-height:78px;transition:transform .2s ease,border-color .2s ease}
     .wl-activity:hover{transform:translateY(-3px)}
     .wl-activity.sel{border-color:color-mix(in srgb,var(--student-team-primary,#013369) 60%,transparent);background:color-mix(in srgb,var(--student-team-primary,#013369) 12%,rgba(255,255,255,.03))}
     .wl-activity:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--wl-accent,rgba(255,255,255,.15))}
     .wl-adot{width:8px;height:8px;border-radius:99px;flex-shrink:0}
+    .wl-activity-icon{width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
     .wl-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;text-align:center}
     .wl-step-node{width:34px;height:34px;border-radius:99px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.03);color:rgba(255,255,255,.4);transition:all .3s ease;z-index:1}
     .wl-step.on .wl-step-node{background:linear-gradient(135deg,var(--student-team-primary,#013369),var(--student-team-secondary,#D50A0A));border-color:transparent;color:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--student-team-primary,#013369) 26%,transparent)}
@@ -53,6 +61,9 @@
     .wl-starter{border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02);transition:all .18s ease}
     .wl-starter:hover:not(:disabled){border-color:color-mix(in srgb,var(--student-team-primary,#013369) 45%,transparent);background:color-mix(in srgb,var(--student-team-primary,#013369) 10%,transparent);color:#fff}
     .wl-feedback{position:sticky;top:80px;z-index:5;border-radius:14px}
+    .wl-feedback details summary{list-style:none;cursor:pointer}
+    .wl-feedback details summary::-webkit-details-marker{display:none}
+    .wl-feedback-preview{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
     .wl-revision-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}
     .wl-revision-step{border:1px solid rgba(251,191,36,.2);background:rgba(0,0,0,.2);border-radius:12px;padding:10px}
     .wl-revision-step b{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:rgba(253,230,138,.9)}
@@ -68,6 +79,13 @@
     .wl-btn-submit{background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369));color:#fff;box-shadow:0 10px 28px rgba(0,0,0,.32)}
     .wl-btn-revise{background:linear-gradient(135deg,#f59e0b,#f7d154);color:#241a02}
     .wl-save-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;transition:color .2s ease}
+    .wl-check-item{border:1px solid transparent;border-radius:10px;padding:9px 10px;transition:border-color .2s ease,background .2s ease}
+    .wl-check-item.teacher-focus{border-color:rgba(251,191,36,.3);background:rgba(245,158,11,.08);color:#fef3c7}
+    .wl-focus-badge{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:#fcd34d;margin-left:auto;white-space:nowrap}
+    .wl-action-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}
+    .wl-action-bar.hidden{display:none}
+    .wl-workspace.revision-focus{grid-template-columns:minmax(0,1fr)}
+    .wl-leaders-card.is-collapsed{display:none}
     .wl-leader-row{border-radius:12px;transition:background .18s ease}
     .wl-leader-row:hover{background:rgba(255,255,255,.05)}
     .wl-leader-you{background:color-mix(in srgb,var(--student-team-primary,#013369) 16%,transparent);border:1px solid color-mix(in srgb,var(--student-team-primary,#013369) 40%,transparent)}
@@ -76,7 +94,16 @@
     .wl-modal.show{opacity:1;pointer-events:auto}
     .wl-modal-card{width:min(94vw,460px);border-radius:20px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,#12151c,#0b0d12);box-shadow:0 30px 90px rgba(0,0,0,.6);transform:translateY(12px) scale(.97);transition:transform .2s ease}
     .wl-modal.show .wl-modal-card{transform:none}
-    @media (max-width:640px){.wl-revision-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:1024px){
+      .wl-queue-items{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .wl-action-bar{position:sticky;bottom:10px;z-index:18;margin:18px -8px -8px;padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(9,11,16,.94);backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.45)}
+      .wl-action-bar .wl-btn{flex:1;min-width:125px}
+      .wl-action-bar .wl-save-status{width:100%;justify-content:center;margin-left:0}
+    }
+    @media (max-width:640px){
+      .wl-queue-items{grid-template-columns:1fr}
+      .wl-revision-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
   `;
   document.head.appendChild(style);
 
@@ -90,13 +117,13 @@
         </div>
         <div class="grid grid-cols-3 gap-2 shrink-0">
           <div class="wl-stat px-4 py-3 text-center"><div class="text-[9px] uppercase tracking-wider text-white/45">Writing XP</div><div id="wl-xp" class="text-2xl font-black mt-1">0</div></div>
-          <div class="wl-stat px-4 py-3 text-center"><div class="text-[9px] uppercase tracking-wider text-white/45">Submitted</div><div id="wl-submissions" class="text-2xl font-black mt-1">0</div></div>
-          <div class="wl-stat px-4 py-3 text-center"><div class="text-[9px] uppercase tracking-wider text-white/45">Returned</div><div id="wl-returned" class="text-2xl font-black mt-1">0</div></div>
+          <div class="wl-stat px-4 py-3 text-center"><div class="text-[9px] uppercase tracking-wider text-white/45">Pieces Sent</div><div id="wl-submissions" class="text-2xl font-black mt-1">0</div></div>
+          <div class="wl-stat px-4 py-3 text-center"><div class="text-[9px] uppercase tracking-wider text-white/45">Needs Revision</div><div id="wl-returned" class="text-2xl font-black mt-1">0</div></div>
         </div>
       </div>
     </div>
-    <div id="wl-activities" class="grid md:grid-cols-3 gap-3 mb-6"></div>
-    <div class="grid lg:grid-cols-[1.45fr_.55fr] gap-6">
+    <div id="wl-activities" class="wl-queue mb-6"></div>
+    <div id="wl-workspace" class="wl-workspace grid lg:grid-cols-[1.45fr_.55fr] gap-6">
       <div class="wl-card">
         <div class="p-5 md:p-6 border-b border-white/8">
           <div id="wl-status-flow" class="flex items-start gap-1 mb-5"></div>
@@ -117,22 +144,20 @@
           <div class="text-[10px] uppercase tracking-wider text-white/35 font-bold mb-3">Reporter's Checklist</div>
           <div id="wl-checklist" class="grid sm:grid-cols-2 gap-3"></div>
           <div id="wl-message" class="hidden mt-4 p-3 text-xs border rounded-xl"></div>
-          <div class="flex flex-wrap items-center gap-3 mt-5">
+          <div id="wl-action-bar" class="wl-action-bar">
             <button id="wl-save" class="wl-btn px-5 py-3 border border-white/15 hover:bg-white/5 text-xs">Save Draft</button>
-            <button id="wl-revise" class="wl-btn wl-btn-revise hidden px-5 py-3 text-xs">Revise This Piece</button>
-            <button id="wl-submit" class="wl-btn wl-btn-submit px-5 py-3 text-xs inline-flex items-center gap-2">Submit to Teacher <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20" id="wl-xp-preview">+0 XP</span></button>
+            <button id="wl-submit" class="wl-btn wl-btn-submit px-5 py-3 text-xs inline-flex items-center justify-center gap-2"><span id="wl-submit-text">Submit to Teacher</span><span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20" id="wl-xp-preview">+0 XP</span></button>
             <span id="wl-save-status" class="wl-save-status text-white/35 ml-auto"></span>
           </div>
         </div>
       </div>
       <aside class="space-y-6">
-        <div class="wl-card"><div class="p-4 border-b border-white/8 flex items-center gap-2"><iconify-icon icon="lucide:folder-open" class="text-brand-400"></iconify-icon><h2 class="font-bold">My Press Box</h2></div><div id="wl-history" class="p-2"></div></div>
-        <div class="wl-card"><div class="p-4 border-b border-white/8 flex items-center gap-2"><iconify-icon icon="lucide:pen-tool" class="text-brand-400"></iconify-icon><h2 class="font-bold">Writing Leaders</h2></div><div id="wl-leaders" class="p-2"></div></div>
+        <div id="wl-leaders-card" class="wl-card wl-leaders-card"><div class="p-4 border-b border-white/8 flex items-center gap-2"><iconify-icon icon="lucide:pen-tool" class="text-brand-400"></iconify-icon><h2 class="font-bold">Writing Leaders</h2></div><div id="wl-leaders" class="p-2"></div></div>
       </aside>
     </div>
   </div>
   <div id="wl-confirm" class="wl-modal"><div class="wl-modal-card p-6">
-    <div class="flex items-center gap-3 mb-4"><div class="w-11 h-11 rounded-2xl grid place-items-center" style="background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369))"><iconify-icon icon="lucide:send" class="text-white text-lg"></iconify-icon></div><div><div class="text-[10px] uppercase tracking-widest text-white/45 font-black">Submit to teacher</div><div id="wl-confirm-title" class="font-black text-lg">Ready to submit?</div></div></div>
+    <div class="flex items-center gap-3 mb-4"><div class="w-11 h-11 rounded-2xl grid place-items-center" style="background:linear-gradient(135deg,var(--student-team-secondary,#D50A0A),var(--student-team-primary,#013369))"><iconify-icon icon="lucide:send" class="text-white text-lg"></iconify-icon></div><div><div id="wl-confirm-kicker" class="text-[10px] uppercase tracking-widest text-white/45 font-black">Submit to teacher</div><div id="wl-confirm-title" class="font-black text-lg">Ready to submit?</div></div></div>
     <div id="wl-confirm-body" class="space-y-2 mb-5"></div>
     <div class="flex gap-3"><button id="wl-confirm-cancel" class="wl-btn flex-1 px-4 py-3 border border-white/15 hover:bg-white/5 text-xs">Keep Editing</button><button id="wl-confirm-go" class="wl-btn wl-btn-submit flex-1 px-4 py-3 text-xs">Submit Now</button></div>
   </div></div>`;
@@ -141,15 +166,10 @@
   const words = () => $('wl-content').value.trim().split(/\s+/).filter(Boolean).length;
   const currentEntry = () => state.entries.find(item => item.activity === state.activity) || {};
   const isLocked = entry => ['submitted', 'complete', 'reviewed', 'revision'].includes(entry.status);
+  const isRevisionCycle = entry => Boolean(entry.teacher_feedback && entry.revision_base_content);
+  const isActiveRevision = entry => isRevisionCycle(entry) && (entry.status === 'revision' || entry.status === 'draft');
   const statusLabel = status => ({ draft:'Drafting', submitted:'With Teacher', revision:'Needs Revision', complete:'Complete', reviewed:'Complete' }[status] || 'Drafting');
   const entryStatusLabel = entry => entry.status === 'draft' && entry.teacher_feedback ? 'Revising' : statusLabel(entry.status);
-  const statusClasses = status => ({
-    draft:'text-white/45 border-white/10 bg-white/[.03]',
-    submitted:'text-blue-200 border-blue-400/30 bg-blue-500/10',
-    revision:'text-amber-200 border-amber-400/40 bg-amber-500/10',
-    complete:'text-green-200 border-green-400/35 bg-green-500/10',
-    reviewed:'text-green-200 border-green-400/35 bg-green-500/10'
-  }[status] || 'text-white/45 border-white/10 bg-white/[.03]');
   const statusAccent = entry => entry.status === 'revision' || (entry.status === 'draft' && entry.teacher_feedback) ? '#f59e0b'
     : entry.status === 'complete' || entry.status === 'reviewed' ? '#22c55e'
     : entry.status === 'submitted' ? '#3b82f6' : 'rgba(255,255,255,.15)';
@@ -218,8 +238,13 @@
 
   function renderStatusFlow(entry = {}) {
     const status = entry.status || 'draft';
-    const active = status === 'complete' || status === 'reviewed' ? 3 : status === 'revision' ? 2 : status === 'submitted' ? 1 : 0;
-    const steps = [['Draft', 'pencil'], ['Submitted', 'send'], ['Reviewed', 'clipboard-check'], [status === 'revision' ? 'Revise' : 'Done', status === 'revision' ? 'rotate-ccw' : 'check-circle']];
+    const revisionCycle = isRevisionCycle(entry);
+    const active = revisionCycle
+      ? (status === 'complete' || status === 'reviewed' ? 3 : status === 'submitted' ? 2 : status === 'draft' ? 1 : 0)
+      : (status === 'complete' || status === 'reviewed' ? 3 : status === 'submitted' ? 1 : 0);
+    const steps = revisionCycle
+      ? [['Returned', 'message-square-warning'], ['Revising', 'pencil-line'], ['Resubmitted', 'send'], ['Approved', 'badge-check']]
+      : [['Draft', 'pencil'], ['Submitted', 'send'], ['Review', 'clipboard-check'], ['Done', 'check-circle']];
     $('wl-status-flow').innerHTML = steps.map(([label, icon], index) => `<div class="wl-step ${index <= active ? 'on' : ''}"><div class="wl-step-line"></div><div class="wl-step-node"><iconify-icon icon="lucide:${icon}" class="text-sm"></iconify-icon></div><span class="wl-step-label">${esc(label)}</span></div>`).join('');
   }
 
@@ -255,14 +280,15 @@
     }
     if (entry.status === 'draft' && entry.teacher_feedback) {
       panel.className = 'wl-feedback mb-5 p-4 border border-amber-300/30 bg-amber-400/10 text-amber-50';
-      panel.innerHTML = `<div class="flex items-start gap-3">
-        <iconify-icon icon="lucide:clipboard-pen" class="text-xl shrink-0"></iconify-icon>
-        <div class="min-w-0 flex-1">
-          <div class="text-xs font-black uppercase tracking-wide">Revision in progress</div>
-          <p class="text-sm leading-6 mt-2 whitespace-pre-wrap">${esc(entry.teacher_feedback)}</p>
-          ${revisionMeterMarkup(revisionStats(entry.revision_base_content || '', entry.content || ''))}
-        </div>
-      </div>`;
+      panel.innerHTML = `<details>
+        <summary class="flex items-center gap-3">
+          <iconify-icon icon="lucide:clipboard-pen" class="text-xl shrink-0"></iconify-icon>
+          <div class="min-w-0 flex-1"><div class="text-xs font-black uppercase tracking-wide">Teacher feedback</div><div class="wl-feedback-preview text-[11px] text-white/60 mt-1">${esc(entry.teacher_feedback)}</div></div>
+          <span class="text-[9px] font-black uppercase text-amber-200">View notes</span>
+        </summary>
+        <p class="text-sm leading-6 mt-3 pt-3 border-t border-amber-200/15 whitespace-pre-wrap">${esc(entry.teacher_feedback)}</p>
+      </details>
+      ${revisionMeterMarkup(revisionStats(entry.revision_base_content || '', entry.content || ''))}`;
       panel.classList.remove('hidden');
       return;
     }
@@ -272,23 +298,51 @@
   }
 
   function renderActivities() {
-    $('wl-activities').innerHTML = Object.entries(activities).map(([key, activity]) => {
+    const groups = [
+      { id:'attention', label:'Needs Attention', icon:'circle-alert' },
+      { id:'waiting', label:'Waiting for Teacher', icon:'clock-3' },
+      { id:'ready', label:'Ready to Write', icon:'pencil' },
+      { id:'finished', label:'Finished', icon:'circle-check' }
+    ];
+    const rows = Object.entries(activities).map(([key, activity]) => {
       const entry = state.entries.find(item => item.activity === key) || {};
-      const selected = key === state.activity;
-      const accent = statusAccent(entry);
-      const statusTone = entry.status === 'revision' || (entry.teacher_feedback && entry.status === 'draft') ? 'text-amber-300' : entry.status === 'complete' || entry.status === 'reviewed' ? 'text-green-300' : entry.status === 'submitted' ? 'text-blue-300' : 'text-white/30';
-      return `<button data-activity="${key}" class="wl-activity ${selected ? 'sel' : ''} p-5" style="--wl-accent:${accent}">
-        <div class="flex items-center justify-between"><iconify-icon icon="lucide:${activity.icon}" class="text-xl text-brand-400"></iconify-icon><span class="text-[10px] font-bold text-white/40">+${activity.xp} XP</span></div>
-        <div class="font-bold mt-4">${activity.label}</div>
-        <div class="flex items-center justify-between gap-2 mt-2"><span class="text-[10px] text-white/35">Goal: ${activity.goal} words</span><span class="inline-flex items-center gap-1.5 text-[9px] uppercase font-black ${statusTone}"><span class="wl-adot" style="background:${accent}"></span>${entryStatusLabel(entry)}</span></div>
-      </button>`;
+      const group = isActiveRevision(entry) ? 'attention'
+        : entry.status === 'submitted' ? 'waiting'
+        : entry.status === 'complete' || entry.status === 'reviewed' ? 'finished'
+        : 'ready';
+      return { key, activity, entry, group };
+    });
+    $('wl-activities').innerHTML = groups.map(group => {
+      const items = rows.filter(row => row.group === group.id);
+      if (!items.length) return '';
+      return `<section class="wl-queue-group"><div class="wl-queue-heading"><iconify-icon icon="lucide:${group.icon}"></iconify-icon>${group.label}</div><div class="wl-queue-items">${items.map(({ key, activity, entry }) => {
+        const selected = key === state.activity;
+        const accent = statusAccent(entry);
+        const statusTone = isActiveRevision(entry) ? 'text-amber-300' : entry.status === 'complete' || entry.status === 'reviewed' ? 'text-green-300' : entry.status === 'submitted' ? 'text-blue-300' : 'text-white/40';
+        const reward = Number(entry.xp_awarded || 0) > 0 ? '' : `<span class="text-[9px] font-bold text-white/35">+${activity.xp} XP</span>`;
+        return `<button data-activity="${key}" class="wl-activity ${selected ? 'sel' : ''}" style="--wl-accent:${accent}">
+          <span class="wl-activity-icon"><iconify-icon icon="lucide:${activity.icon}" class="text-lg text-brand-400"></iconify-icon></span>
+          <span class="min-w-0 flex-1"><span class="font-bold text-sm block truncate">${activity.label}</span><span class="text-[10px] text-white/35 block mt-1">${esc(entry.title || `${activity.goal}-word assignment`)}</span></span>
+          <span class="shrink-0 text-right">${reward}<span class="flex items-center justify-end gap-1.5 text-[9px] uppercase font-black ${statusTone} mt-1"><span class="wl-adot" style="background:${accent}"></span>${entryStatusLabel(entry)}</span></span>
+        </button>`;
+      }).join('')}</div></section>`;
     }).join('');
     document.querySelectorAll('[data-activity]').forEach(button => button.onclick = () => selectActivity(button.dataset.activity));
   }
 
   function renderChecklist(entry = {}) {
     const checks = [['capitals', 'I checked capitals'], ['punctuation', 'I checked punctuation'], ['evidence', 'I used facts or statistics'], ['sentences', 'I wrote complete sentences']];
-    $('wl-checklist').innerHTML = checks.map(([key, label]) => `<label class="flex items-center gap-3 text-xs text-white/65 cursor-pointer"><input data-check="${key}" type="checkbox" ${entry.checklist?.[key] ? 'checked' : ''} class="accent-blue-500 w-4 h-4">${label}</label>`).join('');
+    const feedback = String(entry.teacher_feedback || '').toLowerCase();
+    const focusWords = {
+      capitals:['capital', 'uppercase', 'proper noun', 'last name', 'first name'],
+      punctuation:['punctuation', 'period', 'comma', 'question mark', 'exclamation', 'apostrophe'],
+      evidence:['evidence', 'fact', 'statistic', 'score', 'yard'],
+      sentences:['sentence', 'grammar', 'paragraph', 'complete thought']
+    };
+    $('wl-checklist').innerHTML = checks.map(([key, label]) => {
+      const focus = isRevisionCycle(entry) && focusWords[key].some(word => feedback.includes(word));
+      return `<label class="wl-check-item ${focus ? 'teacher-focus' : ''} flex items-center gap-3 text-xs text-white/65 cursor-pointer"><input data-check="${key}" type="checkbox" ${entry.checklist?.[key] ? 'checked' : ''} class="accent-blue-500 w-4 h-4"><span>${label}</span>${focus ? '<span class="wl-focus-badge">Teacher focus</span>' : ''}</label>`;
+    }).join('');
     document.querySelectorAll('[data-check]').forEach(input => input.addEventListener('change', scheduleAutosave));
   }
 
@@ -300,9 +354,11 @@
     $('wl-starters').querySelectorAll('button').forEach(button => { button.disabled = locked; button.classList.toggle('opacity-40', locked); });
     $('wl-save').classList.toggle('hidden', locked);
     $('wl-submit').classList.toggle('hidden', locked);
-    $('wl-revise').classList.toggle('hidden', entry.status !== 'revision');
     $('wl-content').classList.toggle('opacity-60', locked);
     $('wl-save-status').classList.toggle('hidden', locked);
+    $('wl-action-bar').classList.toggle('hidden', locked);
+    $('wl-leaders-card').classList.toggle('is-collapsed', isActiveRevision(entry));
+    $('wl-workspace').classList.toggle('revision-focus', isActiveRevision(entry));
   }
 
   function selectActivity(key) {
@@ -313,7 +369,10 @@
     $('wl-prompt').textContent = activity.prompt.replace('your team', state.team);
     $('wl-title').value = entry.title || '';
     $('wl-content').value = entry.content || '';
+    const revisionCycle = isRevisionCycle(entry);
+    $('wl-submit-text').textContent = revisionCycle ? 'Send Revision to Teacher' : 'Submit to Teacher';
     $('wl-xp-preview').textContent = `+${activity.xp} XP`;
+    $('wl-xp-preview').classList.toggle('hidden', revisionCycle || Number(entry.xp_awarded || 0) > 0);
     $('wl-starters').innerHTML = activity.starters.map(text => `<button class="wl-starter px-3 py-2 text-[11px] text-white/55">${esc(text)}</button>`).join('');
     [...$('wl-starters').children].forEach((button, index) => button.onclick = () => {
       const starter = activity.starters[index];
@@ -332,7 +391,8 @@
     renderActivities();
     updateCount();
     setLocked(entry);
-    setSaveStatus(entry.status === 'submitted' ? 'submitted' : 'clean');
+    lastSavedAt = entry.updated_at ? new Date(entry.updated_at).getTime() : 0;
+    setSaveStatus(entry.status === 'submitted' ? 'submitted' : entry.id && !isLocked(entry) ? 'saved' : 'clean');
     showMessage('', 'info');
   }
 
@@ -347,14 +407,38 @@
     refreshRevisionMeter();
   }
 
+  function savedAgeText() {
+    const elapsed = Math.max(0, Date.now() - lastSavedAt);
+    const minutes = Math.floor(elapsed / 60000);
+    if (minutes < 1) return 'Saved just now';
+    if (minutes === 1) return 'Saved 1 minute ago';
+    if (minutes < 60) return `Saved ${minutes} minutes ago`;
+    return 'Saved earlier';
+  }
+
+  function refreshSavedAge() {
+    const el = $('wl-save-status');
+    if (!el || saveStatusKind !== 'saved') return;
+    el.innerHTML = `<iconify-icon icon="lucide:check"></iconify-icon>${savedAgeText()}`;
+    clearTimeout(saveAgeTimer);
+    saveAgeTimer = setTimeout(refreshSavedAge, 30000);
+  }
+
   function setSaveStatus(kind) {
     const el = $('wl-save-status');
     if (!el) return;
+    saveStatusKind = kind;
+    clearTimeout(saveAgeTimer);
+    if (kind === 'saved') {
+      if (!lastSavedAt) lastSavedAt = Date.now();
+      refreshSavedAge();
+      el.style.color = 'rgba(74,222,128,.9)';
+      return;
+    }
     const map = {
       clean:['', ''],
       dirty:['lucide:circle-dot', 'Unsaved changes'],
       saving:['lucide:loader-circle', 'Saving...'],
-      saved:['lucide:check', 'Saved'],
       failed:['lucide:cloud-off', 'Save failed - retrying'],
       submitted:['lucide:lock', 'Submitted - locked']
     };
@@ -385,6 +469,7 @@
       lastSaved = snapshot;
       const entry = state.entries.find(item => item.activity === state.activity);
       if (entry) { entry.title = snapshot.title; entry.content = snapshot.content; }
+      lastSavedAt = Date.now();
       setSaveStatus(isDirty() ? 'dirty' : 'saved');
     } catch (error) {
       setSaveStatus('failed');
@@ -410,14 +495,6 @@
     $('wl-xp').textContent = Number(data.writingXp || 0).toLocaleString();
     $('wl-submissions').textContent = data.submissions || 0;
     $('wl-returned').textContent = data.returned || 0;
-    $('wl-history').innerHTML = state.entries.length ? state.entries.map(entry => `<button data-open="${entry.activity}" class="w-full text-left p-3 rounded-xl hover:bg-white/[.04] transition" style="border-left:3px solid ${statusAccent(entry)}">
-      <div class="flex justify-between gap-2 items-center"><span class="text-xs font-bold">${esc(activities[entry.activity]?.label || entry.activity)}</span><span class="text-[9px] uppercase px-2 py-1 border rounded-full ${statusClasses(entry.status)}">${esc(entryStatusLabel(entry))}</span></div>
-      <div class="text-[10px] text-white/35 mt-2 truncate">${esc(entry.title || 'Untitled draft')}</div>
-      ${entry.status === 'revision' ? '<div class="text-[10px] text-amber-300 mt-2 flex items-center gap-1"><iconify-icon icon="lucide:message-square-warning"></iconify-icon>Teacher feedback is ready</div>' : ''}
-      ${entry.status === 'draft' && entry.teacher_feedback ? '<div class="text-[10px] text-amber-300 mt-2">Revision in progress</div>' : ''}
-      ${entry.status === 'complete' || entry.status === 'reviewed' ? '<div class="text-[10px] text-green-300 mt-2 flex items-center gap-1"><iconify-icon icon="lucide:check-circle"></iconify-icon>Finished</div>' : ''}
-    </button>`).join('') : '<div class="p-6 text-center text-xs text-white/35">Your saved writing will appear here.</div>';
-    document.querySelectorAll('[data-open]').forEach(button => button.onclick = () => selectActivity(button.dataset.open));
     const me = state.username;
     $('wl-leaders').innerHTML = data.leaderboard?.length ? data.leaderboard.slice(0, 5).map((row, index) => {
       const medal = index < 3 ? `<span class="wl-medal medal-${index + 1}" style="color:#1a1206">${index + 1}</span>` : `<span class="w-[22px] text-center text-[11px] font-black text-white/30">${index + 1}</span>`;
@@ -441,6 +518,8 @@
 
   function openConfirm() {
     const activity = activities[state.activity];
+    const entry = currentEntry();
+    const revisionCycle = isRevisionCycle(entry);
     const count = words();
     const metGoal = count >= activity.goal;
     const checks = checklist();
@@ -448,11 +527,14 @@
     const totalChecks = Object.keys(checks).length || 4;
     const revision = currentRevisionStats();
     const row = (ok, label, detail) => `<div class="flex items-center gap-3 p-3 rounded-xl border ${ok ? 'border-green-400/25 bg-green-500/5' : 'border-amber-400/25 bg-amber-500/5'}"><iconify-icon icon="lucide:${ok ? 'check-circle-2' : 'alert-circle'}" class="text-lg ${ok ? 'text-green-300' : 'text-amber-300'}"></iconify-icon><div class="min-w-0"><div class="text-xs font-bold">${label}</div><div class="text-[10px] text-white/45">${detail}</div></div></div>`;
+    $('wl-confirm-kicker').textContent = revisionCycle ? 'Send revision to teacher' : 'Submit to teacher';
+    $('wl-confirm-title').textContent = revisionCycle ? 'Ready to send your revision?' : 'Ready to submit?';
+    $('wl-confirm-go').textContent = revisionCycle ? 'Send Revision' : 'Submit Now';
     $('wl-confirm-body').innerHTML =
       row(metGoal, 'Word goal', `${count} of ${activity.goal} words${metGoal ? ' — goal met!' : ' — a bit more makes it stronger'}`) +
       row(checkedCount === totalChecks, "Reporter's checklist", `${checkedCount} of ${totalChecks} items checked`) +
       (revision ? row(revision.sufficient, 'Revision changes', `${revision.changedWords} changed words since your teacher returned it${revision.sufficient ? ' — ready to send back' : ' — revise more before submitting'}`) : '') +
-      `<div class="flex items-center justify-between p-3 rounded-xl border border-white/12 bg-white/[.03] mt-1"><span class="text-xs font-bold flex items-center gap-2"><iconify-icon icon="lucide:zap" class="text-brand-400"></iconify-icon>You'll earn</span><span class="text-base font-black text-amber-300">+${activity.xp} XP</span></div>`;
+      (revisionCycle ? '<div class="p-3 rounded-xl border border-blue-400/20 bg-blue-500/5 text-[11px] text-blue-100">Your teacher will see this as a new revision of the same assignment.</div>' : `<div class="flex items-center justify-between p-3 rounded-xl border border-white/12 bg-white/[.03] mt-1"><span class="text-xs font-bold flex items-center gap-2"><iconify-icon icon="lucide:zap" class="text-brand-400"></iconify-icon>You'll earn</span><span class="text-base font-black text-amber-300">+${activity.xp} XP</span></div>`);
     $('wl-confirm').classList.add('show');
   }
   function closeConfirm() { $('wl-confirm').classList.remove('show'); }
@@ -505,6 +587,5 @@
   $('wl-confirm-cancel').onclick = closeConfirm;
   $('wl-confirm').onclick = event => { if (event.target === $('wl-confirm')) closeConfirm(); };
   $('wl-confirm-go').onclick = () => { closeConfirm(); save(true); };
-  $('wl-revise').onclick = revise;
   load().catch(error => showMessage(error.message, 'error'));
 })();

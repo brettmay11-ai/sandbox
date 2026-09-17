@@ -6,7 +6,6 @@ const ACTIVITIES = {
   prediction:{ label:'Make Your Prediction', xp:40 },
   journal:{ label:'Season Journal', xp:30 }
 };
-const SUBMITTED_STATUSES = ['submitted', 'revision', 'complete', 'reviewed'];
 const MIN_REVISION_CHANGED_WORDS = 8;
 const MIN_REVISION_CHANGE_RATIO = 0.08;
 const clean = (value, max) => String(value || '').trim().slice(0, max);
@@ -87,8 +86,8 @@ async function profile(pool, user) {
   return {
     entries,
     writingXp:entries.reduce((sum, row) => sum + Number(row.xp_awarded || 0), 0),
-    submissions:entries.filter(row => SUBMITTED_STATUSES.includes(row.status)).length,
-    returned:entries.filter(row => row.status === 'revision').length,
+    submissions:entries.filter(row => row.submitted_at).length,
+    returned:entries.filter(row => row.status === 'revision' || (row.status === 'draft' && row.teacher_feedback)).length,
     completed:entries.filter(row => row.status === 'complete' || row.status === 'reviewed').length,
     leaderboard
   };
@@ -166,6 +165,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
     if (wordCount(data.content) < 40) { sendJson(res, 400, { error:'Write at least 40 words before submitting.' }); return true; }
     if (Object.values(data.checklist).some(value => !value)) { sendJson(res, 400, { error:'Complete the writing checklist before submitting.' }); return true; }
     const existing = (await pool.query('SELECT status,teacher_feedback,revision_base_content FROM writing_entries WHERE user_id=$1 AND activity=$2', [user.id, data.activity])).rows[0];
+    const isRevisionSubmission = Boolean(existing?.teacher_feedback && existing.revision_base_content);
     if (existing?.status === 'submitted') {
       sendJson(res, 409, { error:'This writing is already waiting for teacher feedback.' });
       return true;
@@ -174,7 +174,7 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
       sendJson(res, 409, { error:'This writing piece is already complete.' });
       return true;
     }
-    if (existing?.teacher_feedback && existing.revision_base_content) {
+    if (isRevisionSubmission) {
       const stats = revisionStats(existing.revision_base_content, data.content);
       if (!stats.sufficient) {
         sendJson(res, 400, { error:`Make a real revision before resubmitting. Add or change at least ${MIN_REVISION_CHANGED_WORDS} meaningful words based on your teacher feedback.` });
@@ -197,7 +197,12 @@ async function handleWriting({ pool, req, res, path, user, sendJson, readJson })
     `, [user.id, data.activity, data.title, data.content, data.checklist, info.xp]);
     const profileData = await profile(pool, user);
     const awardedBadges = await awardWritingBadges(pool, user.id, { activity:data.activity, profile:profileData }, { entryId:result.rows[0].id });
-    sendJson(res, 200, { entry:result.rows[0], message:`Submitted! You earned ${info.xp} writing XP.`, ...profileData, awardedBadges });
+    sendJson(res, 200, {
+      entry:result.rows[0],
+      message:isRevisionSubmission ? 'Revision sent to your teacher.' : `Submitted! You earned ${info.xp} writing XP.`,
+      ...profileData,
+      awardedBadges
+    });
     return true;
   }
 

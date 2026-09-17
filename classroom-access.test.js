@@ -63,11 +63,17 @@ test('returned writing must change before it can be resubmitted',async()=>{
   assert(submission);
   assert.equal((await call(handleWriting,`/api/teacher/writing/${submission.id}`,teacher,'PATCH',{status:'revision',feedback:'Add one specific statistic and explain why it matters.'})).status,200);
   assert.equal((await call(handleWriting,'/api/writing/revise',student,'POST',{activity:'journal'})).status,200);
+  const revisingProfile=await call(handleWriting,'/api/writing/profile',student);
+  assert.equal(revisingProfile.data.returned,1);
+  assert.equal(revisingProfile.data.submissions,1);
   const unchanged=await call(handleWriting,'/api/writing/submit',student,'POST',payload);
   assert.equal(unchanged.status,400);
   assert.match(unchanged.data.error,/real revision/i);
   const revised={...payload,content:content+' I added that the offense gained 187 passing yards, and that number matters because it shows the quarterback moved the ball through the air when the defense expected a run.'};
-  assert.equal((await call(handleWriting,'/api/writing/submit',student,'POST',revised)).status,200);
+  const resubmitted=await call(handleWriting,'/api/writing/submit',student,'POST',revised);
+  assert.equal(resubmitted.status,200);
+  assert.match(resubmitted.data.message,/revision sent/i);
+  assert.equal(resubmitted.data.returned,0);
   const reviewed=(await call(handleWriting,'/api/teacher/writing',teacher)).data.submissions.find(row=>row.username==='revise');
   assert(reviewed.revisionChangedWords>=8);
 });
