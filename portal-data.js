@@ -9,12 +9,7 @@
     })());
     return requests.get(url);
   }
-  function label(meta, season) {
-    if (!meta) return `${season} season | Data unavailable; waiting for scheduled update`;
-    const updated = meta.updatedAt ? new Date(meta.updatedAt).toLocaleString('en-US',{ timeZone:'America/Chicago', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })+' CT' : 'unknown';
-    return `${season} season | Updated ${updated}${meta.status==='stale'?' | Delayed update: showing last stored data':''}`;
-  }
-  window.NFLFeeds = { feed, label, season:null, players:null, schedule:null, teamStats:null };
+  window.NFLFeeds = { feed, season:null, players:null, schedule:null, teamStats:null };
   window.initializeSportsData = async function() {
     const state = window.NFLFeeds;
     const now = new Date();
@@ -50,11 +45,5 @@
       const data=await response.json();
       if (response.ok && data.featuredGame) Object.assign(FEATURED_GAME,data.featuredGame);
     } catch(error) { console.warn('Featured selection unavailable.',error); }
-    for (const [id,meta] of [['home',state.schedule],['teams',state.teamStats],['stats',state.teamStats],['players',state.players],['matchups',state.schedule],['travel',state.schedule]]) {
-      const section=document.getElementById(id==='home'?'featured':id);
-      if (!section) continue;
-      const note=document.createElement('p'); note.className='sports-data-status'; note.textContent=label(meta,state.season);
-      section.querySelector('.max-w-6xl, .max-w-7xl')?.prepend(note);
-    }
   };
 })();

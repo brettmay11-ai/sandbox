@@ -88,23 +88,21 @@ function liveLeaderCard(category, players) {
   </div>`;
 }
 
-function liveLeadersMarkup(teamAbbr, season, players) {
+function liveLeadersMarkup(teamAbbr, players) {
   const team = getTeam(teamAbbr);
   return `<div class="mb-6" data-live-team-leaders="${teamAbbr}">
-    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
       <h3 class="text-sm font-semibold text-white/75 flex items-center gap-2"><iconify-icon icon="lucide:activity" class="text-brand-400"></iconify-icon>${fullName(team)} Stat Leaders</h3>
-      <span class="text-xs text-white/60">Stored stats | ${season} Season</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${LIVE_LEADER_CATEGORIES.map(category => liveLeaderCard(category, players)).join('')}</div>
-    <p class="text-xs text-white/60 mt-3">${window.NFLFeeds?.label(window.NFLFeeds.players,season)||'Source: SportsData.io. Updated daily.'}</p>
   </div>`;
 }
 
 async function loadLiveLeadersInto(container, teamAbbr) {
   container.innerHTML = '<div class="glass-panel rounded-xl p-5 text-[11px] text-white/40 flex items-center gap-2"><iconify-icon icon="lucide:loader-2" class="animate-spin text-brand-400"></iconify-icon>Loading updated team leaders...</div>';
   try {
-    const { season, players } = await fetchTeamLiveStats(teamAbbr);
-    container.innerHTML = liveLeadersMarkup(teamAbbr, season, players);
+    const { players } = await fetchTeamLiveStats(teamAbbr);
+    container.innerHTML = liveLeadersMarkup(teamAbbr, players);
   } catch (error) {
     console.warn('Live team statistics could not be loaded.', error);
     container.innerHTML = '<div class="glass-panel rounded-xl p-5 text-sm text-white/70">Statistics are unavailable while this feed waits for its scheduled update.</div>';

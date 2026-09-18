@@ -111,7 +111,7 @@
       const top = leaders(rows, category);
       title.textContent = scope === 'team' ? `${teamName(team)} Leaders` : 'League Top 10';
       subtitle.textContent = scope === 'team' ? `Top ${teamName(team)} players for ${category.label.toLowerCase()}.` : `Top NFL players for ${category.label.toLowerCase()}.`;
-      status.textContent = (top.length ? `${category.label} | ` : 'No season statistics yet. ') + window.NFLFeeds.label(window.NFLFeeds.players,window.NFLFeeds.season);
+      status.textContent = top.length ? category.label : 'No season statistics yet.';
       grid.innerHTML = top.map((item, index) => cardHtml(item, index, category)).join('');
     }
     panel.addEventListener('click', event => {

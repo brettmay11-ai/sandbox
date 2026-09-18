@@ -188,8 +188,6 @@
       if(page==='stats')installStatsStandings(rows);
       if(page==='dashboard')await installDashboardCard(rows);
       if(page==='home')await installFeaturedContext(rows);
-      const panel=document.getElementById('standings-panel')||document.getElementById('selected-team-standings-card')||document.getElementById('featured-standings-context');
-      if(panel){const note=document.createElement('p');note.className='sports-data-status';note.textContent=window.NFLFeeds.label(feedMetadata,SEASON);panel.appendChild(note)}
     } catch(error) { console.warn('Standings unavailable.',error); }
   }
   window.addEventListener('portal-page-ready', installStandings);
