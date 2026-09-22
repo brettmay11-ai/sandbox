@@ -516,7 +516,7 @@ select option{background:#111827;color:#fff}
   </div>
 </div>
 
-<div id="compare-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)">
+<div id="compare-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px)" onclick="if(event.target===this)closeCompareModal()">
   <div class="glass-panel rounded-2xl p-6 md:p-8 max-w-6xl w-full max-h-[90vh] overflow-y-auto relative">
     <button onclick="closeCompareModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><iconify-icon icon="lucide:x" class="text-sm"></iconify-icon></button>
     <div id="compare-modal-content"></div>
@@ -2481,6 +2481,9 @@ function closeCompareModal(){
   document.getElementById('compare-modal').classList.add('hidden');
   document.getElementById('compare-modal').classList.remove('flex');
 }
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&!document.getElementById('compare-modal').classList.contains('hidden'))closeCompareModal();
+});
 
 // Never render the legacy demonstration arrays while stored feeds are loading.
 Object.values(PLAYER_STATS).forEach(category=>{category.players=[]});
