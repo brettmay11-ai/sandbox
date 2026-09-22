@@ -159,6 +159,34 @@ test('nflverse daily import fills legacy student sports caches',async()=>{
   assert.equal(teams.find(team=>team.Team==='SEA').OpponentOffensiveYards,287);
   assert.equal(standings.find(team=>team.Team==='SEA').Wins,1);
   assert.equal(games.find(game=>game.GameKey==='2026_01_NE_SEA').Leaders.Receiving[0].ReceivingYards,122);
+  assert.equal(games.find(game=>game.GameKey==='2026_01_NE_SEA').Players.length,2);
+});
+test('nflverse refresh replaces a fresh leader-only game cache with full player details',async()=>{
+  const routes=[
+    routeToSportsData('/api/sportsdata/nfl/current-season'),
+    routeToSportsData('/api/sportsdata/nfl/schedule/2026'),
+    routeToSportsData('/api/sportsdata/nfl/standings/2026'),
+    routeToSportsData('/api/sportsdata/nfl/player-season-stats/2026'),
+    routeToSportsData('/api/sportsdata/nfl/team-season-stats/2026'),
+    routeToSportsData('/api/sportsdata/nfl/game-stats/2026')
+  ];
+  for(const route of routes){
+    const data=route.apiPath.includes('GameStats')?[{GameKey:'2026_01_NE_SEA',Leaders:{Passing:[{Name:'Drew Lock'}]}}]:[];
+    await pool.query("INSERT INTO sportsdata_cache(cache_key,data,fetched_at,expires_at) VALUES($1,$2,NOW(),NOW()+INTERVAL '2 hours')",[`sportsdata:nfl:${route.apiPath}`,JSON.stringify(data)]);
+  }
+  const csv={
+    'games.csv':`game_id,season,game_type,week,gameday,weekday,gametime,away_team,away_score,home_team,home_score,stadium\n2026_01_NE_SEA,2026,REG,1,2026-09-10,Thursday,20:20,NE,10,SEA,13,Lumen Field\n`,
+    'stats_player_reg_2026.csv':`player_id,player_name,player_display_name,position,recent_team,completions,attempts,passing_yards,passing_tds,passing_interceptions\n00-0035704,D.Lock,Drew Lock,QB,SEA,16,22,187,1,0\n`,
+    'stats_player_week_2026.csv':`season,week,season_type,game_id,player_id,player_name,player_display_name,position,recent_team,completions,attempts,passing_yards,passing_tds,passing_interceptions\n2026,1,REG,2026_01_NE_SEA,00-0035704,D.Lock,Drew Lock,QB,SEA,16,22,187,1,0\n`,
+    'stats_team_week_2026.csv':`season,week,team,season_type,game_id,opponent_team,passing_yards,rushing_yards,def_sacks,def_interceptions\n2026,1,SEA,REG,2026_01_NE_SEA,NE,187,46,3,2\n2026,1,NE,REG,2026_01_NE_SEA,SEA,178,109,1,0\n`
+  };
+  let calls=0;
+  const fetcher=async url=>({ok:true,status:200,text:async()=>{calls++;return csv[url.split('/').pop()]||''}});
+  await refreshNflverseData(pool,2026,fetcher);
+  const games=(await pool.query("SELECT data FROM sportsdata_cache WHERE cache_key='sportsdata:nfl:derived/json/GameStats/2026'")).rows[0].data;
+  assert.equal(calls,4);
+  assert.equal(games[0].Players[0].Name,'Drew Lock');
+  assert.equal(games[0].Players[0].PassingAttempts,22);
 });
 test('nflverse refresh ignores old 24-hour expirations after the shorter refresh window',async()=>{
   const current=routeToSportsData('/api/sportsdata/nfl/current-season');

@@ -445,11 +445,8 @@ function normalizeSportsDataGameStats(boxScores, schedule = []) {
   return games;
 }
 
-function gameStatsHavePlayerLeaders(data) {
-  return Array.isArray(data) && data.some(game => {
-    const leaders = game?.Leaders || {};
-    return ['Passing','Rushing','Receiving','Defense'].some(key => Array.isArray(leaders[key]) && leaders[key].length > 0);
-  });
+function gameStatsHavePlayerDetails(data) {
+  return Array.isArray(data) && data.length > 0 && data.every(game => Array.isArray(game?.Players));
 }
 
 async function refreshNflverseData(pool, season, fetcher = fetch) {
@@ -466,7 +463,7 @@ async function refreshNflverseData(pool, season, fetcher = fetch) {
   };
   const fresh = await Promise.all(Object.values(routes).map(route => readCached(pool, route)));
   const allFresh = fresh.every(row => row && Date.now() - new Date(row.fetched_at).getTime() < ttlHours * 3600000);
-  if (allFresh && gameStatsHavePlayerLeaders(fresh[5]?.data)) return true;
+  if (allFresh && gameStatsHavePlayerDetails(fresh[5]?.data)) return true;
   try {
     const [scheduleRows, playerRows, playerWeeklyRows, teamWeeklyRows] = await Promise.all([fetchCsv(urls.schedule, fetcher), fetchCsv(urls.players, fetcher), fetchCsv(urls.playerWeekly, fetcher), fetchCsv(urls.teamWeekly, fetcher)]);
     const schedule = normalizeNflverseSchedule(scheduleRows, season);
