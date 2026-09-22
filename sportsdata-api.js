@@ -218,13 +218,21 @@ function normalizeNflversePlayers(rows) {
 function normalizeNflverseGamePlayer(row) {
   const receptions = number(row.receptions);
   const rushingAttempts = number(row.carries);
+  const rushingYards = number(row.rushing_yards);
+  const receivingYards = number(row.receiving_yards);
+  const soloTackles = number(row.def_tackles_solo);
+  const assistedTackles = number(row.def_tackle_assists);
   return {
     PlayerID:row.player_id || null, Team:teamCode(row.recent_team || row.team), Name:row.player_display_name || row.player_name || '', Position:row.position || '',
     PassingCompletions:number(row.completions), PassingAttempts:number(row.attempts), PassingYards:number(row.passing_yards),
     PassingTouchdowns:number(row.passing_tds), PassingInterceptions:number(row.passing_interceptions),
-    RushingAttempts:rushingAttempts, RushingYards:number(row.rushing_yards), RushingTouchdowns:number(row.rushing_tds),
-    Receptions:receptions, ReceivingTargets:number(row.targets), ReceivingYards:number(row.receiving_yards), ReceivingTouchdowns:number(row.receiving_tds),
-    SoloTackles:number(row.def_tackles_solo), AssistedTackles:number(row.def_tackle_assists), Sacks:number(row.def_sacks),
+    RushingAttempts:rushingAttempts, RushingYards:rushingYards,
+    RushingYardsPerAttempt:rushingAttempts ? Number((rushingYards / rushingAttempts).toFixed(1)) : 0,
+    RushingTouchdowns:number(row.rushing_tds),
+    Receptions:receptions, ReceivingTargets:number(row.targets), ReceivingYards:receivingYards,
+    ReceivingYardsPerReception:receptions ? Number((receivingYards / receptions).toFixed(1)) : 0,
+    ReceivingTouchdowns:number(row.receiving_tds),
+    SoloTackles:soloTackles, AssistedTackles:assistedTackles, Tackles:soloTackles + assistedTackles, Sacks:number(row.def_sacks),
     Interceptions:number(row.def_interceptions), FumblesForced:number(row.def_fumbles_forced), PassesDefended:number(row.def_pass_defended)
   };
 }
@@ -248,15 +256,38 @@ function playerStat(row, field) {
 }
 
 function normalizedCachedPlayer(row) {
+  const rushingAttempts = playerStat(row, 'RushingAttempts');
+  const rushingYards = playerStat(row, 'RushingYards');
+  const receptions = playerStat(row, 'Receptions');
+  const receivingYards = playerStat(row, 'ReceivingYards');
+  const soloTackles = playerStat(row, 'SoloTackles');
+  const assistedTackles = playerStat(row, 'AssistedTackles');
   return {
     ...row,
     Team:String(row.Team || row.TeamKey || '').toUpperCase(),
     Name:row.Name || row.PlayerName || row.DisplayName || [row.FirstName,row.LastName].filter(Boolean).join(' '),
     Position:row.Position || row.FantasyPosition || '',
+    PassingCompletions:playerStat(row, 'PassingCompletions'),
+    PassingAttempts:playerStat(row, 'PassingAttempts'),
     PassingYards:playerStat(row, 'PassingYards'),
-    RushingYards:playerStat(row, 'RushingYards'),
-    ReceivingYards:playerStat(row, 'ReceivingYards'),
-    Sacks:playerStat(row, 'Sacks')
+    PassingTouchdowns:playerStat(row, 'PassingTouchdowns'),
+    PassingInterceptions:playerStat(row, 'PassingInterceptions'),
+    RushingAttempts:rushingAttempts,
+    RushingYards:rushingYards,
+    RushingYardsPerAttempt:rushingAttempts ? Number((rushingYards / rushingAttempts).toFixed(1)) : 0,
+    RushingTouchdowns:playerStat(row, 'RushingTouchdowns'),
+    Receptions:receptions,
+    ReceivingTargets:playerStat(row, 'ReceivingTargets'),
+    ReceivingYards:receivingYards,
+    ReceivingYardsPerReception:receptions ? Number((receivingYards / receptions).toFixed(1)) : 0,
+    ReceivingTouchdowns:playerStat(row, 'ReceivingTouchdowns'),
+    SoloTackles:soloTackles,
+    AssistedTackles:assistedTackles,
+    Tackles:playerStat(row, 'Tackles') || soloTackles + assistedTackles,
+    Sacks:playerStat(row, 'Sacks'),
+    Interceptions:playerStat(row, 'Interceptions'),
+    FumblesForced:playerStat(row, 'FumblesForced'),
+    PassesDefended:playerStat(row, 'PassesDefended')
   };
 }
 
@@ -296,6 +327,7 @@ function normalizeCachedGameStats(game, teamRows, playerRows) {
     GameKey:game.GameKey, Season:Number(game.Season), Week:Number(game.Week), AwayTeam:away, HomeTeam:home,
     AwayScore:scoreFor(away), HomeScore:scoreFor(home), Status:game.Status || 'Final', StadiumDetails:game.StadiumDetails || game.Stadium || null,
     Teams:teams,
+    Players:players,
     Leaders:{
       Passing:topGamePlayers(players, 'PassingYards'),
       Rushing:topGamePlayers(players, 'RushingYards'),
@@ -388,6 +420,7 @@ function normalizeNflverseGameStats(teamRows, playerRows, games) {
         GameKey:game.GameKey, Season:game.Season, Week:game.Week, AwayTeam:game.AwayTeam, HomeTeam:game.HomeTeam,
         AwayScore:game.AwayScore, HomeScore:game.HomeScore, Status:game.Status, StadiumDetails:game.StadiumDetails || null,
         Teams:teamGroups.get(game.GameKey),
+        Players:players,
         Leaders:{
           Passing:topGamePlayers(players, 'PassingYards'),
           Rushing:topGamePlayers(players, 'RushingYards'),

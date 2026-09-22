@@ -192,7 +192,8 @@ test('nflverse game stats create final-game box score summaries',()=>{
     ],
     [
       {season_type:'REG',game_id:'2026_01_NE_SEA',team:'SEA',player_display_name:'Drew Lock',position:'QB',passing_yards:'187',passing_tds:'1'},
-      {season_type:'REG',game_id:'2026_01_NE_SEA',team:'SEA',player_display_name:'Jaxon Smith-Njigba',position:'WR',receiving_yards:'122',receptions:'8'}
+      {season_type:'REG',game_id:'2026_01_NE_SEA',team:'SEA',player_display_name:'Jaxon Smith-Njigba',position:'WR',receiving_yards:'122',receptions:'8',targets:'10'},
+      {season_type:'REG',game_id:'2026_01_NE_SEA',team:'NE',player_display_name:'Example Defender',position:'LB',def_tackles_solo:'5',def_tackle_assists:'3',def_sacks:'1'}
     ],
     [{GameKey:'2026_01_NE_SEA',Season:2026,Week:1,AwayTeam:'NE',HomeTeam:'SEA',AwayScore:10,HomeScore:13,Status:'Final',IsOver:true}]
   )[0];
@@ -200,6 +201,9 @@ test('nflverse game stats create final-game box score summaries',()=>{
   assert.equal(games.Teams.NE.Turnovers,3);
   assert.equal(games.Leaders.Passing[0].Name,'Drew Lock');
   assert.equal(games.Leaders.Receiving[0].ReceivingYards,122);
+  assert.equal(games.Players.length,3);
+  assert.equal(games.Players.find(player=>player.Name==='Jaxon Smith-Njigba').ReceivingTargets,10);
+  assert.equal(games.Players.find(player=>player.Name==='Example Defender').Tackles,8);
 });
 test('sportsdata box scores create final-game popup summaries without another provider call',()=>{
   const games=normalizeSportsDataGameStats([
@@ -210,8 +214,8 @@ test('sportsdata box scores create final-game popup summaries without another pr
         {GameKey:'2026_01_DAL_PHI',Team:'PHI',Score:24,OffensiveYards:334,PassingYards:201,RushingYards:133,FirstDowns:21,Turnovers:0,Sacks:3,Takeaways:1}
       ],
       PlayerGames:[
-        {GameKey:'2026_01_DAL_PHI',Team:'PHI',Name:'Example QB',Position:'QB',PassingYards:201},
-        {GameKey:'2026_01_DAL_PHI',Team:'DAL',Name:'Example WR',Position:'WR',ReceivingYards:101}
+        {GameKey:'2026_01_DAL_PHI',Team:'PHI',Name:'Example QB',Position:'QB',PassingCompletions:18,PassingAttempts:27,PassingYards:201,PassingTouchdowns:2,PassingInterceptions:1},
+        {GameKey:'2026_01_DAL_PHI',Team:'DAL',Name:'Example WR',Position:'WR',Receptions:7,ReceivingTargets:9,ReceivingYards:101,ReceivingTouchdowns:1}
       ]
     }
   ])[0];
@@ -219,6 +223,9 @@ test('sportsdata box scores create final-game popup summaries without another pr
   assert.equal(games.Teams.PHI.TotalYards,334);
   assert.equal(games.Leaders.Passing[0].Name,'Example QB');
   assert.equal(games.Leaders.Receiving[0].ReceivingYards,101);
+  assert.equal(games.Players.length,2);
+  assert.equal(games.Players.find(player=>player.Name==='Example QB').PassingAttempts,27);
+  assert.equal(games.Players.find(player=>player.Name==='Example WR').ReceivingYardsPerReception,14.4);
 });
 test('a missing cache returns unavailable without contacting SportsData',async()=>{
   let result;

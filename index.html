@@ -72,6 +72,12 @@ section h2,#featured-away-name,#featured-home-name{font-family:'Anton','Inter',s
 .final-score-pill{display:inline-flex;align-items:center;gap:.35rem;border:1px solid rgba(34,197,94,.26);background:rgba(34,197,94,.1);color:#bbf7d0;border-radius:999px;padding:.25rem .55rem;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
 .game-stats-btn{display:inline-flex;align-items:center;gap:.35rem;border:1px solid color-mix(in srgb,var(--student-team-primary,#013369) 44%,rgba(255,255,255,.14));background:color-mix(in srgb,var(--student-team-primary,#013369) 18%,rgba(255,255,255,.04));color:#fff;border-radius:9px;padding:.45rem .7rem;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;transition:.18s ease}
 .game-stats-btn:hover,.game-stats-btn:focus-visible{background:color-mix(in srgb,var(--student-team-primary,#013369) 28%,rgba(255,255,255,.06));outline:none;transform:translateY(-1px)}
+.game-stats-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:5px;border:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.24);border-radius:10px}
+.game-stats-tab{min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:7px 10px;border:1px solid transparent;border-radius:7px;color:rgba(255,255,255,.5);font-size:11px;font-weight:800;transition:background .18s ease,border-color .18s ease,color .18s ease}
+.game-stats-tab:hover,.game-stats-tab:focus-visible{color:#fff;background:rgba(255,255,255,.06);outline:none}.game-stats-tab.is-active{color:#fff;border-color:color-mix(in srgb,var(--student-team-accent,#5b9bd5) 42%,transparent);background:color-mix(in srgb,var(--student-team-primary,#013369) 30%,rgba(255,255,255,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.09)}
+.game-stats-tab img{width:24px;height:24px;object-fit:contain}.game-player-section{padding:0 0 20px}.game-player-section:last-child{padding-bottom:0}.game-player-heading{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:rgba(255,255,255,.78);font-size:12px;font-weight:800}.game-player-table-wrap{overflow-x:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(0,0,0,.18)}
+.game-player-table{width:100%;min-width:600px;border-collapse:collapse;text-align:right;font-variant-numeric:tabular-nums}.game-player-table th{padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.38);font-size:9px;letter-spacing:.1em;text-transform:uppercase}.game-player-table td{padding:10px 11px;border-bottom:1px solid rgba(255,255,255,.055);color:rgba(255,255,255,.75);font-size:12px}.game-player-table tr:last-child td{border-bottom:0}.game-player-table th:first-child,.game-player-table td:first-child{position:sticky;left:0;z-index:1;min-width:175px;text-align:left;background:#101010}.game-player-table th:first-child{background:#171717}.game-player-table strong{display:block;color:#fff;font-size:12px}.game-player-table small{display:block;margin-top:2px;color:rgba(255,255,255,.34);font-size:9px}.game-stats-empty{padding:34px 16px;text-align:center;color:rgba(255,255,255,.4);font-size:12px}
+@media(max-width:640px){.game-stats-tab{padding:7px 4px;font-size:10px}.game-stats-tab img{width:21px;height:21px}.game-stats-team-name{display:none}.game-player-table th:first-child,.game-player-table td:first-child{min-width:150px}}
 .section-reveal{opacity:0;transform:translateY(30px);transition:all 0.8s cubic-bezier(0.4,0,0.2,1)}.section-reveal.visible{opacity:1;transform:translateY(0)}
 @keyframes pulse-glow{0%,100%{box-shadow:0 0 8px color-mix(in srgb,var(--student-team-primary,#013369) 45%,transparent)}50%{box-shadow:0 0 20px color-mix(in srgb,var(--student-team-primary,#013369) 80%,transparent)}}.live-badge{animation:pulse-glow 2s ease-in-out infinite}
 .fun-fact-card{transition:all 0.4s ease}.fun-fact-card:hover{transform:scale(1.02);border-color:color-mix(in srgb,var(--student-team-primary,#013369) 38%,transparent)}
@@ -1242,6 +1248,48 @@ function playerLeadersComparison(stats){
     <div>${rows.map(([label,icon,data,field,suffix])=>playerLeaderRow(label,icon,data,away,home,field,suffix)).join('')}</div>
   </section>`;
 }
+function gamePlayerNumber(player,field){const value=Number(player?.[field]);return Number.isFinite(value)?value:0}
+function gamePlayerAverage(player,valueField,countField,averageField){
+  const supplied=Number(player?.[averageField]);
+  if(Number.isFinite(supplied)&&supplied!==0)return supplied.toFixed(1);
+  const count=gamePlayerNumber(player,countField);
+  return count?(gamePlayerNumber(player,valueField)/count).toFixed(1):'0.0';
+}
+function gamePlayerTable(title,icon,players,columns){
+  if(!players.length)return '';
+  return `<section class="game-player-section">
+    <h4 class="game-player-heading"><iconify-icon icon="${icon}" class="text-brand-400"></iconify-icon>${title}</h4>
+    <div class="game-player-table-wrap"><table class="game-player-table">
+      <thead><tr><th>Player</th>${columns.map(column=>`<th>${column.label}</th>`).join('')}</tr></thead>
+      <tbody>${players.map(player=>`<tr><td><strong>${escHtml(player.Name)}</strong><small>${escHtml(player.Position||'Player')}</small></td>${columns.map(column=>`<td>${column.render?column.render(player):formatGameStat(gamePlayerNumber(player,column.field))}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+  </section>`;
+}
+function fullTeamGameStats(stats,team){
+  const players=(stats.Players||[]).filter(player=>String(player.Team||'').toUpperCase()===team);
+  const active=(fields)=>players.filter(player=>fields.some(field=>gamePlayerNumber(player,field)!==0));
+  const sortBy=(rows,...fields)=>rows.sort((a,b)=>fields.reduce((difference,field)=>difference||gamePlayerNumber(b,field)-gamePlayerNumber(a,field),0));
+  const passing=sortBy(active(['PassingAttempts','PassingCompletions','PassingYards','PassingTouchdowns','PassingInterceptions']),'PassingYards','PassingAttempts');
+  const rushing=sortBy(active(['RushingAttempts','RushingYards','RushingTouchdowns']),'RushingYards','RushingAttempts');
+  const receiving=sortBy(active(['Receptions','ReceivingTargets','ReceivingYards','ReceivingTouchdowns']),'ReceivingYards','Receptions');
+  const defense=sortBy(active(['Tackles','SoloTackles','AssistedTackles','Sacks','Interceptions','FumblesForced','PassesDefended']),'Tackles','Sacks','Interceptions');
+  const sections=[
+    gamePlayerTable('Passing','lucide:target',passing,[{label:'C/ATT',render:p=>`${gamePlayerNumber(p,'PassingCompletions')}/${gamePlayerNumber(p,'PassingAttempts')}`},{label:'YDS',field:'PassingYards'},{label:'TD',field:'PassingTouchdowns'},{label:'INT',field:'PassingInterceptions'}]),
+    gamePlayerTable('Rushing','lucide:footprints',rushing,[{label:'CAR',field:'RushingAttempts'},{label:'YDS',field:'RushingYards'},{label:'AVG',render:p=>gamePlayerAverage(p,'RushingYards','RushingAttempts','RushingYardsPerAttempt')},{label:'TD',field:'RushingTouchdowns'}]),
+    gamePlayerTable('Receiving','lucide:hand',receiving,[{label:'REC',field:'Receptions'},{label:'TGT',field:'ReceivingTargets'},{label:'YDS',field:'ReceivingYards'},{label:'AVG',render:p=>gamePlayerAverage(p,'ReceivingYards','Receptions','ReceivingYardsPerReception')},{label:'TD',field:'ReceivingTouchdowns'}]),
+    gamePlayerTable('Defense','lucide:shield',defense,[{label:'TKL',render:p=>gamePlayerNumber(p,'Tackles')||gamePlayerNumber(p,'SoloTackles')+gamePlayerNumber(p,'AssistedTackles')},{label:'SOLO',field:'SoloTackles'},{label:'AST',field:'AssistedTackles'},{label:'SACK',field:'Sacks'},{label:'INT',field:'Interceptions'},{label:'FF',field:'FumblesForced'},{label:'PD',field:'PassesDefended'}])
+  ].filter(Boolean);
+  return sections.length?sections.join(''):'<div class="game-stats-empty"><iconify-icon icon="lucide:clipboard-minus" class="mb-2 block text-2xl"></iconify-icon>Detailed player stats are not available for this team yet.</div>';
+}
+function switchGameStatsTab(name){
+  document.querySelectorAll('#compare-modal [data-game-stats-panel]').forEach(panel=>panel.classList.toggle('hidden',panel.dataset.gameStatsPanel!==name));
+  document.querySelectorAll('#game-stats-tabs [data-game-stats-tab]').forEach(button=>{
+    const active=button.dataset.gameStatsTab===name;
+    button.classList.toggle('is-active',active);
+    button.setAttribute('aria-selected',String(active));
+    button.tabIndex=active?0:-1;
+  });
+}
 async function showGameStatsModal(gameKey, season){
   const content=document.getElementById('compare-modal-content');
   content.innerHTML='<div class="py-12 text-center text-white/50"><iconify-icon icon="lucide:loader-2" class="animate-spin text-2xl text-brand-400"></iconify-icon><p class="mt-3 text-sm">Loading game stats...</p></div>';
@@ -1265,11 +1313,20 @@ async function showGameStatsModal(gameKey, season){
           <div class="flex flex-col items-center gap-2 ${winner===stats.HomeTeam?'text-green-300':'text-white'}">${logo(stats.HomeTeam,70)}<strong class="text-sm">${escHtml(fullName(home))}</strong><span class="text-5xl font-black">${stats.HomeScore}</span></div>
         </div>
       </div>
-      <section class="rounded-2xl border border-white/8 bg-black/20 p-4 mb-5">
-        <h3 class="mb-3 flex items-center gap-2 text-sm font-bold text-white/75"><iconify-icon icon="lucide:bar-chart-3" class="text-brand-400"></iconify-icon>Team Box Score</h3>
-        <div class="space-y-1">${statRows.map(([label,field])=>`<div class="grid grid-cols-3 items-center gap-2 border-b border-white/5 py-2 text-center last:border-b-0"><div class="text-sm font-bold text-white">${formatGameStat(gameStatValue(stats,stats.AwayTeam,field))}</div><div class="text-[10px] uppercase tracking-[.14em] text-white/35">${label}</div><div class="text-sm font-bold text-white">${formatGameStat(gameStatValue(stats,stats.HomeTeam,field))}</div></div>`).join('')}</div>
-      </section>
-      ${playerLeadersComparison(stats)}
+      <div id="game-stats-tabs" class="game-stats-tabs mb-5" role="tablist" aria-label="Game stats views">
+        <button type="button" class="game-stats-tab is-active" role="tab" aria-selected="true" data-game-stats-tab="overview" onclick="switchGameStatsTab('overview')"><iconify-icon icon="lucide:layout-dashboard"></iconify-icon>Overview</button>
+        <button type="button" class="game-stats-tab" role="tab" aria-selected="false" tabindex="-1" data-game-stats-tab="away" onclick="switchGameStatsTab('away')">${logo(stats.AwayTeam,24)}<span>${escHtml(stats.AwayTeam)}</span><span class="game-stats-team-name"> ${escHtml(away?.name||'')}</span></button>
+        <button type="button" class="game-stats-tab" role="tab" aria-selected="false" tabindex="-1" data-game-stats-tab="home" onclick="switchGameStatsTab('home')">${logo(stats.HomeTeam,24)}<span>${escHtml(stats.HomeTeam)}</span><span class="game-stats-team-name"> ${escHtml(home?.name||'')}</span></button>
+      </div>
+      <div data-game-stats-panel="overview" role="tabpanel">
+        <section class="rounded-lg border border-white/8 bg-black/20 p-4 mb-5">
+          <h3 class="mb-3 flex items-center gap-2 text-sm font-bold text-white/75"><iconify-icon icon="lucide:bar-chart-3" class="text-brand-400"></iconify-icon>Team Box Score</h3>
+          <div class="space-y-1">${statRows.map(([label,field])=>`<div class="grid grid-cols-3 items-center gap-2 border-b border-white/5 py-2 text-center last:border-b-0"><div class="text-sm font-bold text-white">${formatGameStat(gameStatValue(stats,stats.AwayTeam,field))}</div><div class="text-[10px] uppercase tracking-[.14em] text-white/35">${label}</div><div class="text-sm font-bold text-white">${formatGameStat(gameStatValue(stats,stats.HomeTeam,field))}</div></div>`).join('')}</div>
+        </section>
+        ${playerLeadersComparison(stats)}
+      </div>
+      <div class="hidden" data-game-stats-panel="away" role="tabpanel">${fullTeamGameStats(stats,stats.AwayTeam)}</div>
+      <div class="hidden" data-game-stats-panel="home" role="tabpanel">${fullTeamGameStats(stats,stats.HomeTeam)}</div>
       <p class="mt-5 text-center text-[10px] text-white/30">Game stats update automatically from the backend cache.</p>
     `;
   }catch(error){
