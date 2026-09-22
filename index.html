@@ -230,21 +230,21 @@ select option{background:#111827;color:#fff}
         </div>
         <span id="featured-week-badge" class="text-[11px] md:text-xs font-mono text-white/45 uppercase tracking-wider"></span>
       </div>
-      <div class="flex flex-col lg:flex-row items-start lg:items-center gap-8 lg:gap-10 mb-10">
-        <div class="slide-up slide-up-d1 flex items-center gap-5 md:gap-6 min-w-0">
+      <div class="featured-matchup flex flex-col xl:flex-row items-start xl:items-center gap-8 xl:gap-10 mb-10">
+        <div class="featured-team slide-up slide-up-d1 flex items-center gap-5 md:gap-6 min-w-0">
           <div id="featured-away-logo" class="fg-logo w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center p-2 backdrop-blur-sm shrink-0"></div>
-          <div class="min-w-0">
+          <div class="featured-team-copy min-w-0">
             <div id="featured-away-city" class="text-[11px] md:text-sm font-mono uppercase tracking-[.22em] text-white/55 mb-1.5"></div>
             <div id="featured-away-name" class="fg-name text-5xl md:text-6xl lg:text-7xl leading-[0.85]"></div>
             <div id="featured-away-record" class="text-[11px] md:text-xs text-white/55 font-mono uppercase tracking-wider mt-3"></div>
           </div>
         </div>
-        <div class="slide-up slide-up-d2 flex items-center justify-center lg:mx-2 shrink-0">
+        <div class="slide-up slide-up-d2 flex items-center justify-center xl:mx-2 shrink-0">
           <div class="vs-glow text-5xl md:text-6xl font-black tracking-tighter bg-gradient-to-b from-white to-white/80 bg-clip-text text-transparent select-none">VS</div>
         </div>
-        <div class="slide-up slide-up-d3 flex items-center gap-5 md:gap-6 min-w-0">
+        <div class="featured-team slide-up slide-up-d3 flex items-center gap-5 md:gap-6 min-w-0">
           <div id="featured-home-logo" class="fg-logo w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center p-2 backdrop-blur-sm shrink-0"></div>
-          <div class="min-w-0">
+          <div class="featured-team-copy min-w-0">
             <div id="featured-home-city" class="text-[11px] md:text-sm font-mono uppercase tracking-[.22em] text-white/55 mb-1.5"></div>
             <div id="featured-home-name" class="fg-name text-5xl md:text-6xl lg:text-7xl leading-[0.85]"></div>
             <div id="featured-home-record" class="text-[11px] md:text-xs text-white/55 font-mono uppercase tracking-wider mt-3"></div>
@@ -841,6 +841,25 @@ function featuredScheduleInfo(fg){
   return game||null;
 }
 
+let featuredNameFitFrame=0;
+function fitFeaturedTeamNames(){
+  cancelAnimationFrame(featuredNameFitFrame);
+  featuredNameFitFrame=requestAnimationFrame(()=>{
+    const names=['featured-away-name','featured-home-name'].map(id=>document.getElementById(id)).filter(Boolean);
+    if(names.length!==2||names.some(element=>!element.textContent.trim()))return;
+    names.forEach(element=>element.style.removeProperty('--featured-name-size'));
+    const baseSize=Math.min(...names.map(element=>parseFloat(getComputedStyle(element).fontSize)||48));
+    const scale=Math.min(1,...names.map(element=>{
+      const available=element.parentElement?.clientWidth||0;
+      return available&&element.scrollWidth?available/element.scrollWidth:1;
+    }));
+    const fittedSize=Math.max(32,Math.floor(baseSize*scale*.98));
+    names.forEach(element=>element.style.setProperty('--featured-name-size',`${fittedSize}px`));
+  });
+}
+window.addEventListener('resize',fitFeaturedTeamNames);
+document.fonts?.ready.then(fitFeaturedTeamNames);
+
 /* ===== Featured Game Renderer ===== */
 function renderFeaturedGame(){
   const fg=FEATURED_GAME;
@@ -865,6 +884,7 @@ function renderFeaturedGame(){
   document.getElementById('featured-home-logo').innerHTML=logo(fg.home,96);
   document.getElementById('featured-home-city').textContent=home.location;
   document.getElementById('featured-home-name').textContent=home.name;
+  fitFeaturedTeamNames();
   const homeOffRank=TEAM_STATS.offensive[0].data.findIndex(d=>d.team===fg.home)+1;
   const homeDefRank=TEAM_STATS.defensive[0].data.findIndex(d=>d.team===fg.home)+1;
   document.getElementById('featured-home-record').textContent=home.div+(homeOffRank&&homeDefRank?` | Off #${homeOffRank} | Def #${homeDefRank}`:' | Season ranks unavailable');
