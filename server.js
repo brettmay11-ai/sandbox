@@ -24,6 +24,7 @@ const mimeTypes = {
   '.jpeg':'image/jpeg',
   '.svg':'image/svg+xml',
   '.ico':'image/x-icon',
+  '.pdf':'application/pdf',
   '.glb':'model/gltf-binary',
   '.gltf':'model/gltf+json'
 };

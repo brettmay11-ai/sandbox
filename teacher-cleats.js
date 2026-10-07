@@ -6,8 +6,15 @@ const page = document.querySelector('[data-teacher-page="cleats"]');
 if (page) {
   const cleatStyles = document.createElement('link');
   cleatStyles.rel = 'stylesheet';
-  cleatStyles.href = 'cleat-studio.css?v=2';
+  cleatStyles.href = '/cleat-studio.css?v=3';
   document.head.appendChild(cleatStyles);
+
+  const studioGrid = page.querySelector('.cleat-studio-grid');
+  const worksheetPanel = document.createElement('section');
+  worksheetPanel.className = 'cleat-worksheet-panel';
+  worksheetPanel.setAttribute('aria-labelledby', 'cleat-worksheet-title');
+  worksheetPanel.innerHTML = `<img class="cleat-worksheet-preview" src="/assets/worksheets/my-cause-my-cleats-worksheet-preview.png" alt="Preview of the printable My Cause My Cleats student worksheet"><div class="cleat-worksheet-copy"><span class="cleat-worksheet-kicker"><iconify-icon icon="lucide:file-pen-line"></iconify-icon>Student worksheet</span><h3 id="cleat-worksheet-title">Print the model-matched design sheet</h3><p>This is the calibrated RC-04 worksheet built for the current 3D cleat. Students can draw on the large side panel and choose separate colors for the tongue and laces.</p><div class="cleat-worksheet-details"><span><iconify-icon icon="lucide:scan-line"></iconify-icon>Scan-ready corner marks</span><span><iconify-icon icon="lucide:rectangle-horizontal"></iconify-icon>US Letter landscape</span><span><iconify-icon icon="lucide:printer"></iconify-icon>Print at 100% / Actual size</span></div><div class="cleat-worksheet-actions"><a class="cleat-worksheet-action cleat-worksheet-action-primary" href="/assets/worksheets/my-cause-my-cleats-worksheet.pdf" target="_blank" rel="noopener"><iconify-icon icon="lucide:printer"></iconify-icon>Open to Print</a><a class="cleat-worksheet-action" href="/assets/worksheets/my-cause-my-cleats-worksheet.pdf" download="My-Cause-My-Cleats-Worksheet.pdf"><iconify-icon icon="lucide:download"></iconify-icon>Download PDF</a></div></div>`;
+  studioGrid?.before(worksheetPanel);
 
   const host = document.getElementById('cleat-viewer');
   const empty = document.getElementById('cleat-viewer-empty');
