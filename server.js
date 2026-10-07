@@ -24,9 +24,7 @@ const mimeTypes = {
   '.jpeg':'image/jpeg',
   '.svg':'image/svg+xml',
   '.ico':'image/x-icon',
-  '.pdf':'application/pdf',
-  '.glb':'model/gltf-binary',
-  '.gltf':'model/gltf+json'
+  '.pdf':'application/pdf'
 };
 const CLASS_SEEDS = [
   { slug:'may', name:'May Class', targetStudentCount:20 },
@@ -36,7 +34,7 @@ const CLASS_SEEDS = [
 ];
 const CLEAN_STUDENT_PAGES = new Set(['dashboard','profile','teams','matchups','stats','players','travel','math','writing','cities']);
 const CLEAN_TEACHER_PAGES = new Set(['dashboard','students','progress','featured','coach','writing','cleats']);
-const TEACHER_ASSETS = new Set(['team-branding.js','teacher-navigation.js','teacher-featured-game.js','teacher-coach-settings.js','teacher-analytics.js','teacher-writing.js','teacher-teks.js','teacher-cleats.js','visual-system.css']);
+const TEACHER_ASSETS = new Set(['team-branding.js','teacher-navigation.js','teacher-featured-game.js','teacher-coach-settings.js','teacher-analytics.js','teacher-writing.js','teacher-teks.js','visual-system.css']);
 
 function normalizeUsername(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 32); }
 function normalizeSlug(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
@@ -590,7 +588,7 @@ function serveFile(response, relative) {
   if (!file.startsWith(root)) return sendJson(response, 403, { error:'Forbidden' });
   fs.readFile(file, (error, content) => {
     if (error) { response.writeHead(404, { 'Content-Type':'text/plain; charset=utf-8' }); return response.end('Not found'); }
-    if (relative === 'teacher.html') content = content.toString().replace('team-branding.js?v=3', 'team-branding.js?v=4').replace(/(href|src)="(visual-system\.css|team-branding\.js|teacher-cleats\.js)/g, '$1="/$2');
+    if (relative === 'teacher.html') content = content.toString().replace(/(href|src)="(visual-system\.css|team-branding\.js)/g, '$1="/$2');
     if (relative === 'admin.html') content = content.toString().replace('</head>', '<link rel="stylesheet" href="/admin-portal-fixes.css?v=1"></head>');
     const contentType=mimeTypes[path.extname(file).toLowerCase()] || 'application/octet-stream';
     if (file.endsWith('.html')) content = path.basename(file) === 'index.html' ? renderStudentHtml(content.toString()) : versionHtml(content.toString());

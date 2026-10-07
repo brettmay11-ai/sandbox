@@ -11,7 +11,6 @@ const { initSocialStudies, handleSocialStudies } = require('./social-studies-api
 const { initBadges, handleBadges, badgeProfile } = require('./badges-api');
 const { initSportsDataCache, handleSportsData, startSportsDataRefresh } = require('./sportsdata-api');
 const { initRssNewsCache, handleRssNews } = require('./rss-news-api');
-const { handleCleatGeneration } = require('./cleat-generation-api');
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is required.');
@@ -107,9 +106,8 @@ async function handleStudentProgress(request,response,pathname,user){
     return createServer(async(request,response)=>{
       try{
         const pathname=decodeURIComponent(new URL(request.url,`http://${request.headers.host||'localhost'}`).pathname);
-        if(pathname.startsWith('/api/math-game/')||pathname.startsWith('/api/coach/')||pathname.startsWith('/api/writing/')||pathname.startsWith('/api/social-studies/')||pathname.startsWith('/api/badges/')||pathname.startsWith('/api/teacher/writing')||pathname==='/api/teacher/analytics'||pathname.startsWith('/api/sportsdata/')||pathname.startsWith('/api/nfl-news/')||pathname==='/api/student-identity'||pathname==='/api/classmates/profiles'||pathname.includes('/team')||pathname==='/api/featured-game'||pathname==='/api/teacher/cleats/generate-inside'||(pathname==='/api/progress'&&request.method==='POST')){
+        if(pathname.startsWith('/api/math-game/')||pathname.startsWith('/api/coach/')||pathname.startsWith('/api/writing/')||pathname.startsWith('/api/social-studies/')||pathname.startsWith('/api/badges/')||pathname.startsWith('/api/teacher/writing')||pathname==='/api/teacher/analytics'||pathname.startsWith('/api/sportsdata/')||pathname.startsWith('/api/nfl-news/')||pathname==='/api/student-identity'||pathname==='/api/classmates/profiles'||pathname.includes('/team')||pathname==='/api/featured-game'||(pathname==='/api/progress'&&request.method==='POST')){
           const user=await getUser(request);
-          if(await handleCleatGeneration({req:request,res:response,path:pathname,user,sendJson}))return;
           if(await handleBadges({pool,req:request,res:response,path:pathname,user,sendJson}))return;
           if(await handleTeacherAnalytics({pool,req:request,res:response,path:pathname,user,sendJson}))return;
           if(await handleSportsData({pool,req:request,res:response,path:pathname,user,sendJson}))return;

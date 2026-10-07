@@ -71,15 +71,6 @@ async function loadTeacherDashboardClassName(){
     if(title) title.textContent='Class';
   }
 }
-function installCleatProductionNotice(){
-  const page=document.querySelector('[data-teacher-page="cleats"]');
-  if(!page||document.getElementById('cleat-production-notice'))return;
-  const notice=document.createElement('div');
-  notice.id='cleat-production-notice';
-  notice.className='mb-5 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-5 py-4 text-amber-100 shadow-lg';
-  notice.innerHTML='<div class="flex items-start gap-3"><iconify-icon icon="lucide:construction" class="text-2xl text-amber-300"></iconify-icon><div><strong class="block text-sm uppercase tracking-[.18em] text-amber-200">Still in production</strong><p class="mt-1 text-sm text-amber-100/85">Cleat Studio is not live yet. This page is for internal previewing and testing only.</p></div></div>';
-  page.prepend(notice);
-}
 function removeLegacyProgressTrackingColumns(){
   document.querySelectorAll('table').forEach(table=>{
     const headers=[...table.querySelectorAll('thead th')];
@@ -104,7 +95,6 @@ function watchProgressTable(){
 }
 window.addEventListener('DOMContentLoaded',()=>{
   loadTeacherDashboardClassName();
-  installCleatProductionNotice();
   watchProgressTable();
 });
 </script>`;
@@ -153,7 +143,7 @@ function adminRefreshScript() {
 function transformTeacherHtml(html) {
   let output = html;
   output = output.replace('team-branding.js?v=3', 'team-branding.js?v=4');
-  output = output.replace(/(href|src)="(visual-system\.css|team-branding\.js|teacher-cleats\.js)/g, '$1="/$2');
+  output = output.replace(/(href|src)="(visual-system\.css|team-branding\.js)/g, '$1="/$2');
   output = output.replace('id="teacher-command-center" data-teacher-page="students"', 'id="teacher-command-center" data-teacher-page="dashboard"');
   output = output.replace('<details class="teacher-secondary-panel" data-teacher-page="students">', '<details id="student-management" open class="teacher-secondary-panel" data-teacher-page="students">');
   output = output.replace('Manage students</span><small>Create accounts, assign teams, and update access</small>', 'Students <span id="teacher-dashboard-panel-class-name" class="text-blue-300 text-sm ml-2">Class</span></span><small>Create accounts, assign teams, and update access</small>');

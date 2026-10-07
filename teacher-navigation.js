@@ -10,7 +10,7 @@
     ['featured', 'Featured Game', 'star'],
     ['coach', 'Research Coach', 'graduation-cap'],
     ['writing', 'Writing Reviews', 'notebook-pen'],
-    ['cleats', 'Cleat Studio', 'footprints']
+    ['cleats', 'Cleat Worksheet', 'file-pen-line']
   ];
   const cleanPath = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
   const requested = (cleanPath[0] === 'teacher' ? cleanPath[1] : null) || new URLSearchParams(location.search).get('page');
@@ -52,7 +52,7 @@
         featured: 'Choose and publish the class Featured Game of the Week.',
         coach: 'Set the weekly research focus and review common student questions.',
         writing: 'Read student writing and return helpful feedback.',
-        cleats: 'Prepare and preview My Cause My Cleats designs.'
+        cleats: 'Print student design sheets and review the collection instructions.'
       }[current];
     }
   }
