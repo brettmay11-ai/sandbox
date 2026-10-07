@@ -24,7 +24,9 @@ const mimeTypes = {
   '.jpeg':'image/jpeg',
   '.svg':'image/svg+xml',
   '.ico':'image/x-icon',
-  '.pdf':'application/pdf'
+  '.pdf':'application/pdf',
+  '.glb':'model/gltf-binary',
+  '.gltf':'model/gltf+json'
 };
 const CLASS_SEEDS = [
   { slug:'may', name:'May Class', targetStudentCount:20 },
